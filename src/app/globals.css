@@ -3,37 +3,44 @@
 /* Dark mode basado en clase .dark (toggle manual + persistencia en localStorage) */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Tokens de diseño: cambia estos valores para reestilizar toda la app */
+/* Tokens de diseño (estilo fintech: naranja + navy + esmeralda).
+   Cambia estos valores para reestilizar toda la app. */
 :root {
   --background: #ffffff;
-  --foreground: #18181b;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --card-foreground: #18181b;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --primary: #18181b;
-  --primary-foreground: #fafafa;
+  --card-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --primary: #f97316; /* naranja */
+  --primary-foreground: #1a1206; /* texto oscuro sobre naranja (alto contraste) */
+  --success: #059669; /* esmeralda */
+  --success-foreground: #ffffff;
   --destructive: #dc2626;
-  --destructive-foreground: #fafafa;
-  --ring: #18181b;
+  --destructive-foreground: #ffffff;
+  --ring: #f97316;
+  --navy: #0b1220;
 }
 
 .dark {
-  --background: #09090b;
-  --foreground: #fafafa;
-  --card: #18181b;
-  --card-foreground: #fafafa;
-  --muted: #27272a;
-  --muted-foreground: #a1a1aa;
-  --border: #27272a;
-  --input: #3f3f46;
-  --primary: #fafafa;
-  --primary-foreground: #18181b;
+  --background: #0b1220; /* azul oscuro / navy */
+  --foreground: #e2e8f0;
+  --card: #131e36; /* navy claro para tarjetas */
+  --card-foreground: #f1f5f9;
+  --muted: #1b2742;
+  --muted-foreground: #94a3b8;
+  --border: #233149;
+  --input: #2a3a57;
+  --primary: #f97316; /* naranja */
+  --primary-foreground: #1a1206;
+  --success: #34d399; /* esmeralda */
+  --success-foreground: #06281c;
   --destructive: #ef4444;
-  --destructive-foreground: #fafafa;
-  --ring: #fafafa;
+  --destructive-foreground: #ffffff;
+  --ring: #f97316;
+  --navy: #0b1220;
 }
 
 /* Expone los tokens como utilidades de Tailwind (bg-background, text-foreground, ...) */
@@ -48,9 +55,12 @@
   --color-input: var(--input);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-ring: var(--ring);
+  --color-navy: var(--navy);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

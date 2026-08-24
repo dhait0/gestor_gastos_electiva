@@ -18,7 +18,8 @@ export const metadata: Metadata = {
 };
 
 // Evita el parpadeo al cargar: aplica el tema antes del primer pintado.
-const themeScript = `(function(){try{var t=localStorage.getItem('theme');var m=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(!t&&m)){document.documentElement.classList.add('dark');}}catch(e){}})();`;
+// Por defecto la app usa el tema oscuro (base navy); el usuario puede cambiarlo.
+const themeScript = `(function(){try{var t=localStorage.getItem('theme');if(t!=='light'){document.documentElement.classList.add('dark');}}catch(e){document.documentElement.classList.add('dark');}})();`;
 
 export default function RootLayout({
   children,
