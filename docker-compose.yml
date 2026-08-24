@@ -1,4 +1,22 @@
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: finwise-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: finwise
+      POSTGRES_PASSWORD: finwise
+      POSTGRES_DB: finwise
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finwise -d finwise"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   web:
     build:
       context: .
@@ -8,16 +26,20 @@ services:
       - "6060:6060"
     environment:
       - NODE_ENV=development
-      - DATABASE_URL=file:./dev.db
+      # En el contenedor apunta al servicio db (sobrescribe el .env del host)
+      - DATABASE_URL=postgresql://finwise:finwise@db:5432/finwise?schema=public
       - AUTH_SECRET=${AUTH_SECRET:-finwise-dev-secret-cambiar-en-produccion}
       - AUTH_GOOGLE_ID=${AUTH_GOOGLE_ID:-}
       - AUTH_GOOGLE_SECRET=${AUTH_GOOGLE_SECRET:-}
     volumes:
-      # Código fuente (la base SQLite persiste en el host vía este mount)
+      # Código fuente (la base de datos es el servicio db, no un archivo)
       - .:/app
       # Preserva node_modules del contenedor (no usar el del host)
       - /app/node_modules
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     develop:
       watch:
         # Cualquier cambio en el código se sincroniza al contenedor -> hot reload
@@ -31,3 +53,6 @@ services:
         # Cambios en dependencias reconstruyen la imagen automáticamente
         - action: rebuild
           path: package.json
+
+volumes:
+  pgdata:

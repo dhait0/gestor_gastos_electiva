@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start -p 6060 -H 0.0.0.0",
     "lint": "eslint",
-    "db:seed": "tsx prisma/seed.ts"
+    "postinstall": "prisma generate",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:migrate": "prisma migrate dev"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

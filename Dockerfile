@@ -3,17 +3,17 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Dependencias primero para aprovechar la caché de capas
-COPY package.json package-lock.json ./
-RUN npm install
-
-# Resto del proyecto
+# Copia todo el proyecto (incluye prisma/schema.prisma) antes de instalar,
+# para que el postinstall (prisma generate) encuentre el esquema.
 COPY . .
 
-# Genera el cliente de Prisma (no depende de la base de datos)
+# Instala dependencias (el postinstall genera el cliente de Prisma)
+RUN npm install
+
+# Doble seguridad: regenera el cliente (idempotente)
 RUN npx prisma generate
 
 EXPOSE 6060
 
-# En runtime: sincroniza el esquema y arranca el servidor dev con hot reload
-CMD ["sh", "-c", "npx prisma db push --skip-generate && npm run dev"]
+# En runtime: aplica migraciones y arranca el servidor dev con hot reload
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run dev"]
