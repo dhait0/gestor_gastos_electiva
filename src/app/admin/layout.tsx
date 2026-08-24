@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin";
 import SignOutButton from "@/components/sign-out-button";
+import ThemeToggle from "@/components/theme-toggle";
 
 export default async function AdminLayout({
   children,
@@ -10,19 +11,30 @@ export default async function AdminLayout({
   await requireAdmin();
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <header className="border-b border-zinc-200 bg-white">
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-border bg-card">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-4">
-            <span className="font-semibold text-zinc-900">FinWise · Admin</span>
-            <Link href="/admin/users" className="text-sm text-zinc-600 hover:text-zinc-900">
+            <span className="font-semibold text-foreground">
+              FinWise · Admin
+            </span>
+            <Link
+              href="/admin/users"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
               Usuarios
             </Link>
-            <Link href="/dashboard" className="text-sm text-zinc-600 hover:text-zinc-900">
+            <Link
+              href="/dashboard"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
               Dashboard
             </Link>
           </div>
-          <SignOutButton />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <SignOutButton />
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
