@@ -16,6 +16,7 @@ model User {
   image         String?
   passwordHash  String?
   authProvider  String    @default("EMAIL") // EMAIL | GOOGLE
+  role          String    @default("USER") // USER | ADMIN
   googleId      String?   @unique
   currency      String    @default("COP")
   timezone      String    @default("America/Bogota")

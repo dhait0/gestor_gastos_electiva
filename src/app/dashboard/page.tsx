@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import SignOutButton from "@/components/sign-out-button";
@@ -8,6 +9,8 @@ export default async function DashboardPage() {
   if (!session?.user) {
     redirect("/login");
   }
+
+  const isAdmin = session.user.role === "ADMIN";
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-16">
@@ -20,6 +23,16 @@ export default async function DashboardPage() {
           dashboard de FinWise.
         </p>
         <p className="mt-4 text-sm text-zinc-400">ID de usuario: {session.user.id}</p>
+        {isAdmin && (
+          <div className="mt-6">
+            <Link
+              href="/admin/users"
+              className="inline-block rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700"
+            >
+              Administración de usuarios
+            </Link>
+          </div>
+        )}
         <div className="mt-6">
           <SignOutButton />
         </div>
