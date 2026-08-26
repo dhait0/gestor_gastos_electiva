@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import {
   adminCreateUser,
@@ -85,4 +84,11 @@ export async function deleteUser(id: string, _formData: FormData) {
 
   await deleteUserById(id);
   revalidatePath("/admin/users");
+}
+
+export async function deleteUserAction(_prev: { error?: string }, formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "ID de usuario inválido." };
+  await deleteUser(id, formData);
+  return { error: undefined };
 }

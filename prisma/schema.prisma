@@ -7,7 +7,68 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Modelos requeridos por el adaptador de Auth.js (NextAuth)
+enum AccountType {
+  CASH
+  CHECKING
+  SAVINGS
+  CREDIT_CARD
+  DIGITAL_WALLET
+  OTHER
+}
+
+enum CategoryType {
+  INCOME
+  EXPENSE
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+  CANCELLED
+}
+
+enum SubscriptionFrequency {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  CUSTOM
+}
+
+enum DebtType {
+  CREDIT_CARD
+  PERSONAL_LOAN
+  STUDENT_LOAN
+  MORTGAGE
+  OTHER
+}
+
+enum AlertType {
+  BUDGET_WARNING
+  BUDGET_EXCEEDED
+  UPCOMING_PAYMENT
+  LOW_BALANCE
+  SPENDING_SPIKE
+  GOAL_RISK
+  RECURRING_DETECTED
+  FORECAST_WARNING
+  GENERAL
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+  SUCCESS
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -15,16 +76,25 @@ model User {
   emailVerified DateTime?
   image         String?
   passwordHash  String?
-  authProvider  String    @default("EMAIL") // EMAIL | GOOGLE
-  role          String    @default("USER") // USER | ADMIN
+  authProvider  String    @default("EMAIL")
+  role          String    @default("USER")
   googleId      String?   @unique
   currency      String    @default("COP")
   timezone      String    @default("America/Bogota")
-  safetyReserve Int       @default(0) // en unidades de la moneda (pesos COP)
+  safetyReserve Int       @default(0)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   accounts      Account[]
   sessions      Session[]
+  financialAccounts FinancialAccount[]
+  categories         Category[]
+  transactions       Transaction[]
+  budgets            Budget[]
+  goals              Goal[]
+  subscriptions      Subscription[]
+  debts              Debt[]
+  recurringTransactions RecurringTransaction[]
+  alerts             Alert[]
 }
 
 model Account {
@@ -59,4 +129,219 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model FinancialAccount {
+  id             String       @id @default(cuid())
+  userId         String
+  name           String
+  type           AccountType
+  initialBalance Int
+  currentBalance Int
+  currency       String       @default("COP")
+  color          String?
+  icon           String?
+  isArchived     Boolean      @default(false)
+  creditLimit    Int?
+  availableCredit Int?
+  paymentDay     Int?
+  deletedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions      Transaction[]
+  recurringTransactions RecurringTransaction[]
+
+  @@index([userId])
+  @@index([userId, type])
+}
+
+model Category {
+  id          String       @id @default(cuid())
+  userId      String
+  name        String
+  type        CategoryType
+  icon        String?
+  color       String?
+  isDefault   Boolean      @default(false)
+  deletedAt   DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions      Transaction[]
+  budgets           Budget[]
+  subscriptions     Subscription[]
+  recurringTransactions RecurringTransaction[]
+
+  @@index([userId])
+  @@index([userId, type])
+}
+
+model Transaction {
+  id                    String         @id @default(cuid())
+  userId                String
+  accountId             String
+  categoryId            String
+  type                  TransactionType
+  amount                Int
+  description           String
+  date                  DateTime
+  notes                 String?
+  isRecurring           Boolean        @default(false)
+  recurringTransactionId String?
+  transferGroupId       String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account               FinancialAccount     @relation(fields: [accountId], references: [id])
+  category               Category             @relation(fields: [categoryId], references: [id])
+  recurringTransaction   RecurringTransaction? @relation(fields: [recurringTransactionId], references: [id])
+
+  @@index([userId])
+  @@index([userId, date])
+  @@index([userId, categoryId])
+  @@index([accountId])
+}
+
+model Budget {
+  id          String    @id @default(cuid())
+  userId      String
+  categoryId  String
+  month       Int
+  year        Int
+  limitAmount Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@unique([userId, categoryId, month, year])
+  @@index([userId, year, month])
+}
+
+model Goal {
+  id            String      @id @default(cuid())
+  userId        String
+  name          String
+  description   String?
+  targetAmount  Int
+  currentAmount Int         @default(0)
+  targetDate    DateTime?
+  status        GoalStatus  @default(ACTIVE)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contributions GoalContribution[]
+
+  @@index([userId])
+}
+
+model GoalContribution {
+  id        String    @id @default(cuid())
+  goalId    String
+  amount    Int
+  date      DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+
+  goal Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId])
+}
+
+model Subscription {
+  id              String              @id @default(cuid())
+  userId          String
+  name            String
+  amount          Int
+  categoryId      String
+  billingFrequency SubscriptionFrequency
+  nextPaymentDate DateTime
+  status          String              @default("ACTIVE")
+  source          String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@index([userId])
+}
+
+model Debt {
+  id             String    @id @default(cuid())
+  userId         String
+  name           String
+  originalAmount Int
+  currentBalance Int
+  interestRate   Float
+  minimumPayment Int
+  paymentDay     Int
+  type           DebtType
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments   DebtPayment[]
+
+  @@index([userId])
+}
+
+model DebtPayment {
+  id              String    @id @default(cuid())
+  debtId          String
+  amount          Int
+  principalAmount Int
+  interestAmount  Int
+  date            DateTime
+  createdAt       DateTime @default(now())
+
+  debt Debt @relation(fields: [debtId], references: [id], onDelete: Cascade)
+
+  @@index([debtId])
+}
+
+model RecurringTransaction {
+  id                String         @id @default(cuid())
+  userId            String
+  name              String
+  type              TransactionType
+  amount            Int
+  categoryId        String
+  accountId         String?
+  frequency         String
+  nextExecutionDate DateTime
+  isAutomatic       Boolean        @default(false)
+  status            String         @default("ACTIVE")
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category   Category       @relation(fields: [categoryId], references: [id])
+  account    FinancialAccount? @relation(fields: [accountId], references: [id])
+  transactions Transaction[]
+
+  @@index([userId])
+}
+
+model Alert {
+  id        String        @id @default(cuid())
+  userId    String
+  type      AlertType
+  title     String
+  message   String
+  severity  AlertSeverity
+  read      Boolean       @default(false)
+  metadata  Json?
+  createdAt DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, read])
 }

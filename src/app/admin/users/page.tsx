@@ -1,7 +1,8 @@
 import { requireAdmin } from "@/lib/admin";
 import { listUsers } from "@/lib/services/user.service";
-import { updateUserRole, deleteUser } from "./actions";
+import { updateUserRole } from "./actions";
 import NewUserForm from "./new-user-form";
+import DeleteUserButton from "./delete-user-button";
 
 export default async function AdminUsersPage() {
   await requireAdmin();
@@ -69,11 +70,7 @@ export default async function AdminUsersPage() {
                         </button>
                       </form>
                     )}
-                    <form action={deleteUser.bind(null, u.id)}>
-                      <button className="rounded-lg border border-destructive/40 px-3 py-1 text-xs font-medium text-destructive transition hover:bg-destructive/10">
-                        Eliminar
-                      </button>
-                    </form>
+                      <DeleteUserButton id={u.id} />
                   </div>
                 </td>
               </tr>
