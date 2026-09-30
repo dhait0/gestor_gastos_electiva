@@ -1,26 +1,77 @@
 @import "tailwindcss";
 
+/* Dark mode basado en clase .dark (toggle manual + persistencia en localStorage) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tokens de diseño (estilo fintech: naranja + navy + esmeralda).
+   Cambia estos valores para reestilizar toda la app. */
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --primary: #f97316; /* naranja */
+  --primary-foreground: #1a1206; /* texto oscuro sobre naranja (alto contraste) */
+  --success: #059669; /* esmeralda */
+  --success-foreground: #ffffff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --ring: #f97316;
+  --navy: #0b1220;
 }
 
+.dark {
+  --background: #0b1220; /* azul oscuro / navy */
+  --foreground: #e2e8f0;
+  --card: #131e36; /* navy claro para tarjetas */
+  --card-foreground: #f1f5f9;
+  --muted: #1b2742;
+  --muted-foreground: #94a3b8;
+  --border: #233149;
+  --input: #2a3a57;
+  --primary: #f97316; /* naranja */
+  --primary-foreground: #1a1206;
+  --success: #34d399; /* esmeralda */
+  --success-foreground: #06281c;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --ring: #f97316;
+  --navy: #0b1220;
+}
+
+/* Expone los tokens como utilidades de Tailwind (bg-background, text-foreground, ...) */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-ring: var(--ring);
+  --color-navy: var(--navy);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    border-color: var(--border);
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-geist-sans), system-ui, sans-serif;
+  }
 }

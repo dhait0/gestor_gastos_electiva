@@ -197,6 +197,8 @@ El MVP debe priorizar las funciones esenciales.
 
 ## MVP
 
+> **Nota de alcance académico:** para la actividad de definición de MVP de clase y la primera demo, usar el recorte de **MVP académico mínimo** definido en la §108, con **máximo tres funciones Must**. La lista siguiente se conserva como alcance funcional ampliado del proyecto, no como requisito de la primera versión demostrable.
+
 Debe incluir:
 
 1. Registro (email/contraseña y/o inicio de sesión con Google).
@@ -2849,6 +2851,182 @@ Depende de que las funciones principales estén:
 Primero construir una base sólida.
 
 Después ampliar.
+
+---
+
+# 108. MVP académico mínimo — actividad de clase
+
+Esta sección traduce FinWise al ejercicio de clase **“Del problema al MVP”**. Su objetivo es definir una primera versión pequeña, terminada, comprobable y viable. **No reemplaza el roadmap general del proyecto**; únicamente fija el alcance de la primera demo académica.
+
+## 108.1 Paso 1 / 5 — Problema en una frase
+
+> **Estudiantes universitarios y jóvenes profesionales tienen dificultad para saber cuánto dinero pueden gastar sin comprometer sus gastos necesarios y metas, porque sus ingresos, gastos y obligaciones no se interpretan en conjunto.**
+
+Regla: esta frase describe **a quién le pasa**, **qué le pasa** y **por qué le molesta**, sin mencionar FinWise, una app, IA, APIs, dashboards ni ninguna tecnología.
+
+## 108.2 Paso 2 / 5 — Usuario, meta y obstáculo
+
+### Usuario
+
+> **Estudiante universitario o joven profesional que administra personalmente sus ingresos y gastos.**
+
+### Meta
+
+> **Saber cuánto puede gastar en el periodo actual sin descuidar sus obligaciones y metas de ahorro.**
+
+### Obstáculo
+
+> **El saldo que ve en sus cuentas no refleja lo que realmente tiene disponible, porque debe considerar gastos, compromisos y reservas antes de tomar una decisión de compra.**
+
+## 108.3 Paso 3 / 5 — Funciones y priorización MoSCoW
+
+Regla estricta para la actividad: **máximo tres Must**. Lo que no sea esencial para demostrar la propuesta de valor se mueve a Should, Could o Won't for this MVP.
+
+### Must — imprescindibles para la primera demo
+
+1. **Registrar manualmente ingresos y gastos.**
+2. **Mostrar un resumen financiero básico** con saldo líquido, ingresos del periodo y gastos del periodo.
+3. **Calcular y mostrar el dinero disponible para gastar** después de descontar compromisos configurados.
+
+### Should — importantes, pero el MVP puede funcionar sin ellos
+
+- editar y eliminar transacciones;
+- categorizar ingresos y gastos;
+- definir un presupuesto mensual básico;
+- mostrar una alerta cuando el dinero disponible sea bajo o negativo;
+- autenticación para separar datos cuando la demo deje de ser de un solo usuario.
+
+### Could — aportan valor, pero pueden esperar
+
+- múltiples cuentas financieras;
+- metas de ahorro con seguimiento;
+- gráficas de gastos por categoría;
+- proyección de fin de mes;
+- detección de movimientos recurrentes;
+- inicio de sesión con Google.
+
+### Won't — fuera de esta primera versión
+
+- integración bancaria;
+- ejecución de pagos;
+- almacenamiento de números completos de tarjetas o credenciales bancarias;
+- suscripciones avanzadas;
+- administración avanzada de deudas;
+- Financial Score;
+- simulador financiero;
+- importación CSV y reportes;
+- asistente con IA;
+- aplicación móvil.
+
+## 108.4 Regla funcional del Must principal
+
+El Must principal es **“calcular y mostrar el dinero disponible para gastar”**, porque representa la propuesta de valor diferencial del proyecto.
+
+Para la primera demo académica puede usarse esta versión mínima de la regla:
+
+```text
+dineroDisponibleMVP =
+  saldoLiquido
+  - obligacionesPendientes
+  - reservaSeguridad
+```
+
+Cuando existan los módulos de metas y deudas, el cálculo evoluciona a la fórmula completa de la §33:
+
+```text
+dineroDisponible =
+  saldoLiquido
+  - obligacionesPendientes
+  - metasAhorroComprometidas
+  - pagosDeudaPendientes
+  - reservaSeguridad
+```
+
+La primera demo debe evitar confundir **saldo** con **dinero disponible**.
+
+## 108.5 Paso 4 / 5 — Historia principal y criterios comprobables
+
+### Historia principal
+
+> **Como estudiante universitario o joven profesional que administra sus finanzas, quiero saber cuánto dinero puedo gastar realmente, para tomar decisiones de compra sin comprometer mis obligaciones del periodo.**
+
+### Criterios de aceptación — “Se cumple cuando…”
+
+1. **Se cumple cuando** el usuario registra al menos un ingreso y un gasto, y el sistema actualiza el saldo líquido mostrado.
+2. **Se cumple cuando** el usuario define obligaciones pendientes y una reserva de seguridad, y el sistema descuenta esos valores del saldo líquido para calcular el dinero disponible.
+3. **Se cumple cuando** el valor mostrado como dinero disponible cambia automáticamente después de registrar, editar o eliminar un ingreso, gasto u obligación que afecte el cálculo.
+4. **Se cumple cuando** un resultado negativo se muestra como una advertencia clara y no como dinero que el usuario puede gastar.
+5. **Se cumple cuando** los valores monetarios se presentan en COP con formato consistente y sin usar `float` para cálculos críticos.
+6. **Se cumple cuando** la interfaz diferencia explícitamente entre **saldo líquido** y **dinero disponible**.
+
+### Caso de aceptación de ejemplo
+
+Dado:
+
+```text
+Saldo líquido:          $1.800.000
+Obligaciones pendientes: $600.000
+Reserva de seguridad:    $200.000
+```
+
+Entonces:
+
+```text
+Dinero disponible:      $1.000.000
+```
+
+Y la interfaz debe comunicar que ese es el monto aproximado que puede utilizarse sin tocar los compromisos configurados.
+
+## 108.6 Paso 5 / 5 — Prueba de viabilidad
+
+El MVP académico debe poder responder **sí** a las cuatro preguntas:
+
+1. **¿Se explica en una frase? — Sí.**  
+   FinWise permite registrar movimientos básicos y estimar cuánto dinero puede gastar una persona sin comprometer obligaciones configuradas.
+
+2. **¿Puede probarlo un usuario en un dispositivo? — Sí.**  
+   La primera demo puede ejecutarse como flujo de un solo usuario en navegador de escritorio, sin depender de una arquitectura multiusuario completa.
+
+3. **¿Evita pagos y datos financieros altamente sensibles? — Sí, por alcance.**  
+   La primera demo no conecta bancos, no ejecuta pagos, no pide credenciales bancarias y no almacena números completos de tarjetas. Para la presentación se deben usar datos ficticios o de demostración.
+
+4. **¿Es razonable construirlo con el stack actual y apoyo de IA? — Sí.**  
+   El alcance requiere formularios, persistencia, reglas financieras simples y una vista de resumen, todos compatibles con el stack definido en este documento.
+
+**Resultado: 4/4 — el MVP académico es viable.**
+
+## 108.7 Checklist — tu MVP listo para construir
+
+- [x] El problema cabe en una frase y no menciona la solución.
+- [x] Usuario, meta y obstáculo están definidos con claridad.
+- [x] Las funciones están repartidas en MoSCoW y existen solo tres Must.
+- [x] Hay una historia principal con criterios comprobables.
+- [x] El alcance pasa las cuatro preguntas de viabilidad.
+
+## 108.8 Errores que este recorte evita
+
+- **Confundir “mínimo” con “incompleto”.** Los tres Must deben quedar terminados y demostrables.
+- **Empezar por la solución.** La definición del problema no menciona tecnología ni características.
+- **Marcar todo como Must.** Solo hay tres funciones imprescindibles.
+- **Diseñar para todos los usuarios.** La primera validación se enfoca en estudiantes universitarios y jóvenes profesionales.
+- **No escribir criterios.** La historia principal tiene criterios observables y verificables.
+- **Meter pagos, bancos o IA demasiado pronto.** Esas capacidades quedan fuera de la primera versión.
+
+## 108.9 Orden de construcción para esta primera demo
+
+```text
+1. Modelo mínimo de transacciones y configuración de compromisos
+2. Registro manual de ingresos y gastos
+3. Cálculo de saldo líquido
+4. Configuración de obligaciones y reserva de seguridad
+5. Cálculo de dinero disponible
+6. Resumen visual de saldo, ingresos, gastos y disponible
+7. Criterios de error y estados vacíos
+8. Pruebas unitarias del cálculo
+9. Demo con datos ficticios
+```
+
+La demo se considera terminada cuando los tres Must funcionan de extremo a extremo y los criterios de aceptación de la historia principal pueden verificarse manualmente.
 
 ---
 

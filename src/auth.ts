@@ -47,6 +47,7 @@ providers.push(
         id: user.id,
         email: user.email,
         name: user.name,
+        role: user.role,
       };
     },
   }),
@@ -55,7 +56,13 @@ providers.push(
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   trustHost: true,
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60,
+  },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60,
+  },
   pages: {
     signIn: "/login",
   },
@@ -64,6 +71,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.role = (user as { role?: string }).role;
       }
       return token;
     },
@@ -71,17 +79,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user && token.id) {
         session.user.id = String(token.id);
       }
+      session.user.role = token.role as AppRole;
       return session;
     },
   },
 });
 
 import type { DefaultSession } from "next-auth";
+import type { Role as AppRole } from "@/types/role";
 
 declare module "next-auth" {
   interface Session {
     user: {
       id: string;
+      role: AppRole;
     } & DefaultSession["user"];
   }
 }
