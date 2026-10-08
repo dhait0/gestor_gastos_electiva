@@ -1,18 +1,26 @@
 # AGENTS.md — FinWise
 
-> Instrucciones obligatorias para cualquier agente de código, asistente de desarrollo o automatización que trabaje en este repositorio.
+> Instrucciones operativas obligatorias para agentes de desarrollo que trabajen en este repositorio.
 >
-> **Lee este archivo antes de modificar cualquier archivo.**
+> Este archivo funciona como **router de contexto, política de ejecución y límite de autonomía**.
 >
-> Este archivo actúa como router: no obliga a leer toda la documentación. Lee únicamente el contexto relevante para la tarea.
+> No reemplaza la documentación especializada ubicada en `contexto/`.
+
+Proyecto: **FinWise**
+
+Repositorio local esperado:
+
+`/Users/keys/Documents/proyectos/gestor_gastos_electiva`
 
 ---
 
-# 1. Principios principales
+# 1. Objetivo del proyecto
 
-FinWise es una aplicación de inteligencia y gestión financiera personal.
+FinWise es una aplicación web de gestión e inteligencia financiera personal.
 
-No es un CRUD de gastos.
+La pregunta central del producto es:
+
+> **¿Cuánto dinero puedo gastar realmente sin comprometer mis obligaciones, reservas y objetivos financieros?**
 
 Flujo conceptual:
 
@@ -23,58 +31,61 @@ Registrar
 → Predecir
 → Alertar
 → Recomendar
-→ Apoyar decisión
+→ Apoyar la decisión
 ```
 
-Pregunta central:
-
-> **¿Cuánto dinero puede gastar el usuario realmente sin comprometer sus obligaciones, reservas y objetivos financieros?**
-
-Principios operativos:
+MVP académico:
 
 ```text
-seguridad
-+
-precisión financiera
-+
-cambio mínimo correcto
-+
-eficiencia
+1. Registrar manualmente ingresos y gastos.
+2. Mostrar un resumen financiero básico.
+3. Calcular dinero disponible después de compromisos.
+```
+
+No ampliar el alcance del MVP sin autorización explícita.
+
+---
+
+# 2. Regla principal del agente
+
+Trabajar siempre así:
+
+```text
+encontrar el contexto correcto
+→ implementar el mínimo cambio correcto
+→ verificar
+→ detenerse
+```
+
+No intentar impresionar haciendo más trabajo del solicitado.
+
+Cuando la tarea esté cumplida y validada:
+
+```text
+STOP
 ```
 
 ---
 
-# 2. Política de eficiencia — OBLIGATORIA
-
-Documento completo:
-
-```text
-contexto/desarrollo/POLITICA_EFICIENCIA_AGENTES.md
-```
-
-Regla:
-
-> **Haz el mínimo trabajo correcto necesario para cumplir la tarea.**
+# 3. Modo operativo por defecto
 
 Modo por defecto:
 
 ```text
-ECONÓMICO
+MODO ECONÓMICO
 ```
 
-No:
+El esfuerzo debe ser proporcional a:
 
 ```text
-AUTÓNOMO PROFUNDO
+alcance
++
+riesgo
++
+incertidumbre
 ```
 
-por defecto.
-
----
-
-# 3. Clasifica la tarea
-
-Internamente:
+Clasificación interna recomendada:
 
 ```text
 RÁPIDO
@@ -82,264 +93,268 @@ NORMAL
 PROFUNDO
 ```
 
-## Rápido
+## RÁPIDO
 
-Ejemplos:
+Para:
 
-- copy;
-- CSS;
-- icono;
-- bug localizado;
-- documentación pequeña.
+- cambios localizados;
+- textos;
+- estilos pequeños;
+- correcciones obvias;
+- un componente aislado;
+- un test puntual.
 
-Objetivo orientativo:
+Orientación:
 
 ```text
 1–5 archivos relevantes
 ```
 
-## Normal
+## NORMAL
 
-Ejemplos:
+Para:
 
-- formulario;
-- Server Action;
-- pantalla;
-- query;
-- caso de uso.
+- una funcionalidad;
+- un flujo;
+- varias capas relacionadas;
+- un bug no trivial.
 
-Objetivo orientativo:
+Orientación:
 
 ```text
 3–12 archivos relevantes
 ```
 
-## Profundo
+## PROFUNDO
 
-Solo cuando exista:
+Reservarlo para:
 
 - seguridad;
 - RLS;
-- dinero;
-- migración;
-- pérdida de datos;
+- lógica financiera;
+- precisión monetaria;
+- migraciones;
+- riesgo de pérdida de datos;
 - arquitectura;
-- bug transversal desconocido.
+- bugs transversales sin causa conocida.
 
-Los límites son blandos; no justifican trabajo incorrecto.
-
----
-
-# 4. Detente cuando termines
-
-Si la tarea está:
-
-```text
-implementada
-+
-verificada
-```
-
-detente.
-
-No continúes con:
-
-- mejoras no solicitadas;
-- refactors;
-- optimizaciones;
-- documentación adicional;
-- nuevas features.
-
-Si detectas algo fuera de alcance:
-
-```text
-menciónalo
-pero no lo implementes
-```
+No usar análisis profundo por defecto.
 
 ---
 
-# 5. No explores todo el repositorio
+# 4. Recuperación de contexto
 
-No empieces leyendo recursivamente todo el repo.
+No leer todo el repositorio ni toda la documentación antes de cada tarea.
 
-Orden:
-
-```text
-1. identificar módulo
-2. búsqueda exacta si conoces nombre
-3. búsqueda semántica si conoces concepto
-4. abrir candidatos relevantes
-5. expandir solo si hace falta
-```
-
----
-
-# 6. Usa indexación semántica
-
-Si existe codebase indexing:
+Orden recomendado:
 
 ```text
-semantic_search
-→ pocos candidatos
-→ leer archivos reales
-→ modificar
+1. búsqueda exacta
+2. índice semántico / embeddings
+3. seleccionar candidatos
+4. leer archivos relevantes
+5. leer dependencias directas
+6. ampliar solo si sigue faltando contexto
+7. web/MCP únicamente si realmente hace falta
 ```
 
-Preferir inicialmente:
+Si se conoce un símbolo, ruta o función:
+
+```text
+usar búsqueda exacta primero
+```
+
+Si se conoce el concepto pero no la ubicación:
+
+```text
+usar semantic search
+```
+
+Objetivo inicial orientativo:
 
 ```text
 5–10 resultados
 ```
 
-El índice localiza; el código real es la verdad.
-
----
-
-# 7. MCP: pocos y específicos
-
-Los MCP consumen contexto mediante herramientas y schemas.
-
-No activar muchos por defecto.
-
-Preferir:
+Después reducir normalmente a:
 
 ```text
-1 servidor de contexto/código
-+
-1 servidor externo específico si realmente hace falta
+3–8 archivos relevantes
 ```
 
-No cargar GitHub/Slack/Notion/browser/database/etc. simultáneamente sin necesidad.
+No abrir decenas de archivos "por si acaso".
 
 ---
 
-# 8. Lectura documental selectiva
+# 5. Indexación y carpetas auxiliares
 
-Siempre debes respetar:
+Priorizar indexación de:
+
+```text
+src/
+supabase/
+contexto/
+AGENTS.md
+```
+
+Excluir del análisis general salvo necesidad explícita:
+
+```text
+node_modules/
+.next/
+coverage/
+out/
+build/
+.git/
+artefactos generados
+secrets
+```
+
+`.agents/` contiene skills y configuración auxiliar.
+
+`.kilo/` puede contener configuración y worktrees locales.
+
+No recorrer `.agents/` ni `.kilo/` como parte de una tarea normal de aplicación.
+
+---
+
+# 6. AGENTS.md es un router
+
+Este archivo NO autoriza a cargar todos los documentos listados.
+
+Abrir únicamente los documentos relacionados con la tarea actual.
+
+Documentación principal:
 
 ```text
 contexto/FINWISE_CONTEXTO_MAESTRO.md
-contexto/desarrollo/CONVENCIONES_DESARROLLO.md
-contexto/desarrollo/GESTION_GITHUB_Y_RAMAS.md
-contexto/desarrollo/POLITICA_EFICIENCIA_AGENTES.md
-```
 
-Pero **no cargues todos completos en cada tarea**.
+contexto/arquitectura/ARQUITECTURA_TECNICA.md
+contexto/arquitectura/MODELO_DATOS_Y_SEGURIDAD.md
 
-Usa este archivo como router.
+contexto/producto/CASOS_DE_USO_Y_FLUJOS.md
 
----
-
-# 9. Router documental
-
-## UI / UX
-
-```text
 contexto/diseno/SISTEMA_DISENO_FINWISE.md
 contexto/diseno/WIREFRAMES_Y_PANTALLAS.md
+
+contexto/desarrollo/CONVENCIONES_DESARROLLO.md
+contexto/desarrollo/GESTION_GITHUB_Y_RAMAS.md
+
+contexto/calidad/ESTRATEGIA_PRUEBAS.md
+
+contexto/planificacion/BACKLOG_MVP.md
+contexto/planificacion/PLAN_IMPLEMENTACION_MVP.md
+contexto/planificacion/PLAN_EJECUCION_KILO.md
 ```
 
-Leer solo la sección/pantalla afectada.
-
-## Arquitectura / backend
+También pueden existir ADRs en:
 
 ```text
-contexto/arquitectura/ARQUITECTURA_TECNICA.md
 contexto/arquitectura/adr/
 ```
 
-solo si aplica.
-
-## Datos / seguridad
-
-```text
-contexto/arquitectura/MODELO_DATOS_Y_SEGURIDAD.md
-ADR relacionado
-```
-
-## Producto
-
-```text
-contexto/producto/CASOS_DE_USO_Y_FLUJOS.md
-```
-
-## Planificación
-
-```text
-contexto/planificacion/BACKLOG_MVP.md
-contexto/planificacion/PLAN_IMPLEMENTACION_MVP.md
-```
-
-## Testing
-
-```text
-contexto/calidad/ESTRATEGIA_PRUEBAS.md
-```
-
-No leas documentos no relacionados "por si acaso".
+o una ruta equivalente definida en el repositorio.
 
 ---
 
-# 10. Orden de autoridad
+# 7. Orden de autoridad
+
+Ante conflicto entre instrucciones:
 
 ```text
-1. Seguridad / privacidad
+1. Seguridad y privacidad
 2. Integridad financiera
 3. FINWISE_CONTEXTO_MAESTRO.md
 4. MODELO_DATOS_Y_SEGURIDAD.md
-5. ARQUITECTURA_TECNICA.md + ADRs
-6. CASOS_DE_USO_Y_FLUJOS.md
-7. SISTEMA_DISENO_FINWISE.md
-8. WIREFRAMES_Y_PANTALLAS.md
-9. GESTION_GITHUB_Y_RAMAS.md
-10. POLITICA_EFICIENCIA_AGENTES.md
-11. BACKLOG / PLAN
-12. preferencia del agente
+5. ARQUITECTURA_TECNICA.md
+6. ADRs aplicables
+7. CASOS_DE_USO_Y_FLUJOS.md
+8. SISTEMA_DISENO_FINWISE.md
+9. WIREFRAMES_Y_PANTALLAS.md
+10. GESTION_GITHUB_Y_RAMAS.md
+11. POLITICA_EFICIENCIA_AGENTES.md, si existe
+12. PLAN_EJECUCION_KILO.md
+13. Convenciones locales
+14. Preferencia del agente
 ```
 
-La eficiencia nunca justifica romper seguridad o precisión.
+Si dos documentos de autoridad similar se contradicen y la decisión puede afectar comportamiento, datos, seguridad o arquitectura:
+
+```text
+DETENER
+→ explicar contradicción
+→ pedir decisión humana
+```
+
+No inventar una tercera solución silenciosamente.
 
 ---
 
-# 11. Alcance actual
+# 8. Ejecución por fases
+
+Cuando exista:
 
 ```text
-MVP académico P0
+contexto/planificacion/PLAN_EJECUCION_KILO.md
 ```
 
-Debe demostrar:
+trabajar **una fase por vez**.
+
+Flujo obligatorio:
 
 ```text
-1. Registrar ingresos/gastos
-2. Resumen financiero básico
-3. Dinero disponible después de compromisos
+fase actual
+→ implementar
+→ validar
+→ revisar diff
+→ resumir
+→ STOP
 ```
 
-Soporte P0:
+No avanzar automáticamente a la siguiente fase.
+
+No interpretar el plan como:
 
 ```text
-auth
-profiles
-accounts
-categories
-transactions
-obligations
-safety reserve
-dashboard
+"construye todo el proyecto"
 ```
-
-No implementes P1/P2 sin solicitud.
 
 ---
 
-# 12. Stack oficial
+# 9. Control de alcance
+
+Está prohibido el scope creep.
+
+No:
+
+- implementar la siguiente fase;
+- agregar features "ya que estamos";
+- crear abstracciones por anticipación;
+- refactorizar módulos no relacionados;
+- cambiar librerías por preferencia personal;
+- rediseñar pantallas fuera de la tarea;
+- crear documentación innecesaria;
+- introducir infraestructura futura sin necesidad demostrada.
+
+Si una mejora sería útil pero no es necesaria:
+
+```text
+mencionarla al final
+NO implementarla
+```
+
+---
+
+# 10. Stack técnico oficial
+
+Objetivo técnico del proyecto:
 
 ```text
 Next.js 16.x
-React
+App Router
+React 19.x
 TypeScript strict
-Tailwind CSS
+Tailwind CSS 4
 shadcn/ui
 Radix UI
 Lucide
@@ -355,24 +370,38 @@ Supabase Auth
 Supabase RLS
 @supabase/supabase-js
 @supabase/ssr
-Supabase CLI
+Supabase CLI migrations
 
 Vitest
 React Testing Library
 Playwright
 
-pnpm
+GitHub
 GitHub Actions
 Vercel
+pnpm
 ```
 
-No introduzcas por defecto:
+Arquitectura:
+
+```text
+Modular Monolith
+```
+
+No sustituir este stack sin autorización.
+
+---
+
+# 11. Tecnologías no adoptadas inicialmente
+
+No introducir por iniciativa propia:
 
 ```text
 Prisma
 Drizzle
 NestJS
 Redis
+microservices
 Kafka
 RabbitMQ
 GraphQL
@@ -380,264 +409,566 @@ tRPC
 Redux
 Zustand
 TanStack Query
-Realtime
-Edge Functions
+Sentry
+Supabase Realtime
+Supabase Edge Functions
+IA en producción
+integraciones bancarias
+Open Banking
+```
+
+Esto no significa que estén prohibidas para siempre.
+
+Significa:
+
+```text
+NO forman parte de la arquitectura actual
 ```
 
 ---
 
-# 13. Arquitectura
+# 12. Arquitectura de capas
+
+Mantener:
 
 ```text
 Presentation
-→ Application
-→ Domain
-→ Infrastructure
-→ Database
+↓
+Application
+↓
+Domain
+↓
+Infrastructure
+↓
+Database
 ```
 
-Lógica financiera fuera de React.
+La lógica financiera debe ser lo más pura posible.
 
-El dominio no depende de:
+Idealmente el dominio no debe depender de:
 
 ```text
-react
-next/*
-@supabase/*
+React
+Next.js
+Supabase
+DOM
 ```
 
-cuando pueda ser una función pura.
+cuando pueda evitarse.
+
+No colocar reglas financieras complejas dentro de JSX.
 
 ---
 
-# 14. Next.js
+# 13. Next.js
 
-Lecturas:
-
-```text
-Server Components
-```
-
-Mutaciones:
+Preferir:
 
 ```text
-Server Actions
+Server Components → lecturas
+Server Actions → mutaciones de aplicación
+Route Handlers → HTTP explícito, integraciones o webhooks
 ```
 
-HTTP explícito:
+No convertir todo a Client Components.
 
-```text
-Route Handlers
-```
+Usar `"use client"` únicamente donde exista necesidad real de:
 
-solo para contratos HTTP reales/webhooks/integraciones.
+- estado del navegador;
+- hooks de cliente;
+- interacción;
+- APIs del browser.
 
 ---
 
-# 15. Datos e identidad
+# 14. Supabase e identidad
+
+Identidad:
 
 ```text
 auth.users
+```
+
+Perfil:
+
+```text
 public.profiles
 ```
 
-No crear otra tabla `users`.
-
-P0:
+Relación:
 
 ```text
-profiles
-accounts
-categories
-transactions
-obligations
+1:1
+mismo UUID
+```
+
+No crear una tabla paralela de usuarios.
+
+Todo acceso financiero debe respetar RLS.
+
+No confiar solo en filtros de frontend.
+
+---
+
+# 15. Seguridad y RLS
+
+Toda tabla financiera de usuario debe tener ownership explícito.
+
+Patrón esperado:
+
+```text
+user_id
+RLS ON
+```
+
+Validar al menos:
+
+```text
+usuario A accede a A
+usuario B NO accede a A
+anon NO accede
+```
+
+Preferir relaciones que refuercen ownership.
+
+Nunca relajar RLS para "hacer que funcione".
+
+Si la única solución aparente exige desactivar seguridad:
+
+```text
+DETENER
 ```
 
 ---
 
-# 16. Dinero
+# 16. Service role y secretos
 
-DB:
+La service role:
+
+```text
+NUNCA
+```
+
+debe llegar al navegador.
+
+No usarla en:
+
+```text
+NEXT_PUBLIC_*
+bundle cliente
+logs
+commits
+fixtures visibles
+```
+
+No versionar:
+
+```text
+.env
+.env.local
+passwords
+tokens
+secrets
+```
+
+Mantener:
+
+```text
+.env.example
+```
+
+con nombres de variables y valores de ejemplo no sensibles.
+
+---
+
+# 17. Dinero
+
+En PostgreSQL:
 
 ```text
 numeric(20,4)
 ```
 
-TypeScript:
+En TypeScript para cálculos monetarios:
 
 ```text
 decimal.js
 ```
 
-No `number` para cálculos críticos.
+No usar `number` como base de cálculos financieros críticos.
+
+No usar floats SQL para dinero.
+
+Para presentación puede utilizarse:
+
+```text
+Intl.NumberFormat
+```
+
+pero el formato visual no sustituye la precisión del dominio.
 
 ---
 
-# 17. Invariantes
+# 18. Fechas y moneda
+
+Fechas financieras:
 
 ```text
-saldo != dinero disponible
-crédito disponible != efectivo
-transferencia != ingreso
-transferencia != gasto
+date
 ```
 
-Compra con tarjeta:
-
-- aumenta deuda;
-- es gasto;
-- no reduce liquidez inmediatamente.
-
-Pago tarjeta:
+Eventos técnicos:
 
 ```text
-TRANSFER desde activo
-+
-TRANSFER hacia tarjeta
+timestamptz
+```
+
+Zona horaria inicial:
+
+```text
+America/Bogota
+```
+
+Moneda inicial:
+
+```text
+COP
+```
+
+No agregar agregación cross-currency antes de tener un módulo FX explícito.
+
+Nunca sumar monedas diferentes como si fueran equivalentes.
+
+---
+
+# 19. Invariantes financieros
+
+Principios obligatorios:
+
+```text
+saldo != disponible
+crédito disponible != efectivo líquido
+transferencia != ingreso o gasto
+obligación pendiente reduce disponible, no saldo
+marcar obligación pagada no inventa transacción
+forecast es estimación, nunca hecho
 ```
 
 ---
 
-# 18. Disponible MVP
+# 20. Ledger canónico
+
+`transactions` es el ledger financiero canónico.
+
+El saldo actual de una cuenta debe derivarse de movimientos.
+
+No persistir normalmente:
 
 ```text
-saldoLiquido
-- obligacionesPendientes
-- reservaSeguridad
+account.current_balance
 ```
 
-Debe explicar:
+si puede calcularse desde el ledger.
 
-```text
-saldoLiquido
-obligacionesPendientes
-reservaSeguridad
-disponible
-```
+No crear fuentes paralelas de verdad.
 
 ---
 
-# 19. Transferencias
+# 21. Ingresos y gastos
+
+Ingreso:
 
 ```text
-origen: TRANSFER + OUTFLOW
-destino: TRANSFER + INFLOW
+INCOME + INFLOW
 ```
 
-Mismo:
+Gasto:
+
+```text
+EXPENSE + OUTFLOW
+```
+
+El monto debe ser positivo:
+
+```text
+amount > 0
+```
+
+La dirección determina el efecto.
+
+Evitar representar gastos como montos negativos si el modelo oficial usa dirección/tipo.
+
+---
+
+# 22. Transferencias
+
+Una transferencia:
+
+```text
+NO es ingreso
+NO es gasto
+```
+
+Debe representarse como par relacionado:
+
+```text
+TRANSFER + OUTFLOW
+TRANSFER + INFLOW
+```
+
+con:
 
 ```text
 transfer_group_id
-user
-amount
-currency
 ```
 
-Cuentas distintas. Operación atómica.
+o el mecanismo oficial equivalente.
+
+No duplicar ingresos/gastos por mover dinero entre cuentas propias.
 
 ---
 
-# 20. Seguridad
+# 23. Tarjetas de crédito
 
-Toda tabla multiusuario:
+Una compra con tarjeta:
 
 ```text
-user_id
-RLS
-index user_id
-policies explícitas
+EXPENSE + OUTFLOW
 ```
 
-No confiar en frontend.
+sobre una cuenta:
 
-No usar `service_role` para operaciones normales.
+```text
+CREDIT_CARD
+```
+
+Representa gasto y aumento de deuda.
+
+No reduce inmediatamente el saldo líquido de cuentas de activo.
+
+El pago de tarjeta:
+
+```text
+transferencia de cuenta de activo → tarjeta
+```
+
+No crear un segundo gasto.
+
+Regla:
+
+```text
+compra con tarjeta = gasto
+pago de tarjeta = transferencia
+```
 
 ---
 
-# 21. Migraciones
+# 24. Obligaciones
 
-Todo cambio DB:
+Una obligación pendiente:
+
+```text
+reduce capacidad de gasto
+NO reduce saldo bancario
+```
+
+hasta que exista un movimiento real.
+
+Marcar una obligación como pagada:
+
+```text
+NO debe inventar automáticamente una transacción
+```
+
+salvo que un flujo futuro explícito lo defina.
+
+---
+
+# 25. Reserva de seguridad
+
+La reserva de seguridad:
+
+```text
+reduce disponible
+NO reduce saldo líquido
+```
+
+En MVP puede estar almacenada en:
+
+```text
+profiles.safety_reserve
+```
+
+según el modelo aprobado.
+
+---
+
+# 26. Dinero disponible
+
+Fórmula MVP:
+
+```text
+availableToSpend =
+liquidBalance
+- pendingObligations
+- safetyReserve
+```
+
+Fórmula futura conceptual:
+
+```text
+liquidBalance
+- pendingObligations
+- committedSavingsGoals
+- pendingDebtPayments
+- safetyReserve
+```
+
+No implementar componentes futuros de la fórmula antes de que entren al alcance.
+
+---
+
+# 27. Saldo líquido
+
+Inicialmente considerar como activos líquidos:
+
+```text
+CASH
+CHECKING
+SAVINGS
+DIGITAL_WALLET
+```
+
+Excluir:
+
+```text
+CREDIT_CARD
+credit_limit
+available_credit
+```
+
+Modificar esta definición requiere una decisión de dominio.
+
+---
+
+# 28. Forecast
+
+Toda proyección debe presentarse como estimación.
+
+Nunca como hecho.
+
+Usar lenguaje como:
+
+```text
+estimado
+proyectado
+aproximadamente
+si mantienes este ritmo
+```
+
+No afirmar certeza.
+
+---
+
+# 29. Soft delete
+
+Para entidades con historial financiero, preferir:
+
+```text
+deleted_at
+```
+
+No eliminar físicamente historial financiero por defecto.
+
+---
+
+# 30. Migraciones
+
+Todas las modificaciones de esquema deben estar en:
 
 ```text
 supabase/migrations/
 ```
 
-Considerar:
+No depender de cambios manuales en dashboards.
 
-- schema;
-- constraints;
-- indexes;
-- grants;
-- RLS;
-- policies;
-- triggers/functions;
-- tests.
+Para cambios destructivos importantes:
+
+```text
+Expand
+→ Migrate
+→ Contract
+```
+
+No borrar columnas o datos sin analizar impacto.
 
 ---
 
-# 22. Código
+# 31. Sistema visual
 
-Código:
-
-```text
-English
-```
-
-UI/docs:
-
-```text
-Spanish
-```
-
-TypeScript strict. Evitar `any`.
-
----
-
-# 23. UI
-
-Dirección:
+Dirección estética:
 
 ```text
 Apple premium
 +
-Fintech premium
+fintech premium
 +
-Soft luxury
+soft luxury
 ```
 
-Primary:
+Uso moderado:
 
 ```text
-#2563EB
+glassmorphism
+soft UI
 ```
 
-Accent:
+Evitar:
 
 ```text
-#06B6D4
+neón excesivo
+gradientes morado/rosa genéricos de IA
+glows exagerados
+parallax innecesario
 ```
 
-Fonts:
+Tokens base:
 
 ```text
-Manrope
-Geist
+Primary       #2563EB
+Accent        #06B6D4
+Dark bg       #0B1220
+Dark surface  #111827
 ```
 
-No producir:
+Tipografías objetivo:
 
-- SaaS genérico;
-- purple/pink AI gradient;
-- neón;
-- glow excesivo;
-- neumorfismo fuerte;
-- glass en todo.
+```text
+Headings  Manrope
+UI/data   Geist
+```
+
+Números financieros:
+
+```text
+tabular nums
+```
+
+Temas:
+
+```text
+light
+dark
+system
+```
 
 ---
 
-# 24. Mobile
+# 32. Mobile first
 
-Mobile es igual o más importante que desktop.
+Móvil tiene prioridad igual o superior a desktop.
+
+Navegación objetivo:
 
 ```text
 Inicio
@@ -656,156 +987,622 @@ Transferencia
 Obligación
 ```
 
+Solo mostrar como activas funciones realmente implementadas.
+
 ---
 
-# 25. Light / Dark / Motion
+# 33. Desktop y dashboard
 
-Todo componente nuevo:
+Desktop puede usar:
 
 ```text
-Light
-Dark
-System
+sidebar flotante/colapsable
 ```
 
-Motion breve, funcional y compatible con reduced motion.
+con glass moderado.
 
-Performance prevalece.
-
----
-
-# 26. PWA
-
-Respetar:
+El protagonista del dashboard es:
 
 ```text
-safe areas
-standalone
-touch targets
-bottom navigation
+DINERO DISPONIBLE
 ```
 
-No escrituras financieras offline sin diseño específico.
+No el saldo total.
+
+El usuario debe entender rápidamente:
+
+```text
+cuánto tiene
+cuánto está comprometido
+cuánto puede gastar
+```
+
+No inventar tendencias ni insights.
 
 ---
 
-# 27. Accesibilidad
+# 34. Registro rápido de gasto
 
-Mínimo:
+Prioridad UX:
+
+```text
+amount primero
+```
+
+Flujo breve, especialmente en móvil.
+
+No añadir pasos o campos innecesarios.
+
+---
+
+# 35. Accesibilidad y Motion
+
+Objetivo mínimo:
 
 ```text
 WCAG AA
 ```
 
+Revisar:
+
+- contraste;
 - labels;
-- focus;
-- keyboard;
-- touch targets;
-- errores asociados;
-- no solo color;
+- navegación por teclado;
+- focus visible;
 - reduced motion;
-- fallback textual para charts.
+- touch targets;
+- no comunicar solo por color.
 
----
-
-# 28. Estados UI
-
-Cuando aplique:
+Target táctil orientativo:
 
 ```text
-loading
-empty
-success
-warning
-error
-disabled
-no permission
-retry
+44x44 px
+```
+
+Motion debe ser sutil y respetar:
+
+```text
+prefers-reduced-motion
 ```
 
 ---
 
-# 29. Formularios
+# 36. shadcn/ui
+
+Configuración esperada:
+
+```text
+base      Radix
+style     Luma
+icons     Lucide
+baseColor neutral
+```
+
+No instalar todo el registry.
+
+Agregar únicamente componentes requeridos por la tarea.
+
+shadcn es base, no identidad visual final.
+
+---
+
+# 37. Skills
+
+`.agents/skills/` puede contener skills instalados.
+
+No ejecutar todos los skills automáticamente.
+
+Invocar únicamente el que corresponda claramente a la tarea.
+
+Si existe `ui-ux-pro-max`, sus recomendaciones son auxiliares.
+
+La documentación de diseño FinWise tiene prioridad.
+
+---
+
+# 38. MCP, web y contexto externo
+
+No activar múltiples MCP "por si acaso".
+
+Orientación:
+
+```text
+0–1 herramienta de contexto
++
+1 herramienta externa específica si hace falta
+```
+
+Priorizar:
+
+```text
+repo/index > web/MCP
+```
+
+No introducir Context Server, Qdrant compartido u otra infraestructura RAG hasta que exista necesidad demostrada.
+
+Usar web cuando una API/librería actual pueda haber cambiado o sea necesario verificar sintaxis contemporánea.
+
+Priorizar documentación oficial.
+
+---
+
+# 39. Dependencias
+
+Antes de instalar una dependencia:
+
+1. comprobar si ya existe;
+2. comprobar si el stack oficial ya resuelve la necesidad;
+3. justificar que sea necesaria.
+
+No agregar paquetes duplicados.
+
+Ejemplos:
+
+```text
+si Zod existe → no agregar otra librería de schemas
+si Lucide existe → no agregar otro icon pack
+si date-fns existe → no agregar otra librería de fechas sin razón
+```
+
+---
+
+# 40. Convenciones de código
+
+Usar:
+
+- TypeScript estricto;
+- nombres descriptivos;
+- funciones pequeñas;
+- separación de responsabilidades;
+- módulos de dominio;
+- validaciones centralizadas;
+- tipos explícitos cuando aporten claridad.
+
+Evitar:
+
+```text
+any
+lógica financiera en JSX
+queries duplicadas
+componentes gigantes
+constantes mágicas
+abstracciones prematuras
+```
+
+---
+
+# 41. Formularios y validación
+
+Preferir:
 
 ```text
 React Hook Form + Zod
 ```
 
-Errores inline.
+La validación crítica debe existir también en server/domain cuando corresponda.
+
+No confiar únicamente en validación del navegador.
 
 ---
 
-# 30. Testing proporcional
+# 42. Errores y estados UI
+
+Mensajes para usuario:
+
+- claros;
+- accionables;
+- no técnicos.
+
+No mostrar stack traces o detalles internos en UI.
+
+Toda pantalla relevante debe considerar:
+
+```text
+loading
+empty
+error
+retry
+success
+disabled
+```
+
+No dejar vistas vacías sin explicación.
+
+---
+
+# 43. Testing proporcional
+
+No ejecutar toda la suite después de cada edición pequeña.
 
 Durante desarrollo:
 
 ```text
-cambio pequeño → test específico
-feature → tests del módulo
+test específico
+→ typecheck relevante si aplica
 ```
 
-Antes del PR:
+Antes de cerrar una fase o PR:
 
-```text
+```bash
 pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
 ```
 
-No E2E completo tras cada pequeña edición.
+Para lógica financiera:
+
+```text
+unit tests obligatorios
+```
+
+Para RLS:
+
+```text
+tests A/B/anon
+```
+
+Para flujo crítico MVP:
+
+```text
+Playwright
+```
 
 ---
 
-# 31. Intentos
+# 44. Vitest y Playwright
 
-Máximo orientativo:
+Vitest:
+
+- dominio;
+- utilidades;
+- validaciones;
+- componentes cuando tenga sentido.
+
+No crear tests vacíos solo para aumentar conteo.
+
+Playwright:
+
+- flujos de alto valor;
+- evitar automatizar todo por defecto.
+
+Flujo MVP previsto:
+
+```text
+registro
+→ onboarding
+→ crear cuenta
+→ ingreso
+→ gasto
+→ obligación
+→ reserva
+→ disponible
+```
+
+---
+
+# 45. Checks oficiales
+
+Scripts esperados:
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+```
+
+Antes de PR deben pasar salvo excepción explícitamente documentada.
+
+No ocultar fallos.
+
+---
+
+# 46. Anti-loop
+
+No repetir indefinidamente el mismo intento.
+
+Máximo general:
 
 ```text
 2 intentos sustancialmente similares
 ```
 
-Luego cambiar estrategia o reportar bloqueo.
-
----
-
-# 32. Web
-
-No investigar internet por defecto.
-
-Para preguntas internas:
+Después:
 
 ```text
-repo/index > web
+cambiar estrategia
 ```
 
----
-
-# 33. Ramas protegidas
+o:
 
 ```text
-main
-staging
+reportar bloqueo
 ```
 
-`main` = producción Vercel.
-
-`staging` = integración + pruebas locales.
-
-Nunca trabajar directamente sobre ellas.
+No consumir tiempo/tokens con variaciones mínimas del mismo error.
 
 ---
 
-# 34. Crear rama
+# 47. Errores `invalid-argument`
+
+Un error:
+
+```text
+invalid-argument
+```
+
+indica primero un problema de construcción de la llamada a la herramienta.
+
+No asumir automáticamente que el repositorio o el código están fallando.
+
+Flujo obligatorio:
+
+```text
+invalid-argument
+→ revisar esquema/formato
+→ simplificar llamada
+→ un segundo intento
+→ cambiar estrategia o STOP
+```
+
+Reglas:
+
+1. No repetir inmediatamente la misma llamada.
+2. Revisar el formato esperado por la herramienta.
+3. Eliminar parámetros opcionales innecesarios.
+4. Ejecutar una sola acción por llamada mientras se diagnostica.
+5. Tras un segundo fallo equivalente:
+   - abandonar esa estrategia;
+   - cambiar de herramienta si es seguro;
+   - o detenerse y reportar.
+
+Nunca permitir:
+
+```text
+invalid-argument
+→ misma llamada
+→ misma llamada
+→ misma llamada
+```
+
+El agente debe detenerse ANTES de que el sistema aborte automáticamente tras varios fallos.
+
+---
+
+# 48. Reanudación después de errores
+
+Ante una interrupción de herramienta:
+
+```text
+inspeccionar estado
+→ conservar trabajo válido
+→ localizar pendiente
+→ continuar
+```
+
+Nunca:
+
+```text
+error
+→ reiniciar toda la fase
+```
+
+Antes de continuar:
 
 ```bash
-git switch staging
-git fetch origin
-git pull --ff-only origin staging
-git switch -c funcionalidad/nombre
+git status --short
 ```
 
-Tipos:
+y después, en una llamada separada:
+
+```bash
+git diff --stat
+```
+
+Solo si hace falta, en otra llamada:
+
+```bash
+git diff
+```
+
+Reglas:
+
+1. No reiniciar automáticamente la tarea o fase.
+2. No deshacer cambios correctos.
+3. Identificar qué archivos ya quedaron correctamente modificados.
+4. Identificar la operación exacta pendiente.
+5. Continuar únicamente desde ese punto.
+6. No volver a leer todo el proyecto.
+7. No volver a ejecutar trabajo ya completado.
+8. Si el error persiste tras cambiar de estrategia, detenerse y reportar:
+   - archivo;
+   - operación;
+   - error;
+   - posible siguiente paso.
+
+Una interrupción del agente NO autoriza a descartar trabajo válido existente.
+
+---
+
+# 49. Reglas especiales para herramientas shell/bash
+
+Cuando se esté recuperando de un error de herramienta, usar inicialmente una sola orden simple por llamada.
+
+Preferir:
+
+```bash
+git status --short
+```
+
+y después:
+
+```bash
+git diff --stat
+```
+
+en llamadas separadas.
+
+Durante recuperación, evitar inicialmente:
+
+```text
+&&
+;
+pipes
+heredocs
+command substitution
+scripts multilínea
+```
+
+Si una llamada simple devuelve `invalid-argument`:
+
+```text
+NO seguir probando comandos distintos
+```
+
+El problema puede estar en la invocación de la herramienta y no en el shell.
+
+En ese caso:
+
+```text
+cambiar a herramientas de lectura/listado si existen
+```
+
+o:
+
+```text
+STOP y reportar bloqueo
+```
+
+---
+
+# 50. Escritura de archivos
+
+Preferir modificaciones pequeñas y localizadas.
+
+Si una herramienta de escritura falla:
+
+- verificar que la ruta exista;
+- revisar el formato requerido;
+- evitar reescribir el archivo completo si solo cambia una sección;
+- usar patch/edit cuando esté disponible;
+- cambiar estrategia si el mismo enfoque vuelve a fallar.
+
+No recrear archivos correctamente modificados solo por seguridad.
+
+---
+
+# 51. Archivos canónicos y prevención de duplicados
+
+Si un archivo objetivo ya existe:
+
+```text
+DEBE editarse el archivo canónico existente
+```
+
+Está prohibido resolver un fallo creando variantes como:
+
+```text
+archivo 2.md
+archivo copy.md
+archivo copia.md
+archivo final.md
+archivo nuevo.md
+archivo v2.md
+archivo actualizado.md
+```
+
+Flujo obligatorio:
+
+```text
+archivo existe
+→ inspeccionar
+→ editar/patch
+→ verificar
+```
+
+Nunca:
+
+```text
+archivo existe
+→ write falla
+→ crear duplicado
+```
+
+Si por una ejecución interrumpida ya existe un duplicado:
+
+1. identificar el archivo canónico;
+2. comparar original y duplicado;
+3. localizar cambios válidos que existan solo en el duplicado;
+4. incorporar esos cambios al archivo canónico;
+5. verificar el resultado;
+6. eliminar el duplicado únicamente después de verificar;
+7. mantener una sola fuente de verdad.
+
+Nunca eliminar un duplicado antes de comprobar si contiene cambios válidos únicos.
+
+Si la herramienta no permite modificar el archivo existente:
+
+```text
+NO crear una copia
+```
+
+En su lugar:
+
+```text
+cambiar a edit/patch
+```
+
+y si tampoco es posible:
+
+```text
+STOP y reportar bloqueo
+```
+
+---
+
+# 52. Documentación canónica
+
+Un concepto debe tener una sola fuente documental canónica.
+
+Antes de crear cualquier `.md`:
+
+1. buscar si ya existe un archivo con el mismo nombre;
+2. buscar si ya existe un documento con el mismo propósito;
+3. si existe, actualizarlo;
+4. no crear variantes numeradas o "finales".
+
+Evitar:
+
+```text
+FINAL
+FINAL_V2
+ACTUALIZADO
+NUEVO
+COPIA
+2
+```
+
+en archivos que solo duplican documentación existente.
+
+---
+
+# 53. Git — ramas permanentes
+
+Ramas permanentes:
+
+```text
+main     → producción
+staging  → integración y validación
+```
+
+Nunca trabajar directamente en ellas.
+
+---
+
+# 54. Nombres de ramas
+
+Prefijos oficiales:
 
 ```text
 funcionalidad/
@@ -818,113 +1615,80 @@ pruebas/
 sincronizacion/
 ```
 
+Ejemplos:
+
+```text
+funcionalidad/autenticacion
+funcionalidad/cuentas
+correccion/calculo-disponible
+mantenimiento/supabase-base
+```
+
 ---
 
-# 35. Regla de oro Git
+# 55. Crear rama normal
 
-> **La rama nueva se adapta a staging. Staging nunca se adapta a la rama nueva.**
+Siempre desde `staging` actualizado:
 
-No borrar cambios integrados para facilitar un merge.
+```bash
+git switch staging
+git fetch origin
+git pull --ff-only origin staging
+git switch -c <rama>
+```
+
+No crear features normales desde `main`.
 
 ---
 
-# 36. Antes del PR
+# 56. Antes de integrar a staging
 
-En tu rama:
+Actualizar la rama de trabajo con:
 
 ```bash
 git fetch origin
 git merge origin/staging
 ```
 
-Resolver conflictos EN TU RAMA.
+Resolver conflictos en la rama temporal.
 
-Luego:
-
-```text
-lint
-typecheck
-test
-build
-```
-
-Revisar:
-
-```bash
-git status
-git diff origin/staging...HEAD
-```
+Nunca revertir, resetear o modificar `staging` para acomodar la feature.
 
 ---
 
-# 37. Diff inesperado
+# 57. PR hacia staging
 
-Si aparecen muchas eliminaciones/cambios ajenos:
+Flujo:
 
 ```text
-DETENER
+rama temporal
+→ PR
+→ revisión
+→ checks
+→ Squash and Merge
+→ staging
 ```
 
-Investigar o solicitar revisión.
+Condiciones:
+
+```text
+mínimo 1 aprobación externa
+checks requeridos verdes
+```
+
+Eliminar rama temporal después de merge cuando corresponda.
 
 ---
 
-# 38. Prohibido
+# 58. Producción
 
-No reescribir ramas protegidas con:
-
-```bash
-git push --force
-git push --force-with-lease
-git reset --hard
-git clean -fd
-git branch -D
-```
-
-sin autorización humana explícita.
-
-No:
-
-- push directo;
-- desactivar protecciones;
-- borrar trabajo ajeno;
-- copiar rama sobre staging;
-- aceptar `ours/theirs` masivamente.
-
----
-
-# 39. PR a staging
-
-Requiere:
-
-```text
-actualizada
-sin conflictos
-checks verdes
-1 aprobación externa
-conversaciones resueltas
-```
-
-Merge:
-
-```text
-Squash and Merge
-```
-
-Eliminar rama después.
-
----
-
-# 40. Producción
+Flujo:
 
 ```text
 staging
 → PR
 → main
-→ Vercel
 ```
-
-Solo responsable de producción autoriza/fusiona.
 
 Usar:
 
@@ -932,169 +1696,384 @@ Usar:
 Merge Commit
 ```
 
+Solo la persona responsable de producción autoriza y ejecuta el merge.
+
+No hacer push directo a `main`.
+
 ---
 
-# 41. Hotfix
+# 59. Hotfix
 
-Solo crítico:
+Urgencia:
 
 ```text
 urgencia/*
 ```
 
-desde `main`.
+nace desde:
 
-Luego:
+```text
+main
+```
+
+Después sincronizar de regreso a `staging` mediante:
 
 ```text
 sincronizacion/*
-→ PR
-→ staging
 ```
 
----
-
-# 42. No dupliques
-
-Antes de crear:
-
-- component;
-- hook;
-- service;
-- repository;
-- schema;
-- utility;
-
-buscar equivalente.
+No dejar divergencia silenciosa.
 
 ---
 
-# 43. Dependencias
+# 60. Protección Git
 
-No instalar si el stack actual resuelve razonablemente.
-
-`pnpm-lock.yaml` cambia solo intencionalmente.
-
----
-
-# 44. Refactor
-
-No refactorizar fuera de alcance.
-
-Si detectas mejora:
+Nunca:
 
 ```text
-reportar
-no implementar
+force push a main
+force push a staging
+delete main
+delete staging
+push directo a main
+push directo a staging
 ```
 
-salvo bloqueo real.
+No reescribir historia compartida sin autorización.
 
 ---
 
-# 45. Documentación
+# 61. Commits
 
-No generar Markdown extra por defecto.
+Commits:
 
-Actualizar solo si cambia una decisión/regla.
+- pequeños;
+- coherentes;
+- relacionados con una sola intención.
 
----
-
-# 46. Errores y logging
-
-No exponer:
-
-- stack;
-- SQL;
-- secretos;
-- tokens.
-
-No loguear datos financieros completos innecesariamente.
-
----
-
-# 47. Cambio de arquitectura
-
-No reemplazar silenciosamente:
-
-- Supabase;
-- auth;
-- dinero decimal;
-- Next.js;
-- branching;
-- fórmula disponible.
-
-Cambio relevante requiere ADR.
-
----
-
-# 48. Definition of Done
-
-- [ ] alcance cumplido;
-- [ ] sin scope creep;
-- [ ] seguridad intacta;
-- [ ] precisión financiera intacta;
-- [ ] RLS/ownership respetados;
-- [ ] estados UI relevantes;
-- [ ] mobile revisado;
-- [ ] dark revisado si aplica;
-- [ ] accesibilidad relevante;
-- [ ] tests pertinentes;
-- [ ] lint;
-- [ ] typecheck;
-- [ ] build;
-- [ ] rama actualizada con staging;
-- [ ] conflictos en rama propia;
-- [ ] diff revisado;
-- [ ] docs actualizadas si corresponde.
-
----
-
-# 49. Entrega
-
-Respuesta final:
+No mezclar:
 
 ```text
-Implementado:
-- ...
-
-Archivos:
-- ...
-
-Validación:
-- ...
-
-Pendientes:
-- ...
+feature + refactor masivo + docs + dependencias aleatorias
 ```
 
-Ser breve.
+El agente no debe hacer commit, push o merge si el usuario no lo ha autorizado para esa tarea.
 
 ---
 
-# 50. Principios finales
+# 62. Revisión antes de finalizar
 
-### Producto
-> El usuario necesita comprender su dinero, no solo registrar movimientos.
+Siempre revisar:
 
-### Código
-> La solución más simple que protege el dominio es preferible a la sobrearquitectura.
+```bash
+git status --short
+```
 
-### Seguridad
-> El frontend nunca es la barrera final de autorización.
+y:
 
-### Finanzas
-> Los cálculos deben ser exactos, reproducibles y explicables.
+```bash
+git diff --stat
+```
 
-### Diseño
-> Claridad prevalece sobre efectos.
+Si es necesario:
 
-### Git
-> La rama nueva se adapta a `staging`.
+```bash
+git diff
+```
 
-### Eficiencia
-> Localiza el contexto correcto, realiza el cambio mínimo correcto y detente cuando el objetivo esté cumplido.
+Si aparecen archivos inesperados:
+
+```text
+investigar antes de continuar
+```
+
+No borrar cambios ajenos.
 
 ---
 
-# Fin de AGENTS.md
+# 63. `.agents/` y `.kilo/`
+
+No incluir normalmente en lint:
+
+```text
+.agents/**
+.kilo/**
+```
+
+Pueden contener herramientas externas con convenciones distintas.
+
+No modificar su contenido salvo tarea explícita.
+
+---
+
+# 64. Documentación durante implementación
+
+No crear un `.md` por cada feature.
+
+Actualizar documentación solo si cambia una decisión real:
+
+- arquitectura;
+- seguridad;
+- modelo;
+- regla financiera;
+- flujo;
+- sistema visual;
+- Git;
+- política de agentes.
+
+Una feature normal debe producir principalmente:
+
+```text
+código + tests
+```
+
+---
+
+# 65. PWA
+
+PWA forma parte del MVP planificado.
+
+Inicialmente:
+
+- manifest;
+- iconos;
+- maskable icon;
+- apple-touch-icon;
+- standalone;
+- theme colors;
+- safe areas.
+
+PWA no significa offline financiero completo.
+
+No implementar escrituras financieras offline sin diseño de sincronización.
+
+---
+
+# 66. IA
+
+La IA NO forma parte del MVP obligatorio.
+
+No incorporar un LLM por marketing.
+
+Primero resolver:
+
+```text
+datos
+reglas
+cálculos
+seguridad
+UX
+tests
+```
+
+Si se incorpora IA en el futuro:
+
+- no acceso SQL directo;
+- no inventar movimientos;
+- no ejecutar cambios financieros sin confirmación;
+- no presentar predicciones como certeza.
+
+---
+
+# 67. Funcionalidades fuera de alcance actual
+
+Hasta autorización, no desarrollar:
+
+```text
+budgets avanzados
+goals avanzadas
+recurring transactions
+subscriptions
+debts
+snowball
+avalanche
+forecast avanzado
+Financial Score
+purchase simulator
+AI
+bank integrations
+Open Banking
+shared finances
+FX
+```
+
+Que aparezcan en documentación futura no significa que deban implementarse ahora.
+
+---
+
+# 68. Tareas ambiguas
+
+Primero usar el contexto existente.
+
+No preguntar por algo ya definido en la documentación.
+
+Pedir decisión solo si la ambigüedad afecta:
+
+- datos;
+- seguridad;
+- arquitectura;
+- comportamiento financiero;
+- UX importante;
+- alcance.
+
+Si es una decisión local, reversible y claramente alineada con docs, actuar.
+
+---
+
+# 69. Cuándo detenerse y pedir decisión humana
+
+Detenerse si:
+
+- dos documentos de autoridad se contradicen;
+- una migración puede destruir datos;
+- se necesita relajar RLS;
+- se requiere cambiar una fórmula financiera;
+- se propone cambiar arquitectura base;
+- un conflicto Git exige eliminar trabajo ajeno;
+- una dependencia reemplaza una decisión oficial;
+- la solución necesita salir de la fase actual;
+- una herramienta no puede utilizarse correctamente tras un cambio de estrategia;
+- un `invalid-argument` persiste tras un segundo intento corregido;
+- no se puede continuar con seguridad.
+
+---
+
+# 70. Salida final del agente
+
+Al finalizar una tarea o fase, responder brevemente con:
+
+```text
+1. Implementado
+2. Archivos principales modificados
+3. Validaciones ejecutadas y resultado
+4. Pendientes/bloqueos
+5. Estado: listo/no listo para PR
+```
+
+No producir una narración extensa salvo solicitud.
+
+---
+
+# 71. Definition of Done
+
+Una tarea está terminada cuando:
+
+```text
+alcance solicitado implementado
++
+sin scope creep
++
+seguridad intacta
++
+reglas financieras intactas
++
+tipos/validaciones correctos
++
+tests proporcionales
++
+checks requeridos verdes
++
+diff revisado
+```
+
+Para una fase:
+
+```text
+también debe haberse respetado su STOP
+```
+
+---
+
+# 72. Estado técnico
+
+No asumir versiones ciegamente.
+
+El proyecto fue inicializado alrededor de:
+
+```text
+Next.js 16.4.x
+React 19.x
+TypeScript
+Tailwind CSS 4
+shadcn/ui Radix Luma
+Lucide
+Vitest
+```
+
+Puede haber evolucionado.
+
+`package.json` y el código actual son la fuente real.
+
+---
+
+# 73. Inicio recomendado de cada fase
+
+```text
+1. leer AGENTS.md
+2. abrir solo la fase relevante de PLAN_EJECUCION_KILO.md
+3. recuperar documentos específicos
+4. confirmar rama
+5. revisar estado existente
+6. implementar solo el alcance
+7. validar
+8. revisar diff
+9. resumir
+10. STOP
+```
+
+---
+
+# 74. Reanudación de una sesión nueva después de aborto
+
+Si una sesión anterior terminó por error de herramienta:
+
+```text
+NO asumir que no hizo nada
+NO reiniciar la fase
+NO volver a crear archivos
+```
+
+La nueva sesión debe comenzar así:
+
+```text
+1. leer AGENTS.md
+2. confirmar fase actual
+3. git status --short
+4. git diff --stat
+5. identificar cambios válidos
+6. detectar duplicados
+7. consolidar solo si hace falta
+8. continuar desde la operación pendiente
+```
+
+No repetir trabajo ya completado.
+
+---
+
+# 75. Regla final
+
+Comportamiento esperado:
+
+```text
+preciso
+selectivo
+seguro
+eficiente
+verificable
+```
+
+Evitar:
+
+```text
+exploración masiva
+autonomía sin límites
+scope creep
+refactors preventivos
+loops de herramientas
+duplicación de archivos
+reinicio innecesario de fases
+```
+
+Cuando el objetivo esté cumplido:
+
+> **Detente.**

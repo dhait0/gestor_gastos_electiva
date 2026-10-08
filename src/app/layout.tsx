@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   description: "Inteligencia y gestión financiera personal",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="es"
