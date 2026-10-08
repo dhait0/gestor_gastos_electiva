@@ -1,0 +1,123 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-heading: var(--font-manrope);
+  --font-sans: var(--font-geist);
+
+  /* FinWise semantic tokens */
+  --color-finn-primary: #2563EB;
+  --color-finn-primary-foreground: #FFFFFF;
+  --color-finn-accent: #06B6D4;
+  --color-finn-success: #16A34A;
+  --color-finn-warning: #D97706;
+  --color-finn-danger: #DC2626;
+
+  --color-finn-bg: var(--background);
+  --color-finn-surface: var(--card);
+  --color-finn-surface-elevated: var(--popover);
+  --color-finn-text-primary: var(--foreground);
+  --color-finn-text-secondary: var(--muted-foreground);
+
+  --shadow-finn-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 18px rgba(15, 23, 42, 0.05);
+  --shadow-finn-elevated: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --shadow-finn-floating: 0 18px 50px rgba(15, 23, 42, 0.12);
+
+  --radius-finn-sm: 0.5rem;
+  --radius-finn-md: 0.75rem;
+  --radius-finn-lg: 1rem;
+  --radius-finn-xl: 1.25rem;
+  --radius-finn-2xl: 1.5rem;
+
+  --motion-fast: 140ms;
+  --motion-normal: 220ms;
+  --motion-slow: 340ms;
+}
+
+:root {
+  /* Light theme — FinWise */
+  --background: #F4F7FB;
+  --foreground: #0F172A;
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
+  --primary: #2563EB;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #0F172A;
+  --muted: #F8FAFC;
+  --muted-foreground: #475569;
+  --accent: #CFFAFE;
+  --accent-foreground: #083344;
+  --destructive: #DC2626;
+  --border: rgba(15, 23, 42, 0.08);
+  --input: rgba(15, 23, 42, 0.08);
+  --ring: #2563EB;
+  --radius: 1rem;
+
+  background:
+    radial-gradient(circle at 10% 5%, rgba(37, 99, 235, 0.06), transparent 34%),
+    radial-gradient(circle at 90% 10%, rgba(6, 182, 212, 0.035), transparent 28%),
+    #F4F7FB;
+}
+
+.dark {
+  /* Dark theme — FinWise */
+  --background: #0B1220;
+  --foreground: #F8FAFC;
+  --card: #111827;
+  --card-foreground: #F8FAFC;
+  --popover: #111827;
+  --popover-foreground: #F8FAFC;
+  --primary: #3B82F6;
+  --primary-foreground: #FFFFFF;
+  --secondary: #1E293B;
+  --secondary-foreground: #F8FAFC;
+  --muted: #0F172A;
+  --muted-foreground: #94A3B8;
+  --accent: #0E7490;
+  --accent-foreground: #F8FAFC;
+  --destructive: #F87171;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.15);
+  --ring: #3B82F6;
+
+  background:
+    radial-gradient(circle at 12% 0%, rgba(37, 99, 235, 0.12), transparent 30%),
+    radial-gradient(circle at 88% 8%, rgba(6, 182, 212, 0.06), transparent 24%),
+    #0B1220;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+    outline-color: var(--ring);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+  html {
+    font-family: var(--font-geist), sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-manrope), sans-serif;
+  }
+  /* Numeros financieros: tabular para evitar saltos visuales */
+  .font-tabular, [data-financial] {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
