@@ -491,7 +491,41 @@ Debe existir nueva evidencia o hipótesis antes de otro intento.
 
 ---
 
-# 21. Pruebas proporcionales
+# 21. Recuperación ante fallos de herramientas
+
+Si una herramienta falla durante una tarea:
+
+1. No reiniciar la fase desde cero.
+2. No repetir indefinidamente la misma llamada fallida.
+3. Inspeccionar primero el estado actual:
+   - `git status`
+   - `git diff`
+   - archivos ya creados o modificados.
+4. Identificar el último punto completado correctamente.
+5. Continuar únicamente desde la operación pendiente.
+6. Conservar todo cambio válido ya realizado.
+7. Ante argumentos inválidos, corregir el formato o cambiar de herramienta o estrategia.
+8. Realizar como máximo 2 intentos sustancialmente similares.
+
+Si el problema continúa:
+
+- detenerse;
+- indicar el archivo u operación pendiente;
+- mostrar el error recibido;
+- solicitar intervención cuando sea necesario.
+
+Nunca borrar, sobrescribir o rehacer trabajo correcto únicamente para recuperar una ejecución interrumpida.
+
+Flujo obligatorio:
+
+```text
+error
+→ inspeccionar estado
+→ conservar trabajo válido
+→ localizar pendiente
+→ continuar desde ahí
+
+# 22. Pruebas proporcionales
 
 Cambio pequeño:
 
@@ -520,7 +554,7 @@ No ejecutar todo el E2E después de cada edición pequeña.
 
 ---
 
-# 22. E2E
+# 23. E2E
 
 Usar durante implementación cuando:
 
@@ -536,7 +570,7 @@ Suite completa preferentemente:
 
 ---
 
-# 23. Builds
+# 24. Builds
 
 No reconstruir producción repetidamente para copy/CSS.
 
@@ -549,7 +583,7 @@ Usar build cuando:
 
 ---
 
-# 24. Dependencias
+# 25. Dependencias
 
 Antes de instalar:
 
@@ -567,7 +601,7 @@ No instalar varias librerías para experimentar.
 
 ---
 
-# 25. Skills
+# 26. Skills
 
 No activar todas las skills disponibles.
 
@@ -585,7 +619,7 @@ preferir la más específica
 
 ---
 
-# 26. MCP
+# 27. MCP
 
 Los MCP agregan herramientas/descripciones al contexto.
 
@@ -608,7 +642,7 @@ si no hacen falta.
 
 ---
 
-# 27. Context servers
+# 28. Context servers
 
 Un servidor de contexto debe reducir lectura.
 
@@ -624,7 +658,7 @@ Debe ofrecer:
 
 ---
 
-# 28. Resultados de búsqueda
+# 29. Resultados de búsqueda
 
 Preferir inicialmente:
 
@@ -636,7 +670,7 @@ No devolver 50 fragmentos por defecto.
 
 ---
 
-# 29. Contexto máximo útil
+# 30. Contexto máximo útil
 
 Preferir:
 
@@ -652,7 +686,7 @@ muchos fragmentos medianamente relacionados
 
 ---
 
-# 30. Resúmenes
+# 31. Resúmenes
 
 No volver a resumir documentos completos en cada turno.
 
@@ -665,7 +699,7 @@ leer sección
 
 ---
 
-# 31. Documentación generada
+# 32. Documentación generada
 
 No crear automáticamente:
 
@@ -681,7 +715,7 @@ Solo lo exigido por la tarea/gobierno.
 
 ---
 
-# 32. Respuesta final
+# 33. Respuesta final
 
 Formato recomendado:
 
@@ -703,7 +737,7 @@ No escribir un ensayo del proceso.
 
 ---
 
-# 33. Preguntas al usuario
+# 34. Preguntas al usuario
 
 No preguntar por decisiones triviales cubiertas por documentación.
 
@@ -717,13 +751,13 @@ Preguntar cuando:
 
 ---
 
-# 34. Autonomía
+# 35. Autonomía
 
 Autonomía significa completar el objetivo, no inventar objetivos nuevos.
 
 ---
 
-# 35. Clasificación previa
+# 36. Clasificación previa
 
 Antes de trabajar, clasificar internamente:
 
@@ -735,7 +769,7 @@ PROFUNDO
 
 ---
 
-# 36. Tareas rápidas
+# 37. Tareas rápidas
 
 Objetivo orientativo:
 
@@ -749,7 +783,7 @@ No sacrificar corrección.
 
 ---
 
-# 37. Tareas normales
+# 38. Tareas normales
 
 Después de cada hallazgo importante, decidir:
 
@@ -761,7 +795,7 @@ Si sí, dejar de explorar.
 
 ---
 
-# 38. Tareas profundas
+# 39. Tareas profundas
 
 Dividir:
 
@@ -776,7 +810,7 @@ No hacer auditoría total salvo que la tarea sea una auditoría.
 
 ---
 
-# 39. Indexación recomendada
+# 40. Indexación recomendada
 
 Indexar preferentemente:
 
@@ -803,7 +837,7 @@ secretos
 
 ---
 
-# 40. Prioridad de recuperación
+# 41. Prioridad de recuperación
 
 ```text
 1. nombre exacto / búsqueda textual
@@ -818,7 +852,7 @@ No comenzar por 6.
 
 ---
 
-# 41. Índice incremental
+# 42. Índice incremental
 
 Actualizar únicamente archivos modificados cuando sea posible.
 
@@ -826,7 +860,7 @@ No reindexar todo el repo en cada consulta.
 
 ---
 
-# 42. Ramas
+# 43. Ramas
 
 La búsqueda debe priorizar el checkout/rama actual.
 
@@ -834,7 +868,7 @@ No asumir que resultados de otra rama son verdad vigente.
 
 ---
 
-# 43. Privacidad
+# 44. Privacidad
 
 No indexar/enviar:
 
@@ -847,7 +881,7 @@ No indexar/enviar:
 
 ---
 
-# 44. Embeddings
+# 45. Embeddings
 
 No empezar con el modelo más costoso.
 
@@ -857,7 +891,7 @@ Escalar solo si la recuperación es insuficiente.
 
 ---
 
-# 45. Métrica práctica
+# 46. Métrica práctica
 
 La indexación funciona si reduce:
 
@@ -881,7 +915,7 @@ semantic_search
 
 ---
 
-# 46. Señales de exceso
+# 47. Señales de exceso
 
 Detener y reevaluar si:
 
@@ -895,7 +929,7 @@ Detener y reevaluar si:
 
 ---
 
-# 47. Excepciones
+# 48. Excepciones
 
 Los límites son:
 
@@ -919,7 +953,7 @@ debe existir una razón técnica
 
 ---
 
-# 48. Agentes de terceros
+# 49. Agentes de terceros
 
 Esta política aplica aunque el agente:
 
@@ -936,7 +970,7 @@ eficiencia del proyecto
 
 ---
 
-# 49. Principio final
+# 50. Principio final
 
 > **El mejor agente no es el que más archivos lee ni el que más pasos ejecuta. Es el que identifica rápidamente el contexto correcto, realiza el cambio mínimo correcto y sabe cuándo detenerse.**
 
