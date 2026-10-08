@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { AppLayoutClient } from "@/components/layout/AppLayoutClient";
 
 export default async function AppLayout({
   children,
@@ -15,9 +16,5 @@ export default async function AppLayout({
     redirect("/login");
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      {children}
-    </div>
-  );
+  return <AppLayoutClient>{children}</AppLayoutClient>;
 }
