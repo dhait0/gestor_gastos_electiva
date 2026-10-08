@@ -1,0 +1,2 @@
+-- Seed data for FinWise local development.
+-- Empty by default; add demo data when needed.

@@ -2,11 +2,13 @@
 
 > Instrucciones obligatorias para cualquier agente de código, asistente de desarrollo o automatización que trabaje en este repositorio.
 >
-> **Lee este archivo completo antes de modificar cualquier archivo.**
+> **Lee este archivo antes de modificar cualquier archivo.**
+>
+> Este archivo actúa como router: no obliga a leer toda la documentación. Lee únicamente el contexto relevante para la tarea.
 
 ---
 
-## 1. Proyecto
+# 1. Principios principales
 
 FinWise es una aplicación de inteligencia y gestión financiera personal.
 
@@ -28,69 +30,258 @@ Pregunta central:
 
 > **¿Cuánto dinero puede gastar el usuario realmente sin comprometer sus obligaciones, reservas y objetivos financieros?**
 
-El principal KPI del producto es:
+Principios operativos:
 
 ```text
-dinero disponible
+seguridad
++
+precisión financiera
++
+cambio mínimo correcto
++
+eficiencia
 ```
-
-no el saldo bancario.
 
 ---
 
-## 2. Documentación obligatoria
+# 2. Política de eficiencia — OBLIGATORIA
 
-Antes de implementar una tarea, lee como mínimo:
+Documento completo:
+
+```text
+contexto/desarrollo/POLITICA_EFICIENCIA_AGENTES.md
+```
+
+Regla:
+
+> **Haz el mínimo trabajo correcto necesario para cumplir la tarea.**
+
+Modo por defecto:
+
+```text
+ECONÓMICO
+```
+
+No:
+
+```text
+AUTÓNOMO PROFUNDO
+```
+
+por defecto.
+
+---
+
+# 3. Clasifica la tarea
+
+Internamente:
+
+```text
+RÁPIDO
+NORMAL
+PROFUNDO
+```
+
+## Rápido
+
+Ejemplos:
+
+- copy;
+- CSS;
+- icono;
+- bug localizado;
+- documentación pequeña.
+
+Objetivo orientativo:
+
+```text
+1–5 archivos relevantes
+```
+
+## Normal
+
+Ejemplos:
+
+- formulario;
+- Server Action;
+- pantalla;
+- query;
+- caso de uso.
+
+Objetivo orientativo:
+
+```text
+3–12 archivos relevantes
+```
+
+## Profundo
+
+Solo cuando exista:
+
+- seguridad;
+- RLS;
+- dinero;
+- migración;
+- pérdida de datos;
+- arquitectura;
+- bug transversal desconocido.
+
+Los límites son blandos; no justifican trabajo incorrecto.
+
+---
+
+# 4. Detente cuando termines
+
+Si la tarea está:
+
+```text
+implementada
++
+verificada
+```
+
+detente.
+
+No continúes con:
+
+- mejoras no solicitadas;
+- refactors;
+- optimizaciones;
+- documentación adicional;
+- nuevas features.
+
+Si detectas algo fuera de alcance:
+
+```text
+menciónalo
+pero no lo implementes
+```
+
+---
+
+# 5. No explores todo el repositorio
+
+No empieces leyendo recursivamente todo el repo.
+
+Orden:
+
+```text
+1. identificar módulo
+2. búsqueda exacta si conoces nombre
+3. búsqueda semántica si conoces concepto
+4. abrir candidatos relevantes
+5. expandir solo si hace falta
+```
+
+---
+
+# 6. Usa indexación semántica
+
+Si existe codebase indexing:
+
+```text
+semantic_search
+→ pocos candidatos
+→ leer archivos reales
+→ modificar
+```
+
+Preferir inicialmente:
+
+```text
+5–10 resultados
+```
+
+El índice localiza; el código real es la verdad.
+
+---
+
+# 7. MCP: pocos y específicos
+
+Los MCP consumen contexto mediante herramientas y schemas.
+
+No activar muchos por defecto.
+
+Preferir:
+
+```text
+1 servidor de contexto/código
++
+1 servidor externo específico si realmente hace falta
+```
+
+No cargar GitHub/Slack/Notion/browser/database/etc. simultáneamente sin necesidad.
+
+---
+
+# 8. Lectura documental selectiva
+
+Siempre debes respetar:
 
 ```text
 contexto/FINWISE_CONTEXTO_MAESTRO.md
 contexto/desarrollo/CONVENCIONES_DESARROLLO.md
 contexto/desarrollo/GESTION_GITHUB_Y_RAMAS.md
+contexto/desarrollo/POLITICA_EFICIENCIA_AGENTES.md
 ```
 
-Después consulta según la tarea:
+Pero **no cargues todos completos en cada tarea**.
 
-### Arquitectura / backend / datos
+Usa este archivo como router.
 
-```text
-contexto/arquitectura/ARQUITECTURA_TECNICA.md
-contexto/arquitectura/MODELO_DATOS_Y_SEGURIDAD.md
-contexto/arquitectura/adr/
-```
+---
 
-### Producto / comportamiento
+# 9. Router documental
 
-```text
-contexto/producto/CASOS_DE_USO_Y_FLUJOS.md
-```
-
-### UI / UX
+## UI / UX
 
 ```text
 contexto/diseno/SISTEMA_DISENO_FINWISE.md
 contexto/diseno/WIREFRAMES_Y_PANTALLAS.md
 ```
 
-### Planificación
+Leer solo la sección/pantalla afectada.
+
+## Arquitectura / backend
+
+```text
+contexto/arquitectura/ARQUITECTURA_TECNICA.md
+contexto/arquitectura/adr/
+```
+
+solo si aplica.
+
+## Datos / seguridad
+
+```text
+contexto/arquitectura/MODELO_DATOS_Y_SEGURIDAD.md
+ADR relacionado
+```
+
+## Producto
+
+```text
+contexto/producto/CASOS_DE_USO_Y_FLUJOS.md
+```
+
+## Planificación
 
 ```text
 contexto/planificacion/BACKLOG_MVP.md
 contexto/planificacion/PLAN_IMPLEMENTACION_MVP.md
 ```
 
-### Testing
+## Testing
 
 ```text
 contexto/calidad/ESTRATEGIA_PRUEBAS.md
 ```
 
-Si un archivo aún no existe físicamente en el checkout, no inventes su contenido. Trabaja con la documentación disponible y reporta la ausencia.
+No leas documentos no relacionados "por si acaso".
 
 ---
 
-## 3. Orden de autoridad
-
-Si detectas contradicción:
+# 10. Orden de autoridad
 
 ```text
 1. Seguridad / privacidad
@@ -102,17 +293,16 @@ Si detectas contradicción:
 7. SISTEMA_DISENO_FINWISE.md
 8. WIREFRAMES_Y_PANTALLAS.md
 9. GESTION_GITHUB_Y_RAMAS.md
-10. BACKLOG / PLAN
-11. tu preferencia
+10. POLITICA_EFICIENCIA_AGENTES.md
+11. BACKLOG / PLAN
+12. preferencia del agente
 ```
 
-No cambies una decisión establecida silenciosamente.
+La eficiencia nunca justifica romper seguridad o precisión.
 
 ---
 
-## 4. Alcance actual
-
-Prioridad actual:
+# 11. Alcance actual
 
 ```text
 MVP académico P0
@@ -126,7 +316,7 @@ Debe demostrar:
 3. Dinero disponible después de compromisos
 ```
 
-Soporte técnico P0:
+Soporte P0:
 
 ```text
 auth
@@ -139,13 +329,11 @@ safety reserve
 dashboard
 ```
 
-No implementes funcionalidades P1/P2 solo porque "serían útiles" si la tarea no las requiere.
+No implementes P1/P2 sin solicitud.
 
 ---
 
-## 5. Stack oficial
-
-Usa:
+# 12. Stack oficial
 
 ```text
 Next.js 16.x
@@ -196,19 +384,9 @@ Realtime
 Edge Functions
 ```
 
-Si una tarea parece exigir una tecnología no adoptada, explica la necesidad antes de instalarla.
-
 ---
 
-## 6. Arquitectura
-
-Estilo:
-
-```text
-monolito modular
-```
-
-Dirección de dependencia:
+# 13. Arquitectura
 
 ```text
 Presentation
@@ -218,11 +396,9 @@ Presentation
 → Database
 ```
 
-### Regla crítica
+Lógica financiera fuera de React.
 
-La lógica financiera **NO** debe vivir en componentes React.
-
-El dominio no debe depender de:
+El dominio no depende de:
 
 ```text
 react
@@ -230,55 +406,44 @@ next/*
 @supabase/*
 ```
 
-cuando la regla puede ser una función pura.
+cuando pueda ser una función pura.
 
 ---
 
-## 7. Next.js
+# 14. Next.js
 
-Preferir:
-
-### Lecturas
+Lecturas:
 
 ```text
 Server Components
 ```
 
-### Mutaciones de la aplicación
+Mutaciones:
 
 ```text
 Server Actions
 ```
 
-### HTTP explícito
+HTTP explícito:
 
 ```text
 Route Handlers
 ```
 
-solo cuando exista un contrato HTTP real, webhook o integración.
-
-No uses `"use client"` en árboles completos por comodidad.
+solo para contratos HTTP reales/webhooks/integraciones.
 
 ---
 
-## 8. Identidad y datos
-
-Autenticación:
+# 15. Datos e identidad
 
 ```text
 auth.users
-```
-
-Perfil:
-
-```text
 public.profiles
 ```
 
-No crees otra tabla `users` paralela.
+No crear otra tabla `users`.
 
-MVP data:
+P0:
 
 ```text
 profiles
@@ -290,35 +455,25 @@ obligations
 
 ---
 
-## 9. Dinero
+# 16. Dinero
 
-### Database
+DB:
 
 ```text
 numeric(20,4)
 ```
 
-### TypeScript domain
+TypeScript:
 
 ```text
 decimal.js
 ```
 
-No uses aritmética con `number` para cálculos monetarios críticos.
-
-En límites server/client preferir:
-
-```text
-decimal string
-```
-
-No redondees en pasos intermedios innecesariamente.
+No `number` para cálculos críticos.
 
 ---
 
-## 10. Invariantes financieras
-
-Nunca violes:
+# 17. Invariantes
 
 ```text
 saldo != dinero disponible
@@ -327,13 +482,13 @@ transferencia != ingreso
 transferencia != gasto
 ```
 
-Tarjeta de crédito:
+Compra con tarjeta:
 
-- compra aumenta deuda;
-- compra cuenta como gasto;
+- aumenta deuda;
+- es gasto;
 - no reduce liquidez inmediatamente.
 
-Pago de tarjeta:
+Pago tarjeta:
 
 ```text
 TRANSFER desde activo
@@ -341,13 +496,9 @@ TRANSFER desde activo
 TRANSFER hacia tarjeta
 ```
 
-No duplicar el gasto.
-
 ---
 
-## 11. Dinero disponible MVP
-
-Fórmula:
+# 18. Disponible MVP
 
 ```text
 saldoLiquido
@@ -355,7 +506,7 @@ saldoLiquido
 - reservaSeguridad
 ```
 
-Debe devolver/permitir breakdown:
+Debe explicar:
 
 ```text
 saldoLiquido
@@ -364,19 +515,9 @@ reservaSeguridad
 disponible
 ```
 
-No muestres un resultado negativo como:
-
-```text
-Puedes gastar -$X
-```
-
-Usa un mensaje de déficit.
-
 ---
 
-## 12. Transferencias
-
-Dos transactions:
+# 19. Transferencias
 
 ```text
 origen: TRANSFER + OUTFLOW
@@ -392,13 +533,11 @@ amount
 currency
 ```
 
-Diferentes cuentas.
-
-Operación atómica.
+Cuentas distintas. Operación atómica.
 
 ---
 
-## 13. Seguridad
+# 20. Seguridad
 
 Toda tabla multiusuario:
 
@@ -409,33 +548,21 @@ index user_id
 policies explícitas
 ```
 
-No confíes en filtros del frontend como autorización.
+No confiar en frontend.
 
-No uses service role para operaciones normales.
-
-`service_role` jamás llega al cliente.
+No usar `service_role` para operaciones normales.
 
 ---
 
-## 14. Ownership
+# 21. Migraciones
 
-Siempre valida que relaciones pertenecen al mismo usuario.
-
-Cuando el schema use FK compuesta de ownership, respétala.
-
-Nunca relajes RLS para "hacer funcionar" una feature.
-
----
-
-## 15. Migraciones
-
-Todo cambio de DB:
+Todo cambio DB:
 
 ```text
 supabase/migrations/
 ```
 
-Debe considerar:
+Considerar:
 
 - schema;
 - constraints;
@@ -446,21 +573,9 @@ Debe considerar:
 - triggers/functions;
 - tests.
 
-No hagas cambios manuales rutinarios en producción.
-
-No borres datos para resolver una incompatibilidad salvo entorno local desechable y autorización.
-
 ---
 
-## 16. Soft delete
-
-Cuando exista `deleted_at`, las queries normales deben excluirlo.
-
-No hard-delete histórico arbitrariamente.
-
----
-
-## 17. Código y naming
+# 22. Código
 
 Código:
 
@@ -468,33 +583,17 @@ Código:
 English
 ```
 
-UI y documentación:
+UI/docs:
 
 ```text
 Spanish
 ```
 
-Convenciones:
-
-```text
-camelCase
-PascalCase
-UPPER_SNAKE_CASE
-```
-
-TypeScript:
-
-```text
-strict
-```
-
-Evita `any`.
-
-Usa `unknown` + narrowing cuando corresponda.
+TypeScript strict. Evitar `any`.
 
 ---
 
-## 18. UI de FinWise
+# 23. UI
 
 Dirección:
 
@@ -521,34 +620,24 @@ Accent:
 Fonts:
 
 ```text
-Manrope headings
-Geist UI/data
+Manrope
+Geist
 ```
 
-Glass:
+No producir:
 
-```text
-moderado, no universal
-```
-
-No generes:
-
-- interfaz SaaS genérica;
-- gradientes morado/rosa;
-- neon;
+- SaaS genérico;
+- purple/pink AI gradient;
+- neón;
 - glow excesivo;
 - neumorfismo fuerte;
-- tarjetas dentro de tarjetas sin motivo.
+- glass en todo.
 
 ---
 
-## 19. Mobile first-class
+# 24. Mobile
 
 Mobile es igual o más importante que desktop.
-
-Diseña/implementa primero mobile cuando la feature tenga UI.
-
-Navegación mobile:
 
 ```text
 Inicio
@@ -556,12 +645,6 @@ Movimientos
 +
 Metas
 Más
-```
-
-Bottom nav:
-
-```text
-floating glass
 ```
 
 Quick Create:
@@ -573,27 +656,11 @@ Transferencia
 Obligación
 ```
 
-No reduzcas simplemente el layout desktop.
-
 ---
 
-## 20. Desktop
+# 25. Light / Dark / Motion
 
-Sidebar:
-
-```text
-floating glass
-+
-collapsible
-```
-
-No uses densidad extrema.
-
----
-
-## 21. Light / Dark
-
-Todo componente nuevo debe funcionar en:
+Todo componente nuevo:
 
 ```text
 Light
@@ -601,50 +668,28 @@ Dark
 System
 ```
 
-No hardcodees colores que rompan uno de los temas.
+Motion breve, funcional y compatible con reduced motion.
+
+Performance prevalece.
 
 ---
 
-## 22. Motion
+# 26. PWA
 
-La animación explica estado.
-
-No añadas motion decorativo permanente.
-
-Usa presets compartidos.
-
-Respeta:
-
-```text
-prefers-reduced-motion
-```
-
-Si un efecto reduce performance:
-
-```text
-reduce blur/motion
-```
-
----
-
-## 23. PWA
-
-FinWise es PWA desde el MVP.
-
-Respeta:
+Respetar:
 
 ```text
 safe areas
 standalone
-mobile bottom nav
 touch targets
+bottom navigation
 ```
 
-No implementes escritura financiera offline sin diseño específico.
+No escrituras financieras offline sin diseño específico.
 
 ---
 
-## 24. Accesibilidad
+# 27. Accesibilidad
 
 Mínimo:
 
@@ -652,24 +697,20 @@ Mínimo:
 WCAG AA
 ```
 
-Buscar AAA razonable en información crítica.
-
-Requisitos:
-
 - labels;
-- focus visible;
+- focus;
 - keyboard;
 - touch targets;
-- errors asociados;
-- no depender solo de color;
+- errores asociados;
+- no solo color;
 - reduced motion;
-- charts con alternativa textual.
+- fallback textual para charts.
 
 ---
 
-## 25. Estados UI
+# 28. Estados UI
 
-Cuando aplique, cubre:
+Cuando aplique:
 
 ```text
 loading
@@ -682,63 +723,28 @@ no permission
 retry
 ```
 
-No entregues solo happy path.
-
 ---
 
-## 26. Formularios
-
-Usa:
+# 29. Formularios
 
 ```text
 React Hook Form + Zod
 ```
 
-Errores de campo:
+Errores inline.
+
+---
+
+# 30. Testing proporcional
+
+Durante desarrollo:
 
 ```text
-inline
+cambio pequeño → test específico
+feature → tests del módulo
 ```
 
-No uses únicamente toast.
-
-Monto financiero:
-
-- `> 0`;
-- UI formatea;
-- domain conserva precisión.
-
----
-
-## 27. Testing
-
-### Unit
-
-Vitest.
-
-Todo cálculo financiero relevante necesita pruebas.
-
-### Component
-
-React Testing Library.
-
-Probar comportamiento.
-
-### DB / RLS
-
-Probar A/B/anon.
-
-### E2E
-
-Playwright para flujos críticos.
-
-No borres tests para hacer pasar el build.
-
----
-
-## 28. Checks antes de entregar
-
-Ejecuta:
+Antes del PR:
 
 ```text
 pnpm lint
@@ -747,58 +753,50 @@ pnpm test
 pnpm build
 ```
 
-Cuando existan suites correspondientes:
-
-```text
-integration
-e2e
-```
-
-Si algo falla, no declares la tarea lista.
+No E2E completo tras cada pequeña edición.
 
 ---
 
-# GIT / GITHUB
+# 31. Intentos
 
-## 29. Ramas protegidas
+Máximo orientativo:
 
-Permanentes:
+```text
+2 intentos sustancialmente similares
+```
+
+Luego cambiar estrategia o reportar bloqueo.
+
+---
+
+# 32. Web
+
+No investigar internet por defecto.
+
+Para preguntas internas:
+
+```text
+repo/index > web
+```
+
+---
+
+# 33. Ramas protegidas
 
 ```text
 main
 staging
 ```
 
-`main`:
+`main` = producción Vercel.
 
-```text
-producción en Vercel
-```
+`staging` = integración + pruebas locales.
 
-`staging`:
-
-```text
-integración y pruebas locales
-```
-
-NO trabajes directamente sobre ninguna.
+Nunca trabajar directamente sobre ellas.
 
 ---
 
-## 30. Antes de comenzar una tarea
-
-Primero identifica la rama:
-
-```bash
-git branch --show-current
-```
-
-Si estás en `main` o `staging`:
-
-1. actualiza `staging`;
-2. crea una rama de trabajo.
-
-Ejemplo:
+# 34. Crear rama
 
 ```bash
 git switch staging
@@ -807,13 +805,7 @@ git pull --ff-only origin staging
 git switch -c funcionalidad/nombre
 ```
 
-No empieces cambios de feature directamente en `staging`.
-
----
-
-## 31. Nombres de ramas
-
-En español:
+Tipos:
 
 ```text
 funcionalidad/
@@ -826,44 +818,28 @@ pruebas/
 sincronizacion/
 ```
 
-Sin espacios ni acentos.
-
-Ejemplo:
-
-```text
-funcionalidad/registro-gastos
-```
-
 ---
 
-## 32. Regla de oro Git
+# 35. Regla de oro Git
 
 > **La rama nueva se adapta a staging. Staging nunca se adapta a la rama nueva.**
 
-Si otros cambios ya entraron a `staging`, considéralos válidos.
-
-No los elimines para facilitar tu merge.
+No borrar cambios integrados para facilitar un merge.
 
 ---
 
-## 33. Antes del PR hacia staging
+# 36. Antes del PR
 
-Estando en TU rama:
+En tu rama:
 
 ```bash
 git fetch origin
 git merge origin/staging
 ```
 
-Si hay conflictos:
+Resolver conflictos EN TU RAMA.
 
-```text
-resolver en tu rama
-```
-
-Nunca modificar `staging` para resolverlos.
-
-Después:
+Luego:
 
 ```text
 lint
@@ -872,7 +848,7 @@ test
 build
 ```
 
-Y revisar:
+Revisar:
 
 ```bash
 git status
@@ -881,28 +857,21 @@ git diff origin/staging...HEAD
 
 ---
 
-## 34. Si el diff muestra cambios inesperados
+# 37. Diff inesperado
 
-Si ves:
+Si aparecen muchas eliminaciones/cambios ajenos:
 
-- muchos archivos eliminados;
-- cambios ajenos;
-- configuraciones que no pertenecen a la tarea;
-- pérdida de funcionalidad integrada;
+```text
+DETENER
+```
 
-**DETENTE**.
-
-No intentes "hacerlo pasar".
-
-Investiga el origen.
-
-Si existe conflicto de negocio, solicita revisión humana.
+Investigar o solicitar revisión.
 
 ---
 
-## 35. Prohibido en main/staging
+# 38. Prohibido
 
-No ejecutes para reescribir ramas protegidas:
+No reescribir ramas protegidas con:
 
 ```bash
 git push --force
@@ -912,25 +881,27 @@ git clean -fd
 git branch -D
 ```
 
+sin autorización humana explícita.
+
 No:
 
-- hagas push directo;
-- deshabilites protecciones;
-- reviertas cambios ajenos para arreglar tu feature;
-- copies una rama encima de staging;
-- decidas que "ours" o "theirs" gana todo sin revisar.
+- push directo;
+- desactivar protecciones;
+- borrar trabajo ajeno;
+- copiar rama sobre staging;
+- aceptar `ours/theirs` masivamente.
 
 ---
 
-## 36. Pull Request a staging
+# 39. PR a staging
 
-Requisitos:
+Requiere:
 
 ```text
-rama actualizada
+actualizada
 sin conflictos
 checks verdes
-1 aprobación de otra persona
+1 aprobación externa
 conversaciones resueltas
 ```
 
@@ -940,30 +911,20 @@ Merge:
 Squash and Merge
 ```
 
-Después del merge:
-
-```text
-eliminar rama de trabajo
-```
+Eliminar rama después.
 
 ---
 
-## 37. Producción
-
-Flujo normal:
+# 40. Producción
 
 ```text
 staging
-→ Pull Request
+→ PR
 → main
 → Vercel
 ```
 
-Solo la persona responsable de producción puede autorizar/fusionar:
-
-```text
-staging → main
-```
+Solo responsable de producción autoriza/fusiona.
 
 Usar:
 
@@ -971,27 +932,19 @@ Usar:
 Merge Commit
 ```
 
-No intentes fusionar una feature directamente a `main`.
-
 ---
 
-## 38. Hotfix
+# 41. Hotfix
 
-Solo para producción crítica.
-
-Nace desde:
-
-```text
-main
-```
-
-Nombre:
+Solo crítico:
 
 ```text
 urgencia/*
 ```
 
-Después debe sincronizarse de vuelta a `staging` mediante:
+desde `main`.
+
+Luego:
 
 ```text
 sincronizacion/*
@@ -999,205 +952,148 @@ sincronizacion/*
 → staging
 ```
 
-Nunca push directo.
-
 ---
 
-## 39. Conflictos complejos
-
-Si dos implementaciones válidas chocan y no está claro qué comportamiento debe prevalecer:
-
-**NO elijas borrando trabajo ajeno.**
-
-Solicita decisión humana.
-
-Especialmente si afecta:
-
-- finanzas;
-- seguridad;
-- modelo de datos;
-- UX acordada;
-- migraciones.
-
----
-
-## 40. Agente y operaciones destructivas
-
-No ejecutes comandos destructivos con posibilidad de pérdida de trabajo sin autorización explícita.
-
-Si necesitas rescatar cambios:
-
-- crea rama de rescate;
-- conserva historial;
-- explica la situación.
-
-La prioridad es no perder trabajo de otros.
-
----
-
-# DESARROLLO
-
-## 41. No dupliques
+# 42. No dupliques
 
 Antes de crear:
 
-- service;
-- repository;
 - component;
 - hook;
+- service;
+- repository;
 - schema;
 - utility;
 
-busca si ya existe algo equivalente.
-
-No crees una segunda implementación porque sea más rápido.
+buscar equivalente.
 
 ---
 
-## 42. Dependencias
+# 43. Dependencias
 
-Antes de instalar un paquete:
+No instalar si el stack actual resuelve razonablemente.
 
-1. verifica si el stack actual resuelve;
-2. comprueba necesidad;
-3. evita duplicar librerías;
-4. documenta dependencia relevante.
-
-Si `pnpm-lock.yaml` cambia, debe ser intencional.
+`pnpm-lock.yaml` cambia solo intencionalmente.
 
 ---
 
-## 43. Errores
+# 44. Refactor
 
-No muestres:
+No refactorizar fuera de alcance.
+
+Si detectas mejora:
+
+```text
+reportar
+no implementar
+```
+
+salvo bloqueo real.
+
+---
+
+# 45. Documentación
+
+No generar Markdown extra por defecto.
+
+Actualizar solo si cambia una decisión/regla.
+
+---
+
+# 46. Errores y logging
+
+No exponer:
 
 - stack;
 - SQL;
-- secrets;
+- secretos;
 - tokens.
 
-No loguees información financiera completa sin necesidad.
+No loguear datos financieros completos innecesariamente.
 
 ---
 
-## 44. Cambios de arquitectura
+# 47. Cambio de arquitectura
 
-No reemplaces:
+No reemplazar silenciosamente:
 
 - Supabase;
 - auth;
-- modelo de dinero;
+- dinero decimal;
 - Next.js;
 - branching;
-- fórmula de disponible;
+- fórmula disponible.
 
-sin una decisión explícita.
+Cambio relevante requiere ADR.
 
-Si consideras imprescindible el cambio:
+---
+
+# 48. Definition of Done
+
+- [ ] alcance cumplido;
+- [ ] sin scope creep;
+- [ ] seguridad intacta;
+- [ ] precisión financiera intacta;
+- [ ] RLS/ownership respetados;
+- [ ] estados UI relevantes;
+- [ ] mobile revisado;
+- [ ] dark revisado si aplica;
+- [ ] accesibilidad relevante;
+- [ ] tests pertinentes;
+- [ ] lint;
+- [ ] typecheck;
+- [ ] build;
+- [ ] rama actualizada con staging;
+- [ ] conflictos en rama propia;
+- [ ] diff revisado;
+- [ ] docs actualizadas si corresponde.
+
+---
+
+# 49. Entrega
+
+Respuesta final:
 
 ```text
-explica problema
-propón alternativa
-describe impacto
-requiere ADR
+Implementado:
+- ...
+
+Archivos:
+- ...
+
+Validación:
+- ...
+
+Pendientes:
+- ...
 ```
 
-antes de implementarlo.
+Ser breve.
 
 ---
 
-## 45. Documentación
-
-Si cambias:
-
-- regla financiera;
-- entidad;
-- flujo;
-- arquitectura;
-- diseño global;
-- política Git;
-
-actualiza el documento correspondiente.
-
-No dejes código y docs contradiciéndose.
-
----
-
-## 46. Definition of Done del agente
-
-No declares una tarea terminada hasta que:
-
-- [ ] implementaste el alcance solicitado;
-- [ ] no introdujiste scope creep;
-- [ ] seguridad está intacta;
-- [ ] precisión financiera está intacta;
-- [ ] RLS/ownership se respetan;
-- [ ] estados UI relevantes existen;
-- [ ] mobile está revisado;
-- [ ] dark mode está revisado si aplica;
-- [ ] accesibilidad relevante está cubierta;
-- [ ] tests pertinentes pasan;
-- [ ] lint pasa;
-- [ ] typecheck pasa;
-- [ ] build pasa;
-- [ ] rama está actualizada con staging;
-- [ ] conflictos se resolvieron en la rama propia;
-- [ ] diff fue revisado;
-- [ ] documentación se actualizó cuando correspondía.
-
----
-
-## 47. Formato de entrega recomendado
-
-Al finalizar una tarea informa:
-
-```text
-Rama:
-Objetivo:
-Archivos principales modificados:
-Qué se implementó:
-Migraciones:
-Pruebas ejecutadas:
-Resultados:
-Riesgos/pendientes:
-Documentación actualizada:
-```
-
-No digas simplemente:
-
-```text
-"Listo"
-```
-
-sin indicar qué cambió.
-
----
-
-## 48. Principios finales
+# 50. Principios finales
 
 ### Producto
-
 > El usuario necesita comprender su dinero, no solo registrar movimientos.
 
 ### Código
-
-> La solución más simple que protege correctamente el dominio es preferible a la sobrearquitectura.
+> La solución más simple que protege el dominio es preferible a la sobrearquitectura.
 
 ### Seguridad
-
 > El frontend nunca es la barrera final de autorización.
 
 ### Finanzas
-
 > Los cálculos deben ser exactos, reproducibles y explicables.
 
 ### Diseño
-
-> Claridad y legibilidad prevalecen sobre efectos.
+> Claridad prevalece sobre efectos.
 
 ### Git
+> La rama nueva se adapta a `staging`.
 
-> La rama nueva se adapta a `staging`; `staging` no se sacrifica para acomodar trabajo nuevo.
+### Eficiencia
+> Localiza el contexto correcto, realiza el cambio mínimo correcto y detente cuando el objetivo esté cumplido.
 
 ---
 
