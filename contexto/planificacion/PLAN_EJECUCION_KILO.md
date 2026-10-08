@@ -2,10 +2,13 @@
 
 > Documento operativo para implementación asistida por IA.
 >
-> Ubicación recomendada: `contexto/planificacion/PLAN_EJECUCION_KILO.md`
+> Ubicación recomendada:
 >
-> Este archivo NO reemplaza `AGENTS.md` ni `FINWISE_CONTEXTO_MAESTRO.md`.
-> Su función es definir qué construir, en qué orden y cuándo detenerse.
+> `contexto/planificacion/PLAN_EJECUCION_KILO.md`
+>
+> Este documento NO reemplaza `AGENTS.md` ni `FINWISE_CONTEXTO_MAESTRO.md`.
+>
+> Su función es definir **qué construir, en qué orden, cómo validar y cuándo detenerse**.
 
 ---
 
@@ -19,15 +22,16 @@ Debe trabajar siempre así:
 una fase
 → implementar
 → validar
+→ revisar diff
 → resumir
 → detenerse
-→ esperar autorización para continuar
+→ esperar autorización
 ```
 
-Está prohibido interpretar este archivo como:
+Está prohibido interpretar este documento como:
 
 ```text
-"haz todo el proyecto"
+"construye todo el proyecto"
 ```
 
 Cada fase es un límite explícito de alcance.
@@ -36,9 +40,9 @@ Cada fase es un límite explícito de alcance.
 
 # 1. Autoridad documental
 
-Usar `AGENTS.md` como router de contexto.
+Kilo debe usar `AGENTS.md` como router de contexto.
 
-No cargar todos los `.md` completos en cada tarea.
+No debe cargar todos los `.md` completos en cada tarea.
 
 Orden de autoridad:
 
@@ -47,14 +51,15 @@ Orden de autoridad:
 2. Integridad financiera
 3. FINWISE_CONTEXTO_MAESTRO.md
 4. MODELO_DATOS_Y_SEGURIDAD.md
-5. ARQUITECTURA_TECNICA.md + ADRs
-6. CASOS_DE_USO_Y_FLUJOS.md
-7. SISTEMA_DISENO_FINWISE.md
-8. WIREFRAMES_Y_PANTALLAS.md
-9. GESTION_GITHUB_Y_RAMAS.md
-10. POLITICA_EFICIENCIA_AGENTES.md
-11. Este plan
-12. Preferencia del agente
+5. ARQUITECTURA_TECNICA.md
+6. ADRs aplicables
+7. CASOS_DE_USO_Y_FLUJOS.md
+8. SISTEMA_DISENO_FINWISE.md
+9. WIREFRAMES_Y_PANTALLAS.md
+10. GESTION_GITHUB_Y_RAMAS.md
+11. POLITICA_EFICIENCIA_AGENTES.md
+12. Este plan
+13. Preferencia del agente
 ```
 
 ---
@@ -64,32 +69,34 @@ Orden de autoridad:
 Modo por defecto:
 
 ```text
-ECONÓMICO
+MODO ECONÓMICO
 ```
 
-Recuperación:
+Antes de explorar:
 
 ```text
-1. búsqueda exacta si se conoce el símbolo
+1. búsqueda exacta si se conoce símbolo/ruta
 2. semantic search si se conoce el concepto
-3. abrir pocos candidatos
-4. ampliar solo si falta contexto
+3. seleccionar pocos candidatos
+4. leer archivos relevantes
+5. ampliar solo si falta contexto
 ```
 
 Objetivo inicial:
 
 ```text
 5–10 resultados semánticos
-→ 3–8 archivos realmente relevantes
+→ 3–8 archivos relevantes
 ```
 
 No:
 
-- explorar todo el repo;
-- refactorizar fuera de alcance;
-- implementar fases siguientes;
+- recorrer todo el repo;
+- leer todos los documentos;
+- hacer refactors preventivos;
+- implementar mejoras fuera de fase;
 - instalar dependencias por comodidad;
-- repetir el mismo intento indefinidamente.
+- repetir indefinidamente el mismo intento.
 
 Máximo orientativo:
 
@@ -97,15 +104,72 @@ Máximo orientativo:
 2 intentos sustancialmente similares
 ```
 
-Si la tarea está cumplida:
+Después:
 
 ```text
-DETENER
+cambiar estrategia
+```
+
+o:
+
+```text
+reportar bloqueo
+```
+
+Cuando la tarea esté cumplida:
+
+```text
+STOP
 ```
 
 ---
 
-# 3. Regla Git
+# 3. Recuperación después de errores
+
+Si Kilo se detiene por un error de herramienta, API, escritura o ejecución:
+
+```text
+NO reiniciar la fase
+```
+
+Flujo obligatorio:
+
+```text
+error
+→ git status
+→ git diff
+→ identificar trabajo válido
+→ identificar operación pendiente
+→ continuar solo desde ese punto
+```
+
+Reglas:
+
+1. No reiniciar automáticamente la fase.
+2. No repetir la misma llamada inválida.
+3. No deshacer cambios correctos.
+4. Revisar archivos ya creados o modificados.
+5. Identificar el último punto completado.
+6. Continuar únicamente desde la operación pendiente.
+7. Si una herramienta falla por argumentos inválidos, corregir formato o cambiar estrategia.
+8. Máximo 2 intentos sustancialmente similares.
+9. Si persiste el error, detenerse y reportar:
+   - archivo objetivo;
+   - operación pendiente;
+   - error;
+   - posible siguiente paso.
+
+Nunca:
+
+```text
+error
+→ borrar trabajo
+→ reiniciar todo
+```
+
+---
+
+# 4. Regla Git
 
 Ramas permanentes:
 
@@ -138,7 +202,7 @@ Nunca modificar `staging` para acomodar una feature.
 
 ---
 
-# 4. Checks oficiales
+# 5. Checks oficiales
 
 ```bash
 pnpm lint
@@ -147,13 +211,13 @@ pnpm test
 pnpm build
 ```
 
-Durante desarrollo pueden ejecutarse tests específicos.
+Durante una tarea pequeña puede usar tests específicos.
 
 Antes de cerrar una fase que cambió aplicación/configuración, los checks correspondientes deben quedar verdes.
 
 ---
 
-# 5. Estado esperado de partida
+# 6. Estado esperado al comenzar
 
 Verificar, no asumir:
 
@@ -174,7 +238,7 @@ contexto/
 .kilo/
 ```
 
-También pueden existir ya:
+También pueden existir:
 
 ```text
 Supabase dependencies
@@ -186,15 +250,15 @@ La Fase 0 debe confirmar el estado real.
 
 ---
 
-# 6. Mapa de fases
+# 7. Mapa general
 
 ```text
-FASE 0  Auditoría actual
+FASE 0  Auditoría del estado actual
 FASE 1  Fundación técnica
 FASE 2  Sistema visual base
 FASE 3  Supabase local y clientes
 FASE 4  Modelo de datos P0
-FASE 5  RLS y perfil
+FASE 5  Seguridad RLS y perfil
 FASE 6  Autenticación
 FASE 7  App shell + onboarding
 FASE 8  Cuentas
@@ -204,19 +268,19 @@ FASE 11 Registro de ingreso
 FASE 12 Registro de gasto
 FASE 13 Obligaciones
 FASE 14 Reserva de seguridad
-FASE 15 Motor de saldo líquido/disponible
+FASE 15 Motor de saldo líquido y disponible
 FASE 16 Dashboard MVP
-FASE 17 Historial mínimo
-FASE 18 Estados + accesibilidad + responsive
+FASE 17 Movimientos e historial mínimo
+FASE 18 Estados, accesibilidad y responsive
 FASE 19 PWA
-FASE 20 Hardening seguridad/datos
+FASE 20 Hardening de seguridad y datos
 FASE 21 E2E crítico
-FASE 22 CI/CD
+FASE 22 CI/CD GitHub Actions
 FASE 23 Vercel + producción
 FASE 24 Cierre MVP académico
 ```
 
-No ejecutar P1/P2 antes del cierre del MVP académico.
+No comenzar P1/P2 antes de cerrar el MVP académico.
 
 ---
 
@@ -224,13 +288,19 @@ No ejecutar P1/P2 antes del cierre del MVP académico.
 
 ## Objetivo
 
-Determinar exactamente qué existe antes de cambiar nada.
+Determinar exactamente qué existe antes de modificar.
 
 ## Rama
 
-No crear rama si solo se inspecciona.
+No es necesario crear una rama si solo se inspecciona.
 
-## Leer
+Si se requieren correcciones:
+
+```text
+mantenimiento/fundacion-tecnica
+```
+
+## Contexto mínimo
 
 ```text
 AGENTS.md
@@ -243,10 +313,10 @@ src/
 supabase/ si existe
 ```
 
-## Hacer
+## Tareas
 
-1. Confirmar rama.
-2. Revisar `package.json`.
+1. Confirmar rama actual.
+2. Inspeccionar `package.json`.
 3. Confirmar scripts:
    - dev
    - build
@@ -255,14 +325,15 @@ supabase/ si existe
    - typecheck
    - test
    - test:watch
-4. Confirmar shadcn:
+4. Confirmar versiones principales.
+5. Confirmar shadcn:
    - Radix
    - Luma
    - Lucide
-5. Confirmar Vitest.
-6. Confirmar Playwright.
-7. Confirmar Supabase CLI.
-8. Ejecutar:
+6. Confirmar Vitest.
+7. Confirmar Playwright.
+8. Confirmar Supabase CLI.
+9. Ejecutar:
 
 ```bash
 pnpm lint
@@ -275,13 +346,13 @@ pnpm build
 
 - no instalar;
 - no refactorizar;
-- no crear DB;
-- no modificar UI.
+- no cambiar diseño;
+- no crear base de datos.
 
-## Entrega
+## Entrega esperada
 
 ```text
-Estado:
+Estado actual:
 Checks:
 Faltantes para Fase 1:
 Bloqueos:
@@ -289,9 +360,15 @@ Bloqueos:
 
 ## STOP
 
+Detenerse después de reportar el estado.
+
 ---
 
 # FASE 1 — Fundación técnica
+
+## Objetivo
+
+Cerrar la configuración general antes de construir funcionalidades.
 
 ## Rama
 
@@ -299,7 +376,7 @@ Bloqueos:
 mantenimiento/fundacion-tecnica
 ```
 
-## Leer
+## Contexto
 
 ```text
 AGENTS.md
@@ -308,7 +385,7 @@ ARQUITECTURA_TECNICA.md
 CONVENCIONES_DESARROLLO.md
 ```
 
-Solo secciones de stack/configuración.
+Leer solo secciones relacionadas con stack y estructura.
 
 ## Verificar/instalar solo si falta
 
@@ -341,7 +418,7 @@ Asegurar scripts:
 }
 ```
 
-Asegurar ignores de ESLint:
+Asegurar que ESLint ignore:
 
 ```text
 .agents/**
@@ -350,22 +427,40 @@ Asegurar ignores de ESLint:
 coverage/**
 ```
 
+Mantener:
+
+```text
+TypeScript strict
+src directory
+App Router
+@/* alias
+```
+
 ## Aceptación
 
 ```text
-lint       PASS
-typecheck  PASS
-test       PASS
-build      PASS
+pnpm lint       PASS
+pnpm typecheck  PASS
+pnpm test       PASS
+pnpm build      PASS
 ```
 
-## STOP
+## No hacer
 
-No Auth, DB ni pantallas funcionales todavía.
+- Auth;
+- DB;
+- layout final;
+- tokens visuales avanzados.
+
+## STOP
 
 ---
 
 # FASE 2 — Sistema visual base
+
+## Objetivo
+
+Crear la base visual FinWise antes de construir pantallas.
 
 ## Rama
 
@@ -373,54 +468,88 @@ No Auth, DB ni pantallas funcionales todavía.
 funcionalidad/sistema-visual-base
 ```
 
-## Leer
+## Contexto
 
 ```text
 SISTEMA_DISENO_FINWISE.md
 WIREFRAMES_Y_PANTALLAS.md
 ```
 
-solo reglas globales.
+Solo reglas globales.
 
-## Decisiones
+## Decisiones obligatorias
 
 ```text
 Primary        #2563EB
 Accent         #06B6D4
 Dark bg        #0B1220
 Dark surface   #111827
-Heading        Manrope
-UI/data        Geist
+Heading font   Manrope
+UI/data font   Geist
 shadcn         Radix + Luma
 icons          Lucide
 ```
 
-## Hacer
+## Tareas
 
-1. Configurar Geist + Manrope con `next/font`.
-2. Crear tokens CSS.
-3. Ajustar radius/shadows.
-4. Soportar Light/Dark/System.
-5. Crear tokens semánticos.
-6. Definir presets Motion mínimos.
-7. Mantener glass moderado.
+1. Configurar Geist y Manrope con `next/font`.
+2. Crear tokens CSS globales.
+3. Ajustar radios y sombras base.
+4. Soportar:
+   - light
+   - dark
+   - system
+5. Definir tokens semánticos:
+   - background
+   - foreground
+   - surface
+   - primary
+   - accent
+   - success
+   - warning
+   - danger
+   - muted
+6. Crear presets Motion compartidos mínimos.
+7. No aplicar glass globalmente.
+8. Mantener shadcn como base, no identidad final.
 
-Instalar solo componentes shadcn necesarios.
+## Componentes permitidos
+
+Solo los necesarios:
+
+```text
+Button
+Card
+Input
+Label
+Separator
+Skeleton
+Sheet
+Dialog
+Dropdown/Menu si hace falta
+```
+
+No instalar todo shadcn.
 
 ## Aceptación
 
-- light/dark correctos;
-- fonts correctas;
+- light y dark visibles;
+- tipografías correctas;
 - tokens reutilizables;
+- ningún color crítico repetido innecesariamente;
 - build verde.
 
 ## STOP
 
-No crear Dashboard completo.
+No diseñar Dashboard completo.
 
 ---
 
 # FASE 3 — Supabase local y clientes
+
+## Objetivo
+
+Configurar infraestructura Supabase reproducible.
 
 ## Rama
 
@@ -428,7 +557,7 @@ No crear Dashboard completo.
 mantenimiento/supabase-base
 ```
 
-## Leer
+## Contexto
 
 ```text
 ARQUITECTURA_TECNICA.md
@@ -437,17 +566,17 @@ ADR-002
 ADR-007
 ```
 
-## Hacer
+## Tareas
 
 1. Verificar `supabase/config.toml`.
-2. Si falta:
+2. Si no existe:
 
 ```bash
 pnpm supabase init
 ```
 
 3. Confirmar runtime de contenedores.
-4. Iniciar local cuando corresponda:
+4. Iniciar Supabase local cuando corresponda:
 
 ```bash
 pnpm supabase start
@@ -455,10 +584,10 @@ pnpm supabase start
 
 5. Crear `.env.example`.
 6. Mantener `.env.local` fuera de Git.
-7. Crear clientes Supabase:
+7. Crear clientes:
    - browser
    - server
-8. Configurar SSR/cookies según versiones instaladas.
+8. Configurar SSR/cookies según las versiones instaladas.
 9. Nunca exponer service role.
 
 Estructura orientativa:
@@ -469,20 +598,27 @@ src/lib/supabase/
 └── server.ts
 ```
 
+Usar nombres compatibles con la versión actual de Next.js/Supabase.
+
 ## Aceptación
 
-- Supabase local funciona;
-- browser/server client compilan;
-- env documentado;
+- Supabase local inicia;
+- cliente browser compila;
+- cliente server compila;
+- variables documentadas;
 - checks verdes.
 
 ## STOP
 
-No tablas todavía.
+No crear tablas todavía.
 
 ---
 
 # FASE 4 — Modelo de datos P0
+
+## Objetivo
+
+Crear solamente el schema necesario para el MVP académico.
 
 ## Rama
 
@@ -490,14 +626,14 @@ No tablas todavía.
 funcionalidad/modelo-datos-p0
 ```
 
-## Leer
+## Contexto obligatorio
 
 ```text
 MODELO_DATOS_Y_SEGURIDAD.md
 FINWISE_CONTEXTO_MAESTRO.md
 ```
 
-## Crear solamente
+## Entidades P0
 
 ```text
 profiles
@@ -517,33 +653,24 @@ debts
 alerts
 ```
 
-## Reglas
-
-Dinero:
+## Dinero
 
 ```text
 numeric(20,4)
 ```
 
-Fechas financieras:
+## Fechas
+
+Financieras:
 
 ```text
 date
 ```
 
-Eventos técnicos:
+Técnicas:
 
 ```text
 timestamptz
-```
-
-No persistir:
-
-```text
-current balance
-liquid balance
-available-to-spend
-dashboard summary
 ```
 
 ## Migraciones orientativas
@@ -556,7 +683,26 @@ transactions
 obligations
 ```
 
-Usar el formato real generado por Supabase CLI.
+Usar nombres/timestamps reales de Supabase CLI.
+
+## Constraints
+
+- `user_id`;
+- amount > 0;
+- ownership;
+- tipos válidos;
+- soft delete;
+- currency code;
+- relaciones coherentes.
+
+## No persistir
+
+```text
+current account balance
+liquid balance
+available-to-spend
+dashboard summary
+```
 
 ## Aceptación
 
@@ -564,7 +710,7 @@ Usar el formato real generado por Supabase CLI.
 pnpm supabase db reset
 ```
 
-reconstruye todo desde cero.
+reconstruye DB desde cero sin intervención manual.
 
 ## STOP
 
@@ -572,11 +718,21 @@ No UI.
 
 ---
 
-# FASE 5 — RLS y perfil
+# FASE 5 — Seguridad RLS y perfil
+
+## Objetivo
+
+Cerrar seguridad de datos antes de exponer CRUD.
 
 ## Rama
 
-Puede continuar en `funcionalidad/modelo-datos-p0` si sigue siendo un PR pequeño.
+Puede continuar en:
+
+```text
+funcionalidad/modelo-datos-p0
+```
+
+si sigue siendo el mismo PR pequeño.
 
 Si no:
 
@@ -584,7 +740,7 @@ Si no:
 funcionalidad/rls-p0
 ```
 
-## Leer
+## Contexto
 
 ```text
 MODELO_DATOS_Y_SEGURIDAD.md
@@ -592,7 +748,7 @@ ADR-002-ACCESO-DATOS-Y-RLS.md
 ESTRATEGIA_PRUEBAS.md
 ```
 
-## Hacer
+## Reglas
 
 Toda tabla financiera:
 
@@ -600,13 +756,15 @@ Toda tabla financiera:
 RLS ON
 ```
 
-Policies explícitas por usuario.
+Policies explícitas para usuario autenticado.
 
-Patrón base:
+Patrón:
 
 ```text
 (select auth.uid()) = user_id
 ```
+
+según operación.
 
 Profiles:
 
@@ -615,19 +773,37 @@ self SELECT
 self UPDATE
 ```
 
-Profile tras signup:
+Creación de profile:
 
-- trigger controlado;
-- no duplicar email;
-- probar fallo.
+- trigger controlado tras signup;
+- probar fallos;
+- no duplicar email.
 
-## Pruebas
+## Pruebas mínimas
+
+Usuario A:
 
 ```text
-Usuario A accede A
-Usuario B NO accede A
-Anon NO accede
+lee A
+escribe A
 ```
+
+Usuario B:
+
+```text
+NO lee A
+NO modifica A
+```
+
+Anon:
+
+```text
+NO accede
+```
+
+## Aceptación
+
+RLS probado antes de CRUD.
 
 ## STOP
 
@@ -635,20 +811,25 @@ Anon NO accede
 
 # FASE 6 — Autenticación
 
+## Objetivo
+
+Implementar acceso real a FinWise.
+
 ## Rama
 
 ```text
 funcionalidad/autenticacion
 ```
 
-## Leer
+## Contexto
 
 ```text
 UC-01
 UC-02
 UC-03
 UC-04
-secciones auth de arquitectura/diseño
+ARQUITECTURA_TECNICA.md auth
+SISTEMA_DISENO_FINWISE.md auth
 ```
 
 ## Alcance
@@ -661,33 +842,43 @@ recuperación si corresponde
 protección de rutas
 ```
 
-No OAuth extra inicialmente.
+No OAuth adicional inicialmente.
 
-## Stack
+## Pantallas
 
 ```text
-Server Actions
-Zod
-Supabase Auth
+/login
+/registro
 ```
+
+## Seguridad
+
+- Server Actions;
+- Zod;
+- mensajes seguros;
+- no revelar existencia de cuenta indebidamente.
 
 ## Aceptación
 
 ```text
-signup
-→ profile
-→ login
-→ área privada
-→ logout
+registrarse
+→ profile existe
+→ iniciar sesión
+→ acceder área privada
+→ cerrar sesión
 ```
 
 ## STOP
 
-No Dashboard funcional todavía.
+No crear Dashboard real todavía.
 
 ---
 
 # FASE 7 — App shell + onboarding
+
+## Objetivo
+
+Crear estructura privada usable y primera configuración.
 
 ## Rama
 
@@ -695,13 +886,13 @@ No Dashboard funcional todavía.
 funcionalidad/onboarding
 ```
 
-## Leer
+## Contexto
 
 ```text
 UC-05
 UC-06
-wireframes onboarding/navigation
-design system
+WIREFRAMES_Y_PANTALLAS.md
+SISTEMA_DISENO_FINWISE.md
 ```
 
 ## Mobile
@@ -714,7 +905,7 @@ Metas
 Más
 ```
 
-No mostrar como funcional lo que aún no existe.
+Los módulos no implementados deben ocultarse o deshabilitarse de forma honesta.
 
 ## Desktop
 
@@ -724,7 +915,7 @@ Sidebar flotante/colapsable.
 
 ```text
 display name si aplica
-COP default
+moneda COP default
 primera cuenta
 saldo inicial
 ```
@@ -734,8 +925,8 @@ saldo inicial
 ```text
 signup
 → onboarding
-→ primera cuenta
-→ app privada
+→ crea primera cuenta
+→ entra a la app
 ```
 
 ## STOP
@@ -750,7 +941,7 @@ signup
 funcionalidad/cuentas
 ```
 
-## Leer
+## Contexto
 
 ```text
 UC-06
@@ -772,9 +963,13 @@ OTHER
 
 ## Reglas
 
-No persistir `currentBalance`.
+No persistir:
 
-Balance deriva de ledger.
+```text
+currentBalance
+```
+
+El balance deriva del ledger.
 
 UI:
 
@@ -785,6 +980,10 @@ archivar
 ```
 
 No hard delete normal.
+
+## Aceptación
+
+Ownership y RLS demostrados.
 
 ## STOP
 
@@ -807,15 +1006,27 @@ EXPENSE
 
 ## Reglas
 
-- propiedad del usuario;
-- no duplicados activos por tipo/nombre;
-- categoría INCOME no se usa en EXPENSE.
+- user-owned;
+- sin duplicados activos por tipo/nombre;
+- categoría INCOME no sirve para EXPENSE.
 
-Defaults mínimos:
+Defaults sugeridos:
 
 ```text
-Ingresos: Salario, Honorarios, Otros ingresos
-Gastos: Alimentación, Transporte, Vivienda, Servicios, Salud, Educación, Entretenimiento, Otros
+Ingresos:
+Salario
+Honorarios
+Otros ingresos
+
+Gastos:
+Alimentación
+Transporte
+Vivienda
+Servicios
+Salud
+Educación
+Entretenimiento
+Otros
 ```
 
 ## STOP
@@ -830,7 +1041,7 @@ Gastos: Alimentación, Transporte, Vivienda, Servicios, Salud, Educación, Entre
 funcionalidad/motor-transacciones
 ```
 
-## Leer
+## Contexto
 
 ```text
 MODELO_DATOS_Y_SEGURIDAD.md transactions
@@ -840,11 +1051,17 @@ CONVENCIONES_DESARROLLO.md
 
 ## Dominio
 
+Tipos:
+
 ```text
 INCOME
 EXPENSE
 TRANSFER
+```
 
+Direcciones:
+
+```text
 INFLOW
 OUTFLOW
 ```
@@ -868,25 +1085,31 @@ TRANSFER + OUTFLOW
 TRANSFER + INFLOW
 ```
 
-Monto siempre > 0.
+Monto siempre:
+
+```text
+> 0
+```
 
 ## Arquitectura
 
-Separar razonablemente:
+Implementar razonablemente:
 
 ```text
-application
-domain
-infrastructure
+application use cases
+domain validation/calculation
+infrastructure repository
 ```
 
-Sin sobreingeniería.
+sin sobreingeniería.
 
 ## Tests
 
-Unit tests de invariantes obligatorios.
+Unit tests obligatorios de invariantes.
 
 ## STOP
+
+No construir transferencias UI si no son necesarias aún.
 
 ---
 
@@ -916,6 +1139,13 @@ Zod
 Server Action
 ```
 
+## UX
+
+- amount protagonista;
+- mobile first;
+- CTA claro;
+- feedback de guardado.
+
 ## Aceptación
 
 ```text
@@ -936,12 +1166,12 @@ persiste
 funcionalidad/registro-gastos
 ```
 
-## Leer
+## Contexto
 
 ```text
 UC-10
-wireframe quick expense
-design system
+WIREFRAMES quick expense
+SISTEMA_DISENO_FINWISE
 ```
 
 ## Form
@@ -954,9 +1184,9 @@ date
 note
 ```
 
-Gasto es la acción priorizada de Quick Create.
+Gasto debe ser la acción priorizada de Quick Create.
 
-Persistir:
+Persistencia:
 
 ```text
 EXPENSE + OUTFLOW
@@ -967,7 +1197,7 @@ EXPENSE + OUTFLOW
 - guarda;
 - ownership correcto;
 - balance derivado cambia;
-- tests relevantes.
+- tests relevantes pasan.
 
 ## STOP
 
@@ -981,7 +1211,7 @@ EXPENSE + OUTFLOW
 funcionalidad/obligaciones
 ```
 
-## Leer
+## Contexto
 
 ```text
 UC-14
@@ -1000,7 +1230,7 @@ status
 description opcional
 ```
 
-Reglas:
+## Reglas
 
 ```text
 pendiente reduce disponible
@@ -1008,7 +1238,7 @@ pendiente NO cambia saldo bancario
 marcar pagada NO crea gasto automáticamente
 ```
 
-UI:
+## UI
 
 ```text
 crear
@@ -1028,7 +1258,7 @@ marcar pagada
 funcionalidad/reserva-seguridad
 ```
 
-Persistencia:
+## Persistencia
 
 ```text
 profiles.safety_reserve
@@ -1053,13 +1283,17 @@ SÍ reduce disponible
 
 # FASE 15 — Motor de saldo líquido y disponible
 
+## Objetivo
+
+Implementar el corazón académico de FinWise.
+
 ## Rama
 
 ```text
 funcionalidad/dinero-disponible
 ```
 
-## Leer obligatoriamente
+## Contexto obligatorio
 
 ```text
 FINWISE_CONTEXTO_MAESTRO.md
@@ -1084,7 +1318,7 @@ Usar:
 decimal.js
 ```
 
-No usar `number` para cálculo crítico.
+No usar `number` para cálculos monetarios críticos.
 
 ## Saldo líquido
 
@@ -1119,13 +1353,19 @@ liquidBalance
 Normal:
 
 ```text
-1.800.000 - 600.000 - 200.000 = 1.000.000
+Saldo        1.800.000
+Obligaciones   600.000
+Reserva        200.000
+Disponible   1.000.000
 ```
 
 Déficit:
 
 ```text
-500.000 - 600.000 - 100.000 = -200.000
+Saldo          500.000
+Obligaciones   600.000
+Reserva        100.000
+Disponible    -200.000
 ```
 
 Tarjeta:
@@ -1149,7 +1389,8 @@ Cubrir:
 - varias cuentas;
 - tarjeta;
 - transferencias;
-- soft delete.
+- soft-deleted transactions;
+- fechas/periodo cuando aplique.
 
 ## STOP
 
@@ -1165,11 +1406,11 @@ No Financial Score.
 funcionalidad/dashboard-mvp
 ```
 
-## Leer
+## Contexto
 
 ```text
-wireframes dashboard
-design system
+WIREFRAMES_Y_PANTALLAS.md dashboard
+SISTEMA_DISENO_FINWISE.md
 UC-18
 UC-19
 UC-20
@@ -1186,7 +1427,7 @@ Insight/alerta si hay dato real
 Movimientos recientes
 ```
 
-Principal:
+## Protagonista
 
 ```text
 DINERO DISPONIBLE
@@ -1194,7 +1435,7 @@ DINERO DISPONIBLE
 
 No saldo total.
 
-Breakdown:
+## Breakdown
 
 ```text
 Saldo líquido
@@ -1203,7 +1444,7 @@ Reserva
 Disponible
 ```
 
-Déficit:
+## Déficit
 
 No:
 
@@ -1214,7 +1455,7 @@ Puedes gastar -$200.000
 Sí:
 
 ```text
-Tus compromisos superan tu saldo líquido...
+Tus compromisos actuales superan tu saldo líquido...
 ```
 
 No inventar tendencias.
@@ -1233,7 +1474,7 @@ cuánto puede gastar
 
 ---
 
-# FASE 17 — Historial mínimo
+# FASE 17 — Movimientos e historial mínimo
 
 ## Rama
 
@@ -1245,7 +1486,7 @@ funcionalidad/movimientos
 
 ```text
 lista
-fecha
+orden por fecha
 tipo
 categoría
 cuenta
@@ -1253,11 +1494,11 @@ monto
 detalle básico
 ```
 
-No agregar filtros complejos si no hacen falta.
+No añadir filtros complejos si no son necesarios.
 
 Edición/eliminación puede posponerse.
 
-Si hay eliminación:
+Si se implementa eliminación:
 
 ```text
 soft delete
@@ -1287,25 +1528,28 @@ success
 warning
 ```
 
-Accesibilidad:
+## Accesibilidad
 
 ```text
 WCAG AA
 focus
 keyboard
 labels
-44x44 touch targets
+44x44 touch target
 reduced motion
 contraste
 no color-only
 ```
 
-Responsive:
+## Responsive
 
 ```text
-mobile primero
-desktop después
+mobile
+tablet razonable
+desktop
 ```
+
+Mobile sigue teniendo prioridad.
 
 ## STOP
 
@@ -1319,7 +1563,7 @@ desktop después
 funcionalidad/pwa
 ```
 
-## Implementar
+## Alcance
 
 ```text
 manifest
@@ -1331,7 +1575,7 @@ theme colors
 safe areas
 ```
 
-No implementar escritura financiera offline.
+No implementar sincronización financiera offline.
 
 ## STOP
 
@@ -1362,9 +1606,9 @@ Server Actions
 validation
 ```
 
-Pruebas A/B/anon.
+Pruebas A/B/anon obligatorias.
 
-No cambiar arquitectura sin problema real.
+No cambiar arquitectura si no aparece un problema real.
 
 ## STOP
 
@@ -1390,14 +1634,19 @@ Playwright
 registro
 → onboarding
 → crear cuenta
-→ ingreso
-→ gasto
-→ obligación
-→ reserva
-→ disponible
+→ registrar ingreso
+→ registrar gasto
+→ crear obligación
+→ configurar reserva
+→ ver dinero disponible
 ```
 
-Agregar déficit si es razonable.
+Casos adicionales cuando sea viable:
+
+```text
+déficit
+usuario B no ve usuario A
+```
 
 No automatizar todo el producto.
 
@@ -1413,15 +1662,15 @@ No automatizar todo el producto.
 mantenimiento/ci-github
 ```
 
-## Leer
+## Contexto
 
 ```text
 GESTION_GITHUB_Y_RAMAS.md
-ADR-006
+ADR-006-CI-CD-VERCEL-GITHUB.md
 ESTRATEGIA_PRUEBAS.md
 ```
 
-Checks:
+## Checks
 
 ```text
 lint
@@ -1430,7 +1679,18 @@ test
 build
 ```
 
-Protección:
+Más adelante:
+
+```text
+integration
+e2e
+```
+
+si el costo/tiempo es razonable.
+
+## GitHub
+
+Proteger:
 
 ```text
 staging
@@ -1453,9 +1713,9 @@ rama actualizada
 
 ## Objetivo
 
-Publicar de forma controlada.
+Preparar release real.
 
-Flujo:
+## Flujo
 
 ```text
 staging
@@ -1464,15 +1724,22 @@ staging
 → Vercel
 ```
 
-Configurar:
+## Configurar
 
-- Vercel;
+- proyecto Vercel;
 - variables de producción;
 - Supabase production;
-- Auth redirect URLs;
-- migraciones.
+- redirect/auth URLs;
+- build;
+- dominio si aplica.
 
-No editar DB productiva manualmente como sustituto de migraciones.
+## Migraciones
+
+Aplicar de forma controlada.
+
+Nunca editar schema productivo manualmente como sustituto de migraciones.
+
+## Release
 
 Solo responsable de producción autoriza:
 
@@ -1486,7 +1753,7 @@ Merge:
 Merge Commit
 ```
 
-Smoke:
+## Smoke production
 
 ```text
 app abre
@@ -1505,12 +1772,12 @@ Supabase responde
 ## Validar los 3 Must
 
 ```text
-1. Registrar manualmente ingresos/gastos
+1. Registrar manualmente ingresos y gastos
 2. Resumen financiero básico
 3. Dinero disponible después de compromisos
 ```
 
-Checklist:
+## Checklist
 
 - [ ] Auth
 - [ ] Profile
@@ -1524,7 +1791,7 @@ Checklist:
 - [ ] Disponible
 - [ ] Dashboard
 - [ ] RLS
-- [ ] decimal.js
+- [ ] Precisión decimal
 - [ ] Mobile
 - [ ] Light/Dark
 - [ ] Accesibilidad crítica
@@ -1541,13 +1808,13 @@ MVP ACADÉMICO CERRADO
 
 ---
 
-# 7. Fuera de alcance hasta autorización
+# 8. Fuera de alcance hasta autorización
 
 No ejecutar todavía:
 
 ```text
-Budgets
-Goals
+Budgets avanzados
+Goals avanzadas
 Recurring transactions
 Subscriptions
 Debts
@@ -1560,15 +1827,14 @@ AI
 Bank integrations
 Open Banking
 Shared finances
+FX
 ```
 
 No construirlas como "mejora".
 
 ---
 
-# 8. Prompt maestro para Kilo
-
-Usar este patrón al iniciar cualquier fase:
+# 9. Prompt maestro para iniciar una fase
 
 ```text
 Estamos implementando FinWise.
@@ -1581,7 +1847,7 @@ Antes de modificar:
 2. Recupera solo la documentación relevante indicada para esta fase.
 3. Usa semantic search antes de explorar ampliamente.
 4. Confirma la rama actual y no trabajes directamente en main/staging.
-5. Evalúa lo existente para no duplicar trabajo.
+5. Evalúa el estado existente para no duplicar trabajo.
 
 Durante:
 - Haz el mínimo cambio correcto.
@@ -1590,6 +1856,13 @@ Durante:
 - No agregues dependencias innecesarias.
 - Respeta arquitectura, RLS, precisión monetaria y sistema visual.
 - Máximo 2 intentos similares ante el mismo error antes de cambiar estrategia.
+
+Si la ejecución se interrumpe:
+- NO reinicies la fase.
+- Ejecuta git status y git diff.
+- Conserva trabajo válido.
+- Identifica la operación pendiente.
+- Continúa únicamente desde ahí.
 
 Al finalizar:
 - Ejecuta los checks requeridos.
@@ -1610,7 +1883,7 @@ NO continúes automáticamente a la siguiente fase.
 
 ---
 
-# 9. Prompt para comenzar ahora
+# 10. Prompt para comenzar ahora
 
 ```text
 Ejecuta únicamente la FASE 0 — Auditoría del estado actual de:
@@ -1647,9 +1920,43 @@ Detente al terminar.
 
 ---
 
-# 10. Agrupación razonable de ramas
+# 11. Prompt para reanudar después de un error
 
-No es obligatorio crear una rama por cada número si varias fases forman una unidad pequeña y coherente.
+```text
+Continúa la FASE ACTUAL desde el último estado válido.
+
+NO reinicies la fase desde cero.
+NO repitas la misma llamada fallida.
+NO deshagas cambios ya aplicados correctamente.
+
+Antes de continuar:
+1. Ejecuta git status.
+2. Ejecuta git diff.
+3. Identifica archivos ya modificados correctamente.
+4. Identifica la operación exacta que quedó pendiente.
+
+Continúa únicamente desde ese punto.
+
+Si una herramienta vuelve a fallar:
+- cambia de estrategia una sola vez;
+- máximo 2 intentos similares;
+- si persiste, detente y reporta archivo, operación y error.
+
+Mantén el alcance de la fase actual.
+No avances a la siguiente fase.
+
+Al terminar:
+- ejecuta los checks correspondientes;
+- revisa el diff;
+- informa brevemente estado y pendientes;
+- detente.
+```
+
+---
+
+# 12. Agrupación razonable de ramas
+
+No es obligatorio crear 24 ramas si varias fases forman una unidad pequeña y coherente.
 
 Ejemplos:
 
@@ -1674,7 +1981,7 @@ No crear ramas gigantes.
 
 ---
 
-# 11. Cuándo pedir decisión humana
+# 13. Cuándo pedir decisión humana
 
 Detener y preguntar si:
 
@@ -1686,13 +1993,14 @@ Detener y preguntar si:
 - un conflicto Git implica eliminar trabajo ajeno;
 - una dependencia sustituye una decisión establecida;
 - el diseño exige cambiar el sistema visual;
-- se necesita salir de la fase actual.
+- la solución necesita salir de la fase;
+- tras cambiar estrategia no puede continuar con seguridad.
 
 No preguntar por detalles triviales ya definidos.
 
 ---
 
-# 12. Definition of Done por fase
+# 14. Definition of Done por fase
 
 Una fase está lista cuando:
 
@@ -1709,7 +2017,7 @@ precisión financiera intacta
 +
 diff revisado
 +
-docs actualizadas solo si cambió una decisión
+documentación actualizada solo si cambió una decisión
 ```
 
 No basta con:
@@ -1720,9 +2028,9 @@ No basta con:
 
 ---
 
-# 13. PR
+# 15. Política para commits y PR
 
-Kilo puede preparar cambios/commit si se le autoriza.
+Kilo puede preparar commits si el usuario lo autoriza.
 
 No debe:
 
@@ -1732,7 +2040,7 @@ push directo a staging
 push directo a main
 ```
 
-Flujo:
+Integración:
 
 ```text
 rama temporal
@@ -1756,9 +2064,9 @@ staging
 
 ---
 
-# 14. Documentación durante implementación
+# 16. Documentación durante implementación
 
-No crear `.md` por cada feature.
+No crear nuevos `.md` por cada feature.
 
 Actualizar documentación solo si cambia:
 
@@ -1783,7 +2091,7 @@ es suficiente.
 
 ---
 
-# 15. Regla final
+# 17. Regla final
 
 > **No intentes impresionar haciendo más trabajo del solicitado.**
 
