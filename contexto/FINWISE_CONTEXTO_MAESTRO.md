@@ -1,42 +1,36 @@
 # FinWise — Contexto Maestro del Proyecto
 
-> **Fuente de verdad principal del proyecto FinWise**
+> **Fuente de verdad principal del proyecto FinWise**  
+> Estado: **Aprobado para implementación**  
+> Fecha de consolidación: **8 de octubre de 2026**
 >
-> Estado: **actualizado y consolidado para implementación**
->
-> Fecha de consolidación: **7 de octubre de 2026**
->
-> Este documento reemplaza las versiones anteriores del contexto maestro cuando exista contradicción.
->
-> La documentación especializada conserva mayor detalle técnico y funcional, pero ninguna decisión derivada puede contradecir este archivo sin una modificación explícita del contexto o un ADR aprobado.
+> Este documento reemplaza versiones anteriores del Contexto Maestro cuando exista contradicción.
 
 ---
 
-# 0. Gobierno del contexto maestro
+# 0. Gobierno del contexto
 
 ## 0.1 Propósito
 
-Este documento concentra las decisiones vigentes de producto, alcance, arquitectura, datos, seguridad, experiencia, diseño, planificación, calidad y colaboración de FinWise.
+Este documento consolida las decisiones vigentes de:
 
-Debe permitir que una persona o agente nuevo comprenda:
+- producto;
+- alcance;
+- arquitectura;
+- datos;
+- seguridad;
+- diseño;
+- testing;
+- Git/GitHub;
+- eficiencia de agentes;
+- recuperación de contexto;
+- planificación.
 
-- qué es FinWise;
-- qué problema resuelve;
-- cuál es el MVP;
-- cómo se calcula la información financiera;
-- qué tecnologías se utilizan;
-- cómo se organiza el código;
-- cómo se protegen los datos;
-- cómo debe diseñarse la interfaz;
-- cómo se trabaja con GitHub;
-- cómo se prueba;
-- qué NO debe construirse todavía.
+Debe permitir que una persona o agente nuevo comprenda rápidamente qué es FinWise, qué debe construir y qué reglas no puede romper.
 
----
+## 0.2 Orden de autoridad
 
-## 0.2 Regla de precedencia
-
-Cuando dos decisiones entren en conflicto, usar este orden:
+Si dos decisiones entran en conflicto, usar este orden:
 
 ```text
 1. Seguridad y privacidad
@@ -48,80 +42,62 @@ Cuando dos decisiones entren en conflicto, usar este orden:
 7. Casos de uso y criterios de aceptación
 8. Sistema de diseño y accesibilidad
 9. Política de Git/GitHub
-10. Planificación
-11. Preferencia del desarrollador o agente
+10. Eficiencia de agentes y gestión de contexto
+11. Planificación
+12. Preferencia del desarrollador o agente
 ```
 
-Nunca sacrificar seguridad o integridad financiera para simplificar una implementación.
-
----
+La eficiencia nunca justifica reducir seguridad, precisión financiera o integridad de datos.
 
 ## 0.3 Documentos oficiales
 
-Estructura documental recomendada:
-
 ```text
 contexto/
-├── INDICE_DOCUMENTACION.md
 ├── FINWISE_CONTEXTO_MAESTRO.md
-│
+├── INDICE_DOCUMENTACION.md
 ├── arquitectura/
 │   ├── ARQUITECTURA_TECNICA.md
 │   ├── MODELO_DATOS_Y_SEGURIDAD.md
 │   └── adr/
-│       ├── README.md
-│       ├── ADR-001-STACK-Y-MONOLITO-MODULAR.md
-│       ├── ADR-002-ACCESO-DATOS-Y-RLS.md
-│       ├── ADR-003-PRECISION-MONETARIA.md
-│       ├── ADR-004-LIMITES-SERVER-NEXTJS.md
-│       ├── ADR-005-MOBILE-FIRST-Y-PWA.md
-│       ├── ADR-006-CI-CD-VERCEL-GITHUB.md
-│       └── ADR-007-MIGRACIONES-SUPABASE.md
-│
 ├── producto/
 │   └── CASOS_DE_USO_Y_FLUJOS.md
-│
 ├── diseno/
 │   ├── SISTEMA_DISENO_FINWISE.md
 │   └── WIREFRAMES_Y_PANTALLAS.md
-│
-├── planificacion/
-│   ├── BACKLOG_MVP.md
-│   └── PLAN_IMPLEMENTACION_MVP.md
-│
 ├── desarrollo/
 │   ├── CONVENCIONES_DESARROLLO.md
-│   └── GESTION_GITHUB_Y_RAMAS.md
-│
-└── calidad/
-    └── ESTRATEGIA_PRUEBAS.md
+│   ├── GESTION_GITHUB_Y_RAMAS.md
+│   └── POLITICA_EFICIENCIA_AGENTES.md
+├── calidad/
+│   └── ESTRATEGIA_PRUEBAS.md
+└── planificacion/
+    ├── BACKLOG_MVP.md
+    └── PLAN_IMPLEMENTACION_MVP.md
 ```
 
-En la raíz del repositorio debe existir:
+En la raíz del repositorio:
 
 ```text
 AGENTS.md
 ```
 
-para instruir a agentes de desarrollo.
+`AGENTS.md` funciona como **router de contexto**, no como orden de leer todos los documentos en cada tarea.
 
 ---
 
-## 0.4 Fuente de verdad
+# 1. Identidad del producto
 
-La base de datos es la fuente de verdad de los datos persistentes.
+Nombre:
 
-Los valores derivados deben calcularse desde datos persistidos y reglas de dominio.
+```text
+FinWise
+```
 
-No duplicar como columnas editables valores que pueden derivarse de forma confiable, salvo decisión explícita.
+FinWise es una aplicación de inteligencia y gestión financiera personal.
 
----
+No es únicamente un CRUD de gastos.
 
-## 0.5 Principio rector
-
-FinWise no es un CRUD de gastos.
-
-Su filosofía es:
+Filosofía:
 
 ```text
 Registrar
@@ -133,36 +109,17 @@ Registrar
 → Apoyar la decisión
 ```
 
----
-
-## 0.6 Pregunta central del producto
+Pregunta central:
 
 > **¿Cuánto dinero puedo gastar realmente sin comprometer mis obligaciones, reservas y objetivos financieros?**
 
-La respuesta a esta pregunta es el principal diferenciador de FinWise.
-
----
-
-# 1. Identidad del proyecto
-
-Nombre:
+El principal número de producto es:
 
 ```text
-FinWise
+DINERO DISPONIBLE
 ```
 
-Concepto:
-
-> Aplicación de inteligencia y gestión financiera personal que transforma registros financieros en información comprensible para apoyar decisiones.
-
-FinWise debe comunicar:
-
-- claridad;
-- control;
-- confianza;
-- contexto;
-- prevención;
-- progreso.
+no el saldo bancario bruto.
 
 ---
 
@@ -170,162 +127,91 @@ FinWise debe comunicar:
 
 FinWise es un proyecto universitario que debe demostrar más que operaciones CRUD.
 
-El valor académico principal estará en:
+Debe destacar especialmente por:
 
 - modelado de dominio;
 - seguridad;
 - lógica financiera;
-- análisis;
 - cálculos reproducibles;
 - UX;
 - arquitectura;
-- pruebas;
+- testing;
 - control de versiones;
 - despliegue.
 
-La primera entrega no necesita implementar toda la visión futura.
-
 ---
 
-# 3. Problemática
+# 3. Problema
 
-Muchas personas pueden consultar cuánto dinero existe en una cuenta, pero no saben cuánto de ese dinero es realmente utilizable.
+Una persona puede saber cuánto dinero tiene en sus cuentas y aun así no saber cuánto puede gastar realmente.
 
 La información financiera suele estar dispersa entre:
 
-- aplicaciones bancarias;
+- bancos;
+- tarjetas;
 - notas;
 - hojas de cálculo;
-- tarjetas;
 - facturas;
 - suscripciones;
 - aplicaciones de presupuesto.
 
-Esto dificulta:
-
-- comprender gastos;
-- anticipar obligaciones;
-- ahorrar;
-- planificar;
-- controlar deuda;
-- saber cuánto se puede gastar sin comprometer pagos futuros.
+FinWise debe convertir esa información en una visión accionable.
 
 ---
 
-# 4. Propuesta de solución
+# 4. Alcance
 
-FinWise centraliza y estructura información financiera para producir:
+## 4.1 MVP académico — Must
 
-- saldos;
-- métricas;
-- presupuestos;
-- obligaciones;
-- metas;
-- tendencias;
-- alertas;
-- proyecciones;
-- simulaciones;
-- recomendaciones futuras.
-
-La aplicación debe distinguir siempre entre:
-
-```text
-hecho
-cálculo
-estimación
-recomendación
-```
-
----
-
-# 5. Usuarios objetivo
-
-Personas que desean comprender y organizar sus finanzas personales, por ejemplo:
-
-- estudiantes;
-- jóvenes profesionales;
-- trabajadores independientes;
-- personas con varias cuentas;
-- personas con metas de ahorro;
-- personas con compromisos recurrentes;
-- personas que buscan mejorar control financiero.
-
----
-
-# 6. Alcance oficial
-
-## 6.1 MVP académico — obligatorio
-
-Exactamente tres capacidades Must:
+El MVP académico tiene exactamente tres capacidades obligatorias:
 
 1. Registrar manualmente ingresos y gastos.
 2. Consultar un resumen financiero básico.
 3. Calcular cuánto dinero está disponible para gastar después de compromisos configurados.
 
-Para soportar esas tres capacidades, técnicamente se requieren además:
-
-- autenticación;
-- profile;
-- cuentas;
-- categorías;
-- obligaciones;
-- reserva de seguridad;
-- dashboard mínimo.
-
----
-
-## 6.2 Fórmula MVP
+Para soportarlas técnicamente se requieren:
 
 ```text
-dineroDisponibleMVP =
+auth
+profiles
+accounts
+categories
+transactions
+obligations
+safety reserve
+dashboard mínimo
+```
+
+## 4.2 Fórmula MVP
+
+```text
+dineroDisponible =
 saldoLiquido
 - obligacionesPendientes
 - reservaSeguridad
 ```
 
----
+## 4.3 Alcance posterior
 
-## 6.3 MVP funcional posterior
+Después del MVP académico:
 
-Después de cerrar el MVP académico:
+```text
+edición/eliminación de transacciones
+transferencias
+presupuestos
+metas
+alertas
+forecast
+recurrencias
+suscripciones
+deudas
+snowball/avalanche
+Financial Score
+simulador
+reportes
+```
 
-- edición y eliminación de transacciones;
-- transferencias;
-- presupuestos;
-- metas;
-- alertas;
-- forecast;
-- recurrencias.
-
----
-
-## 6.4 V2
-
-- suscripciones;
-- deudas;
-- pagos de deuda;
-- snowball;
-- avalanche;
-- Financial Score;
-- simulador;
-- reportes;
-- importación/exportación.
-
----
-
-## 6.5 V3 / capacidades avanzadas
-
-- categorización inteligente;
-- IA financiera;
-- detección avanzada de patrones;
-- sincronización bancaria;
-- open banking;
-- finanzas compartidas;
-- análisis predictivo avanzado.
-
----
-
-## 6.6 Fuera de alcance por defecto
+## 4.4 Fuera de alcance inicial
 
 No implementar sin decisión explícita:
 
@@ -335,66 +221,49 @@ NestJS separado
 Redis
 Kafka/RabbitMQ
 GraphQL/tRPC
-Redux global por defecto
+Redux global
 IA productiva
 Open Banking
 sincronización bancaria
 crypto
-portafolios de inversión
-OCR de recibos
+OCR
 multiusuario familiar
 ```
 
 ---
 
-# 7. Invariantes de dominio
+# 5. Invariantes financieras
 
-## 7.1 Saldo no es disponible
+## 5.1 Saldo no es disponible
 
 ```text
 saldoLiquido != dineroDisponible
 ```
 
----
-
-## 7.2 Crédito no es efectivo
+## 5.2 Crédito no es efectivo
 
 ```text
 availableCredit != liquidMoney
 ```
 
-El límite de crédito jamás se suma al saldo líquido.
+Nunca sumar límite de crédito al saldo líquido.
 
----
-
-## 7.3 Transferencia no es ingreso ni gasto
+## 5.3 Transferencia no es ingreso ni gasto
 
 ```text
 TRANSFER != INCOME
 TRANSFER != EXPENSE
 ```
 
----
+## 5.4 Obligación pendiente
 
-## 7.4 Una obligación pendiente no modifica saldo bancario
+Una obligación pendiente reduce capacidad de gasto, pero no crea una salida de dinero hasta existir una transacción real.
 
-Reduce capacidad de gasto, pero no crea una salida financiera hasta existir una transacción real.
+## 5.5 Meta
 
----
+Una meta no inventa movimiento bancario.
 
-## 7.5 Marcar una obligación como pagada no inventa una transacción
-
-El usuario puede registrar explícitamente el gasto/pago correspondiente.
-
----
-
-## 7.6 Una meta no inventa movimiento bancario
-
-Los aportes y movimientos reales deben distinguirse.
-
----
-
-## 7.7 Forecast no es certeza
+## 5.6 Forecast
 
 Toda predicción debe presentarse como:
 
@@ -408,7 +277,7 @@ nunca como saldo real.
 
 ---
 
-# 8. Stack tecnológico oficial
+# 6. Stack oficial
 
 ## Aplicación
 
@@ -418,28 +287,18 @@ React
 TypeScript strict
 ```
 
-## Styling / UI
+## UI
 
 ```text
 Tailwind CSS
 shadcn/ui
 Radix UI
 Lucide
-```
-
-## Motion
-
-```text
 Motion
-```
-
-## Gráficas
-
-```text
 Recharts
 ```
 
-## Formularios y validación
+## Formularios / validación
 
 ```text
 React Hook Form
@@ -452,7 +311,7 @@ Zod
 date-fns
 ```
 
-## Dinero en TypeScript
+## Dinero
 
 ```text
 decimal.js
@@ -461,9 +320,6 @@ decimal.js
 ## Backend / datos
 
 ```text
-Next.js Server Components
-Next.js Server Actions
-Next.js Route Handlers
 Supabase PostgreSQL
 Supabase Auth
 Supabase RLS
@@ -481,15 +337,10 @@ React Testing Library
 Playwright
 ```
 
-## Paquetes
+## Entorno
 
 ```text
 pnpm
-```
-
-## Repositorio / CI/CD
-
-```text
 GitHub
 GitHub Actions
 Vercel
@@ -497,7 +348,7 @@ Vercel
 
 ---
 
-# 9. Tecnologías no adoptadas inicialmente
+# 7. Tecnologías no adoptadas inicialmente
 
 No usar por defecto:
 
@@ -519,11 +370,11 @@ Supabase Edge Functions
 Sentry
 ```
 
-Una de estas tecnologías puede incorporarse en el futuro únicamente si existe una necesidad real y se documenta la decisión.
+Una nueva tecnología requiere necesidad real y decisión documentada.
 
 ---
 
-# 10. Arquitectura oficial
+# 8. Arquitectura
 
 Estilo:
 
@@ -531,123 +382,56 @@ Estilo:
 monolito modular
 ```
 
-Dependencias:
+Dirección:
 
 ```text
 Presentation
-      ↓
-Application
-      ↓
-Domain
-      ↓
-Infrastructure
-      ↓
-Supabase / PostgreSQL
+→ Application
+→ Domain
+→ Infrastructure
+→ Supabase/PostgreSQL
 ```
 
-La lógica financiera debe permanecer independiente de:
+La lógica financiera debe ser independiente de React, Next.js y Supabase cuando pueda expresarse como dominio puro.
 
-```text
-React
-Next.js
-Supabase
-```
+## 8.1 Next.js
 
-cuando sea lógica de dominio pura.
-
----
-
-# 11. Responsabilidades por capa
-
-## Presentation
-
-- páginas;
-- componentes;
-- formularios;
-- view models;
-- estados visuales;
-- interacción.
-
-## Application
-
-- casos de uso;
-- coordinación;
-- autorización contextual;
-- transacciones de aplicación;
-- repositorios.
-
-## Domain
-
-- cálculos;
-- invariantes;
-- reglas financieras;
-- tipos de dominio.
-
-## Infrastructure
-
-- Supabase;
-- queries;
-- persistencia;
-- mapeos;
-- servicios externos.
-
----
-
-# 12. Estrategia de servidor Next.js
-
-## Lecturas
-
-Preferir:
+Lecturas:
 
 ```text
 Server Components
 ```
 
-## Mutaciones originadas por la aplicación
-
-Preferir:
+Mutaciones:
 
 ```text
 Server Actions
 ```
 
-## HTTP explícito
-
-Usar:
+HTTP explícito:
 
 ```text
 Route Handlers
 ```
 
-para:
+para webhooks, integraciones o contratos HTTP reales.
 
-- webhooks;
-- integraciones;
-- contratos HTTP;
-- endpoints externos.
+## 8.2 Estado
 
----
-
-# 13. Estado de aplicación
-
-Orden de preferencia:
+Orden preferido:
 
 ```text
 1. Server Components
 2. Server Actions
 3. URL state
-4. estado React local
+4. React local state
 ```
 
 No introducir state manager global sin necesidad demostrada.
 
-No introducir TanStack Query únicamente por costumbre.
-
 ---
 
-# 14. Identidad del usuario
-
-No existe una tabla de usuarios paralela para autenticación.
+# 9. Identidad y perfiles
 
 Identidad:
 
@@ -661,31 +445,12 @@ Datos de aplicación:
 public.profiles
 ```
 
+No crear una segunda tabla de usuarios para autenticación.
+
 Relación:
 
 ```text
 profiles.id = auth.users.id
-```
-
-con FK y `ON DELETE CASCADE`.
-
-No duplicar email en `profiles` salvo necesidad futura documentada.
-
----
-
-# 15. Profile
-
-Campos conceptuales:
-
-```text
-id
-display_name
-currency_code
-timezone
-safety_reserve
-locale
-created_at
-updated_at
 ```
 
 Defaults iniciales:
@@ -699,9 +464,9 @@ safety_reserve = 0
 
 ---
 
-# 16. Entidades principales
+# 10. Entidades principales
 
-Modelo actual:
+Modelo completo previsto:
 
 ```text
 profiles
@@ -719,13 +484,7 @@ debt_payments
 alerts
 ```
 
-No todas se implementan en el MVP académico.
-
----
-
-# 17. Entidades P0 del MVP académico
-
-Solo se requieren inicialmente:
+MVP P0:
 
 ```text
 auth.users
@@ -736,11 +495,9 @@ transactions
 obligations
 ```
 
-más los cálculos derivados.
-
 ---
 
-# 18. Dinero y precisión
+# 11. Dinero y precisión
 
 PostgreSQL:
 
@@ -748,63 +505,43 @@ PostgreSQL:
 numeric(20,4)
 ```
 
-TypeScript domain:
+TypeScript:
 
 ```text
 decimal.js
 ```
 
-Evitar para cálculos críticos:
+No usar `number` para aritmética monetaria crítica.
 
-```text
-float
-double precision
-JavaScript number arithmetic
-```
+En límites server/client preferir decimal strings.
 
-En límites server/client preferir valores monetarios como decimal string.
+No sumar monedas diferentes sin módulo de FX.
 
-El formateo visual no es representación de dominio.
-
----
-
-# 19. Monedas
-
-Cada registro monetario relevante contiene `currency_code`.
-
-MVP inicial:
+Moneda inicial:
 
 ```text
 COP
 ```
 
-No sumar monedas distintas sin módulo formal de conversión.
-
-No introducir tasas FX implícitas.
-
 ---
 
-# 20. Fechas
+# 12. Fechas
 
-Usar:
+Fechas financieras:
 
 ```text
 date
 ```
 
-para fechas financieras.
-
-Usar:
+Eventos técnicos:
 
 ```text
 timestamptz
 ```
 
-para eventos técnicos.
+No inferir `transaction_date` desde `created_at`.
 
-No inferir `transaction_date` a partir de `created_at`.
-
-Zona horaria inicial:
+Zona inicial:
 
 ```text
 America/Bogota
@@ -812,9 +549,7 @@ America/Bogota
 
 ---
 
-# 21. Accounts
-
-Una cuenta representa dónde existe dinero o crédito.
+# 13. Cuentas
 
 Tipos iniciales:
 
@@ -827,29 +562,7 @@ DIGITAL_WALLET
 OTHER
 ```
 
-Campos conceptuales:
-
-```text
-id
-user_id
-name
-type
-currency_code
-opening_balance
-credit_limit
-payment_due_day
-statement_closing_day
-is_archived
-deleted_at
-created_at
-updated_at
-```
-
 `current_balance` no se persiste inicialmente como valor editable.
-
----
-
-# 22. Balance de cuenta
 
 Activo:
 
@@ -857,7 +570,7 @@ Activo:
 opening_balance + inflows - outflows
 ```
 
-Tarjeta de crédito:
+Tarjeta:
 
 ```text
 opening_debt + outflows - inflows
@@ -869,34 +582,13 @@ Crédito disponible:
 credit_limit - current_debt
 ```
 
-El crédito disponible nunca forma parte del saldo líquido.
+El crédito disponible no forma parte del saldo líquido.
 
 ---
 
-# 23. Transactions
+# 14. Transactions
 
-Ledger financiero canónico.
-
-Campos conceptuales:
-
-```text
-id
-user_id
-account_id
-category_id
-type
-direction
-amount
-currency_code
-description
-transaction_date
-notes
-recurring_transaction_id
-transfer_group_id
-deleted_at
-created_at
-updated_at
-```
+Ledger canónico.
 
 Tipos:
 
@@ -913,40 +605,31 @@ INFLOW
 OUTFLOW
 ```
 
----
-
-# 24. Income / Expense
-
 Ingreso:
 
 ```text
-type = INCOME
-direction = INFLOW
+INCOME + INFLOW
 ```
 
 Gasto:
 
 ```text
-type = EXPENSE
-direction = OUTFLOW
+EXPENSE + OUTFLOW
 ```
 
-Monto siempre:
-
-```text
-> 0
-```
-
-El signo visual se deriva del contexto; no almacenar montos negativos como regla normal.
+Monto siempre mayor que cero.
 
 ---
 
-# 25. Transferencias
+# 15. Transferencias
 
-Una transferencia se representa con dos transactions relacionadas por:
+Una transferencia usa dos transacciones con el mismo:
 
 ```text
 transfer_group_id
+user_id
+amount
+currency_code
 ```
 
 Origen:
@@ -961,49 +644,46 @@ Destino:
 TRANSFER + INFLOW
 ```
 
-Reglas V1:
+Reglas:
 
-- mismo usuario;
-- mismo monto;
-- misma moneda;
 - cuentas diferentes;
+- mismo usuario;
+- misma moneda;
 - creación atómica;
-- no cambia ingresos/gastos globales.
+- sin efecto sobre ingresos/gastos globales.
 
 ---
 
-# 26. Tarjeta de crédito
+# 16. Tarjetas de crédito
 
-Compra con tarjeta:
+Compra:
 
 ```text
 EXPENSE + OUTFLOW
 ```
 
-en cuenta `CREDIT_CARD`.
-
 Efecto:
 
 ```text
 aumenta deuda
+cuenta como gasto
 no reduce saldo líquido inmediatamente
-sí aumenta gasto del periodo
 ```
 
-Pago de tarjeta:
+Pago:
 
 ```text
-bank account: TRANSFER + OUTFLOW
-credit card: TRANSFER + INFLOW
+activo: TRANSFER + OUTFLOW
+tarjeta: TRANSFER + INFLOW
 ```
 
-No registrar el pago de tarjeta como un segundo gasto.
+No registrar el pago como segundo gasto.
 
 ---
 
-# 27. Categories
+# 17. Categorías
 
-Categorias propiedad del usuario en V1.
+Propiedad del usuario.
 
 Tipos:
 
@@ -1012,9 +692,7 @@ INCOME
 EXPENSE
 ```
 
-No utilizar categoría de ingreso para gasto ni viceversa.
-
-Categorías iniciales pueden copiarse por usuario.
+No usar una categoría de ingreso para gasto ni viceversa.
 
 Evitar duplicados activos por:
 
@@ -1024,28 +702,9 @@ user_id + type + lower(name)
 
 ---
 
-# 28. Obligations
+# 18. Obligaciones
 
-Entidad explícita necesaria para el cálculo de disponible.
-
-Campos conceptuales:
-
-```text
-id
-user_id
-name
-description
-amount
-currency_code
-due_date
-status
-source
-source_id
-paid_at
-deleted_at
-created_at
-updated_at
-```
+Entidad explícita del MVP.
 
 Estados iniciales:
 
@@ -1060,137 +719,27 @@ Source inicial:
 MANUAL
 ```
 
-No duplicar una obligación derivada de otra fuente en el futuro.
+Marcar obligación pagada no debe inventar automáticamente una transacción.
 
 ---
 
-# 29. Safety reserve
+# 19. Reserva de seguridad
 
-Se almacena inicialmente en:
+Inicialmente:
 
 ```text
 profiles.safety_reserve
 ```
 
-No modifica saldo real.
+No cambia el saldo real.
 
-Reduce el dinero considerado disponible.
+Reduce el dinero disponible.
 
-Puede ser:
-
-```text
-0
-```
+Puede ser cero.
 
 ---
 
-# 30. Budgets
-
-Modelo mensual por categoría.
-
-Usar:
-
-```text
-period_month DATE
-```
-
-representando el primer día del mes.
-
-Único por:
-
-```text
-user_id + category_id + period_month
-```
-
-`spent` es derivado de transacciones.
-
-Estados visuales iniciales:
-
-```text
-0–69%   NORMAL
-70–89%  WARNING
-90–99%  HIGH
->=100%  EXCEEDED
-```
-
----
-
-# 31. Goals
-
-Campos conceptuales:
-
-```text
-target_amount
-initial_amount
-monthly_commitment_amount
-currency_code
-target_date
-status
-```
-
-`currentAmount` no se persiste como campo editable.
-
-Se deriva:
-
-```text
-initial_amount + goal_contributions
-```
-
-La recomendación mensual también es derivada.
-
----
-
-# 32. Recurrencias y suscripciones
-
-Son posteriores al MVP académico.
-
-La detección puede utilizar inicialmente:
-
-- descripción similar;
-- monto similar;
-- categoría similar;
-- intervalo similar;
-- mínimo tres repeticiones.
-
-Una sugerencia de recurrencia no se activa automáticamente sin confirmación.
-
----
-
-# 33. Debts
-
-Posterior al MVP académico.
-
-A diferencia del balance de cuenta simple, `current_balance` de deuda puede persistirse porque intereses, cargos y refinanciaciones externas pueden modificarlo.
-
-Pago:
-
-```text
-principal + interest = amount
-```
-
----
-
-# 34. Alerts
-
-Campos conceptuales:
-
-```text
-type
-title
-message
-severity
-is_read
-read_at
-metadata
-dedup_key
-expires_at
-```
-
-`metadata` no reemplaza schema formal.
-
----
-
-# 35. Datos derivados — no tablas inicialmente
+# 20. Datos derivados
 
 No crear tablas específicas inicialmente para:
 
@@ -1208,9 +757,9 @@ Son cálculos/view models.
 
 ---
 
-# 36. Motor financiero
+# 21. Motor financiero
 
-Funciones de dominio esperadas:
+Funciones previstas:
 
 ```text
 calculateAccountBalance()
@@ -1225,19 +774,19 @@ calculateDebtStrategy()
 calculateFinancialScore()
 ```
 
-Implementarlas cuando el alcance las necesite.
+Implementar solo cuando el alcance las necesite.
 
 ---
 
-# 37. Saldo líquido
+# 22. Saldo líquido
 
 MVP:
 
 ```text
-sum(balance of CASH)
-+ sum(balance of CHECKING)
-+ sum(balance of SAVINGS)
-+ sum(balance of DIGITAL_WALLET)
+sum(CASH)
++ sum(CHECKING)
++ sum(SAVINGS)
++ sum(DIGITAL_WALLET)
 ```
 
 Excluir:
@@ -1250,7 +799,7 @@ available_credit
 
 ---
 
-# 38. Dinero disponible
+# 23. Dinero disponible
 
 MVP:
 
@@ -1261,84 +810,24 @@ saldoLiquido
 - reservaSeguridad
 ```
 
-Versión completa futura:
+Debe ser explicable con breakdown.
+
+Si el resultado es negativo, no mostrar:
 
 ```text
-dineroDisponible =
-saldoLiquido
-- obligacionesPendientes
-- metasAhorroComprometidas
-- pagosDeudaPendientes
-- reservaSeguridad
+Puedes gastar -$X
 ```
 
-El resultado debe ser explicable mediante breakdown.
+Mostrar un mensaje de déficit.
 
 ---
 
-# 39. Resultado negativo
+# 24. Seguridad
 
-No mostrar:
-
-```text
-Puedes gastar -$200.000
-```
-
-Mostrar algo como:
-
-> Tus compromisos actuales superan tu saldo líquido en aproximadamente $200.000.
-
-Internamente el valor puede conservarse negativo para análisis.
-
----
-
-# 40. Forecast
-
-Primera aproximación:
+Toda tabla financiera multiusuario debe usar:
 
 ```text
-gastoDiarioPromedio =
-gastosMes / diasTranscurridos
-
-gastoProyectado =
-gastoDiarioPromedio * diasTotalesMes
-```
-
-Debe manejar:
-
-- primer día;
-- cero gastos;
-- datos incompletos.
-
-Siempre etiquetar como estimación.
-
----
-
-# 41. Snowball / Avalanche
-
-Posterior.
-
-Snowball:
-
-```text
-ORDER BY current_balance ASC
-```
-
-Avalanche:
-
-```text
-ORDER BY interest_rate_percent DESC
-```
-
-FinWise recomienda orden; no ejecuta pagos.
-
----
-
-# 42. Seguridad
-
-Toda tabla financiera multiusuario debe estar protegida por:
-
-```text
+user_id
 RLS
 ```
 
@@ -1348,49 +837,17 @@ Regla central:
 (select auth.uid()) = user_id
 ```
 
-según política.
-
 No depender del frontend como autorización.
 
----
+No abrir acceso a `anon`.
 
-# 43. Ownership
+Indexar `user_id`.
 
-Todas las entidades financieras contienen:
-
-```text
-user_id
-```
-
-En relaciones críticas preferir protección compuesta:
-
-```text
-(child_fk, user_id)
-→
-(parent_id, user_id)
-```
-
-cuando aporte integridad.
+Usar `USING` y `WITH CHECK` según corresponda.
 
 ---
 
-# 44. RLS
-
-Para cada tabla:
-
-- habilitar RLS;
-- policies explícitas;
-- `authenticated`;
-- separar SELECT/INSERT/UPDATE cuando corresponda;
-- usar `USING` y `WITH CHECK`;
-- indexar `user_id`;
-- no abrir acceso a `anon`.
-
-No crear policy genérica `FOR ALL` por comodidad salvo justificación.
-
----
-
-# 45. Service role
+# 25. Service role
 
 ```text
 service_role
@@ -1398,13 +855,13 @@ service_role
 
 es estrictamente server-only.
 
-No se usa para operaciones normales del usuario.
+Nunca exponer al cliente.
 
-Nunca se expone al cliente.
+No usar para operaciones normales del usuario.
 
 ---
 
-# 46. Functions / triggers
+# 26. Functions / triggers
 
 Preferir:
 
@@ -1412,37 +869,15 @@ Preferir:
 SECURITY INVOKER
 ```
 
-`SECURITY DEFINER` solo con necesidad explícita y controles:
+`SECURITY DEFINER` solo con necesidad explícita y controles estrictos.
 
-- search_path seguro;
-- nombres schema-qualified;
-- grants mínimos;
-- validación de ownership.
-
-El trigger de creación de `profiles` tras signup es una excepción aceptada y debe probarse.
+El trigger de creación de profile después de signup es una excepción aceptada y debe probarse.
 
 ---
 
-# 47. Soft delete
+# 27. Soft delete
 
-Aplicable inicialmente a:
-
-```text
-accounts
-categories
-transactions
-obligations
-goals
-recurring_transactions
-subscriptions
-debts
-```
-
-Usar:
-
-```text
-deleted_at
-```
+Usar `deleted_at` cuando corresponda.
 
 Las consultas normales excluyen filas eliminadas.
 
@@ -1450,7 +885,7 @@ No hard-delete histórico como comportamiento normal.
 
 ---
 
-# 48. Migraciones
+# 28. Migraciones
 
 Ubicación:
 
@@ -1460,18 +895,15 @@ supabase/migrations/
 
 Toda modificación de schema debe ser reproducible.
 
-Una migración funcional debe considerar:
+Considerar:
 
-- tabla/columna;
 - constraints;
 - indexes;
 - grants;
 - RLS;
 - policies;
 - functions/triggers;
-- pruebas.
-
-No resolver producción manualmente y olvidar migración.
+- tests.
 
 Cambios destructivos:
 
@@ -1483,24 +915,7 @@ Expand
 
 ---
 
-# 49. Seeds
-
-Solo datos ficticios.
-
-Nunca usar información financiera real.
-
-El seed debe permitir escenarios:
-
-- normal;
-- déficit;
-- obligaciones;
-- tarjeta;
-- movimientos;
-- posteriormente presupuesto/meta.
-
----
-
-# 50. Estrategia de testing
+# 29. Testing
 
 ## Unit
 
@@ -1508,10 +923,10 @@ El seed debe permitir escenarios:
 Vitest
 ```
 
-Proteger especialmente:
+Prioridad:
 
 - dinero;
-- saldos;
+- balances;
 - liquidez;
 - disponible;
 - tarjetas;
@@ -1523,15 +938,13 @@ Proteger especialmente:
 React Testing Library
 ```
 
-Probar comportamiento, no clases Tailwind.
-
-## Database / RLS
+## RLS / DB
 
 Probar:
 
 ```text
-A puede acceder a A
-B no puede acceder a A
+A accede a A
+B no accede a A
 A no escribe para B
 anon no accede
 ```
@@ -1542,7 +955,7 @@ anon no accede
 Playwright
 ```
 
-Flujo principal:
+Flujo MVP:
 
 ```text
 signup
@@ -1556,7 +969,7 @@ signup
 
 ---
 
-# 51. CI obligatoria
+# 30. CI
 
 Pull Requests deben ejecutar inicialmente:
 
@@ -1567,7 +980,7 @@ test
 build
 ```
 
-Cuando existan:
+Posteriormente pueden añadirse:
 
 ```text
 integration
@@ -1575,40 +988,35 @@ e2e
 security
 ```
 
-podrán añadirse como checks obligatorios.
-
 ---
 
-# 52. Diseño visual oficial
+# 31. Diseño visual
 
 Dirección:
 
 ```text
-60% Apple premium
-25% Fintech premium
-15% Soft luxury
+Apple premium
++
+Fintech premium
++
+Soft luxury
 ```
 
-Con:
+Glassmorphism moderado.
 
-```text
-glassmorphism moderado
-soft UI sutil
-Motion funcional
-```
+Soft UI sutil.
 
 No usar:
 
-- estilo cripto;
 - neón;
 - glow excesivo;
-- gradientes morado/rosa genéricos;
+- purple/pink AI gradients;
 - neumorfismo extremo;
-- dashboard SaaS genérico.
+- SaaS genérico.
 
 ---
 
-# 53. Colores
+# 32. Colores y tipografía
 
 Primary:
 
@@ -1616,7 +1024,7 @@ Primary:
 #2563EB
 ```
 
-Accent cyan:
+Accent:
 
 ```text
 #06B6D4
@@ -1634,41 +1042,23 @@ Dark surface:
 #111827
 ```
 
-Light background:
-
-```text
-#F4F7FB
-```
-
-Cyan es acento, no color dominante.
-
-Gradiente azul→cyan solo en elementos especiales.
-
----
-
-# 54. Tipografía
-
 Headings:
 
 ```text
 Manrope
 ```
 
-UI / números:
+UI/números:
 
 ```text
 Geist
 ```
 
-Montos:
-
-```css
-font-variant-numeric: tabular-nums;
-```
+Montos con números tabulares.
 
 ---
 
-# 55. Light y Dark
+# 33. Light / Dark
 
 Soportar desde el inicio:
 
@@ -1684,51 +1074,96 @@ Default:
 System
 ```
 
-No crear componentes que funcionen solo en un tema.
-
 ---
 
-# 56. Glass
+# 34. Mobile first-class
 
-Nivel:
+> **Mobile es igual o más importante que desktop.**
+
+No diseñar desktop y simplemente reducirlo.
+
+Navegación móvil:
 
 ```text
-2 — premium moderado
+Inicio
+Movimientos
++
+Metas
+Más
 ```
 
-Usar en:
-
-- sidebar;
-- bottom nav;
-- hero;
-- sheets/modals especiales;
-- overlays.
-
-No usar en todas las cards.
-
-Si blur afecta rendimiento o contraste:
+Quick Create:
 
 ```text
-reducir efecto
+Gasto
+Ingreso
+Transferencia
+Obligación
 ```
 
 ---
 
-# 57. Mobile es primera clase
+# 35. Dashboard
 
-Regla oficial:
+El número principal es:
 
-> **La experiencia móvil es igual o más importante que desktop.**
+```text
+Dinero disponible
+```
 
-No diseñar desktop y reducirlo.
+Orden mobile:
 
-Diseñar primero mobile.
+```text
+Header
+→ Disponible hero
+→ Ingresos/Gastos
+→ Cash flow
+→ Insights/Alertas
+→ Movimientos recientes
+```
 
 ---
 
-# 58. PWA
+# 36. Motion
 
-FinWise será PWA desde el MVP.
+La animación debe explicar estado.
+
+No retrasar operaciones por decoración.
+
+Respetar:
+
+```text
+prefers-reduced-motion
+```
+
+Performance prevalece sobre blur/motion.
+
+---
+
+# 37. Accesibilidad
+
+Objetivo mínimo:
+
+```text
+WCAG AA
+```
+
+Intentar AAA donde sea razonable para información financiera crítica.
+
+Touch targets:
+
+```text
+44x44 mínimo
+48x48 preferido mobile
+```
+
+No depender solo del color.
+
+---
+
+# 38. PWA
+
+FinWise será PWA desde MVP.
 
 Incluir:
 
@@ -1746,228 +1181,7 @@ No prometer escritura financiera offline en MVP.
 
 ---
 
-# 59. Navegación móvil
-
-```text
-Inicio
-Movimientos
-+
-Metas
-Más
-```
-
-Bottom navigation:
-
-```text
-floating glass
-```
-
-El botón central `+` abre Quick Create.
-
----
-
-# 60. Quick Create
-
-Acciones:
-
-```text
-Gasto
-Ingreso
-Transferencia
-Obligación
-```
-
-Gasto aparece primero y ligeramente priorizado sin romper el diseño.
-
----
-
-# 61. Navegación desktop
-
-```text
-Sidebar glass flotante + colapsable
-```
-
-Secciones:
-
-```text
-Dashboard
-Movimientos
-Presupuestos
-Metas
-Alertas
-Configuración
-```
-
-según módulos disponibles.
-
-No mostrar módulos falsos como activos.
-
----
-
-# 62. Dashboard
-
-El principal número visual es:
-
-```text
-Dinero disponible
-```
-
-No saldo total.
-
-Orden mobile recomendado:
-
-```text
-Header
-↓
-Disponible hero
-↓
-Ingresos/Gastos
-↓
-Cash flow
-↓
-Insights/Alertas
-↓
-Movimientos recientes
-```
-
----
-
-# 63. AvailableToSpendCard
-
-Debe mostrar:
-
-```text
-Disponible
-Monto
-Cambio contextual si existe
-Saldo
-Compromisos
-Reserva
-Estado
-```
-
-Ejemplo:
-
-```text
-Disponible
-$2.150.000
-
-Saldo          $4.850.000
-Compromisos   -$2.200.000
-Reserva         -$500.000
-```
-
-La evolución solo aparece si existe comparación válida.
-
----
-
-# 64. Mobile — registro rápido
-
-Gasto:
-
-```text
-¿Cuánto gastaste?
-
-$ 25.000
-
-Categoría
-Cuenta
-Fecha
-Nota
-Más detalles
-
-[ Registrar gasto ]
-```
-
-Una sola pantalla.
-
-CTA fijo sobre safe area.
-
-Cuenta muestra saldo de forma secundaria.
-
-Categoría muestra frecuentes y permite buscar todas.
-
----
-
-# 65. Motion
-
-Regla:
-
-> La animación debe explicar el cambio de estado.
-
-Tiempos aproximados:
-
-```text
-micro        140–180ms
-hover        150–180ms
-reveal       180–240ms
-page         220–300ms
-sheet/modal  240–340ms
-counter      350–500ms
-chart        450–650ms
-```
-
-Preferir digit morph para montos; fallback a counter.
-
-Respetar:
-
-```text
-prefers-reduced-motion
-```
-
-Nunca retrasar operaciones por animación decorativa.
-
----
-
-# 66. Accesibilidad
-
-Objetivo mínimo:
-
-```text
-WCAG AA
-```
-
-Intentar AAA donde sea razonable en:
-
-- montos críticos;
-- estados de riesgo;
-- información esencial.
-
-Touch target:
-
-```text
-44x44 mínimo
-48x48 preferido en mobile
-```
-
-No depender solo del color.
-
----
-
-# 67. Voz del producto
-
-Debe ser:
-
-```text
-cercana
-corta
-elegante
-clara
-```
-
-Ejemplo:
-
-> Tu presupuesto de alimentación está casi al límite.
-
-No:
-
-> ¡OJO! 😱 ¡Te estás quedando sin dinero!
-
-Usar emojis de forma mínima.
-
----
-
-# 68. GitHub — ramas permanentes
+# 39. Git — ramas permanentes
 
 ```text
 main
@@ -1990,11 +1204,11 @@ pruebas locales
 
 ---
 
-# 69. Regla Git principal
+# 40. Regla de oro Git
 
 > **La rama nueva se adapta a `staging`; `staging` jamás se modifica para acomodar una rama nueva.**
 
-Si `staging` cambió:
+Si staging cambió:
 
 ```text
 rama nueva
@@ -2005,15 +1219,9 @@ rama nueva
 → PR
 ```
 
-Nunca:
-
-```text
-modificar staging para que la feature entre
-```
-
 ---
 
-# 70. Protección de ramas
+# 41. Protección de ramas
 
 `main` y `staging`:
 
@@ -2024,19 +1232,15 @@ sin eliminación
 solo Pull Request
 ```
 
-No deshabilitar protecciones para acelerar trabajo.
+No desactivar protecciones para acelerar trabajo.
 
 ---
 
-# 71. Ramas de trabajo
+# 42. Ramas de trabajo
 
-Nacen normalmente desde:
+Nacen normalmente desde staging actualizado.
 
-```text
-staging actualizado
-```
-
-Tipos en español:
+Tipos:
 
 ```text
 funcionalidad/
@@ -2049,30 +1253,22 @@ pruebas/
 sincronizacion/
 ```
 
-Ejemplo:
-
-```text
-funcionalidad/registro-gastos
-```
-
 Una rama = un objetivo coherente.
 
 ---
 
-# 72. Integración hacia staging
+# 43. Integración hacia staging
 
-Antes del PR:
+Desde la rama de trabajo:
 
 ```bash
 git fetch origin
 git merge origin/staging
 ```
 
-ejecutado desde la rama nueva.
+Resolver conflictos en la rama nueva.
 
-Los conflictos se resuelven en esa rama.
-
-Después ejecutar:
+Después:
 
 ```text
 lint
@@ -2081,15 +1277,11 @@ test
 build
 ```
 
-Revisar:
-
-```bash
-git diff origin/staging...HEAD
-```
+Revisar diff antes del PR.
 
 ---
 
-# 73. PR hacia staging
+# 44. PR hacia staging
 
 Requiere:
 
@@ -2101,29 +1293,19 @@ mínimo 1 aprobación de otra persona
 conversaciones resueltas
 ```
 
-Si se hace un push relevante después de aprobación:
-
-```text
-revisar nuevamente
-```
-
 Merge:
 
 ```text
 Squash and Merge
 ```
 
-Después:
-
-```text
-eliminar rama de trabajo
-```
+Después eliminar la rama temporal.
 
 ---
 
-# 74. Release a producción
+# 45. Producción
 
-Flujo normal:
+Flujo:
 
 ```text
 staging
@@ -2132,11 +1314,7 @@ staging
 → Vercel
 ```
 
-Solo la persona responsable de producción puede autorizar/fusionar:
-
-```text
-staging → main
-```
+Solo la persona responsable de producción puede autorizar/fusionar `staging → main`.
 
 Merge:
 
@@ -2144,19 +1322,11 @@ Merge:
 Merge Commit
 ```
 
-Durante validación final se recomienda congelar temporalmente `staging`.
-
 ---
 
-# 75. Hotfix
+# 46. Hotfix
 
-Solo para error crítico de producción.
-
-Nace desde:
-
-```text
-main
-```
+Solo para error crítico en producción.
 
 Rama:
 
@@ -2164,7 +1334,9 @@ Rama:
 urgencia/*
 ```
 
-Después de arreglar `main`, el cambio debe regresar a `staging` mediante:
+nace desde `main`.
+
+Después debe sincronizarse de vuelta mediante:
 
 ```text
 sincronizacion/*
@@ -2172,36 +1344,9 @@ sincronizacion/*
 → staging
 ```
 
-Nunca push directo.
-
 ---
 
-# 76. Acciones Git prohibidas para agentes
-
-Un agente no debe ejecutar sobre ramas protegidas:
-
-```text
-git push --force
-git push --force-with-lease
-git reset --hard
-git clean -fd
-git branch -D
-```
-
-ni operaciones destructivas que puedan perder trabajo, salvo autorización humana explícita y contexto seguro.
-
-No puede:
-
-- borrar trabajo ajeno para resolver conflicto;
-- reescribir `staging`;
-- reescribir `main`;
-- fusionar producción;
-- desactivar reglas;
-- decidir unilateralmente qué implementación "gana" en conflicto de negocio.
-
----
-
-# 77. Convenciones de desarrollo
+# 47. Convenciones de desarrollo
 
 Código:
 
@@ -2215,86 +1360,21 @@ UI/documentación:
 Spanish
 ```
 
-Naming:
-
-```text
-camelCase      variables/functions
-PascalCase     components/types
-UPPER_SNAKE    constants globales
-```
-
 TypeScript:
 
 ```text
 strict = true
 ```
 
-Evitar:
+Evitar `any`.
 
-```text
-any
-```
+Reutilizar componentes/tokens antes de crear nuevos.
 
 ---
 
-# 78. Componentes React
+# 48. Estados UI obligatorios
 
-Preferir Server Components.
-
-Usar `"use client"` solo cuando se necesite:
-
-- state;
-- effects;
-- browser APIs;
-- forms interactivos;
-- Motion interactivo.
-
-No convertir árboles completos a client por comodidad.
-
----
-
-# 79. UI components
-
-`shadcn/ui` es base, no estilo final.
-
-Reutilizar componentes FinWise y tokens.
-
-No introducir hex, radius o shadows arbitrarios si ya existe token.
-
-Motion debe usar presets compartidos.
-
-Recharts debe envolverse en componentes FinWise.
-
----
-
-# 80. Manejo de errores
-
-No exponer:
-
-- stack traces;
-- SQL;
-- secrets;
-- detalles internos.
-
-UI:
-
-- mensaje comprensible;
-- retry cuando aplique;
-- conservar formulario razonablemente.
-
-Errores de campo:
-
-```text
-inline
-```
-
-No solo toast.
-
----
-
-# 81. Estados obligatorios de interfaz
-
-Todo componente de datos debe contemplar cuando aplique:
+Cuando apliquen:
 
 ```text
 loading
@@ -2303,56 +1383,493 @@ success
 warning
 error
 disabled
-partial data
 no permission
 retry
 ```
 
----
-
-# 82. Logging
-
-No registrar:
-
-- passwords;
-- tokens;
-- service role;
-- datos financieros completos innecesarios.
-
-Logs deben servir para diagnóstico sin aumentar exposición.
+No entregar solo happy path.
 
 ---
 
-# 83. Performance
+# 49. Política oficial de eficiencia de agentes
+
+Documento:
+
+```text
+contexto/desarrollo/POLITICA_EFICIENCIA_AGENTES.md
+```
+
+Principio:
+
+> **El agente debe realizar el mínimo trabajo correcto necesario para cumplir la tarea.**
+
+Modo por defecto:
+
+```text
+ECONÓMICO
+```
+
+No asumir modo autónomo profundo por defecto.
+
+---
+
+# 50. Niveles de esfuerzo
+
+## Rápido
+
+Para:
+
+- copy;
+- CSS puntual;
+- icono;
+- bug localizado;
+- documentación pequeña.
+
+Presupuesto orientativo:
+
+```text
+1–5 archivos relevantes
+```
+
+## Normal
+
+Para:
+
+- formulario;
+- Server Action;
+- pantalla;
+- query;
+- caso de uso.
+
+Presupuesto orientativo:
+
+```text
+3–12 archivos relevantes
+```
+
+## Profundo
+
+Solo cuando exista:
+
+- seguridad;
+- RLS;
+- dinero;
+- migración;
+- pérdida de datos;
+- arquitectura;
+- bug transversal desconocido.
+
+Los límites son blandos. Superarlos requiere razón técnica.
+
+---
+
+# 51. Regla de detención
+
+Cuando la tarea esté:
+
+```text
+implementada
++
+verificada
+```
+
+detenerse.
+
+No continuar automáticamente con:
+
+- refactors;
+- mejoras;
+- optimizaciones;
+- documentación adicional;
+- nuevas features.
+
+Si detecta algo fuera de alcance:
+
+```text
+mencionarlo
++
+no implementarlo
+```
+
+---
+
+# 52. Lectura selectiva de contexto
+
+`AGENTS.md` es un **router**.
+
+El agente NO debe cargar todos los documentos antes de cada tarea.
+
+Debe recuperar solo el contexto relevante.
+
+Ejemplos:
+
+## UI
+
+```text
+AGENTS.md
+→ sección relevante del Design System
+→ wireframe relevante
+→ componente afectado
+```
+
+## Datos/RLS
+
+```text
+AGENTS.md
+→ MODELO_DATOS_Y_SEGURIDAD.md
+→ ADR relacionado
+→ tablas/migraciones afectadas
+```
+
+## Git
+
+```text
+AGENTS.md
+→ GESTION_GITHUB_Y_RAMAS.md
+```
+
+## Cálculo financiero
+
+```text
+AGENTS.md
+→ sección relevante de este contexto
+→ caso de uso
+→ código de dominio
+```
+
+---
+
+# 53. Recuperación oficial de contexto
+
+Orden:
+
+```text
+1. búsqueda exacta por nombre/símbolo
+2. índice semántico del codebase
+3. lectura de archivos candidatos
+4. documentación especializada relevante
+5. dependencias relacionadas
+6. web/MCP externo solo si hace falta
+```
+
+No comenzar leyendo todo el repositorio.
+
+---
+
+# 54. Búsqueda exacta vs semántica
+
+Si se conoce un símbolo como:
+
+```text
+AvailableToSpendCard
+calculateLiquidBalance
+transactionSchema
+```
+
+usar búsqueda exacta primero.
+
+Si se conoce el concepto pero no el archivo:
+
+```text
+"dónde se calcula el dinero disponible"
+```
+
+usar búsqueda semántica.
+
+El índice localiza; el código real sigue siendo fuente de verdad.
+
+---
+
+# 55. Estado actual de Kilo
+
+Kilo tiene configurado:
+
+```text
+Codebase Indexing / embeddings
+```
+
+Uso esperado:
+
+```text
+semantic search
+→ pocos candidatos
+→ leer archivos reales
+→ implementar
+```
+
+Preferir inicialmente:
+
+```text
+5–10 resultados
+```
+
+Kilo es una herramienta de desarrollo, no una dependencia del producto.
+
+---
+
+# 56. Estado actual de OpenCode
+
+OpenCode utilizará inicialmente:
+
+```text
+AGENTS.md
++
+búsqueda textual/selectiva
++
+lectura bajo demanda
+```
+
+No existe obligación actual de añadir un servidor MCP semántico.
+
+Regla:
+
+> **No añadir infraestructura de contexto hasta demostrar que la recuperación actual es insuficiente.**
+
+---
+
+# 57. Infraestructura compartida de contexto
+
+Estado actual:
+
+```text
+Kilo → indexación semántica disponible
+OpenCode → recuperación selectiva
+Servidor central → no obligatorio
+```
+
+Opciones futuras:
+
+```text
+Qdrant
+Context MCP
+Context7
+otro vector store compartido
+```
+
+No desplegar por posibilidad técnica solamente.
+
+---
+
+# 58. Cuándo considerar servidor central
+
+Evaluar si aparecen varias señales:
+
+- múltiples desarrolladores necesitan compartir índice;
+- diferentes herramientas duplican indexación;
+- agentes leen demasiados archivos;
+- documentación crece demasiado;
+- múltiples agentes necesitan recuperación común;
+- índices locales duplican esfuerzo significativamente.
+
+Hasta entonces:
+
+```text
+mantener solución simple
+```
+
+---
+
+# 59. Arquitectura futura posible de contexto
+
+Si se justifica:
+
+```text
+GitHub / repo
+     ↓
+indexación incremental
+     ↓
+Qdrant/vector store
+     ↓
+FinWise Context MCP
+  ↙      ↓      ↘
+Kilo  OpenCode  otros
+```
+
+El servidor debería:
+
+- devolver pocos fragmentos relevantes;
+- incluir ruta/origen;
+- soportar top-k;
+- actualizar incrementalmente;
+- respetar branch/version;
+- excluir secretos;
+- no inyectar todo el repo.
+
+---
+
+# 60. Política de MCP
+
+Los MCP agregan herramientas/esquemas al contexto.
+
+Por tanto:
+
+> **No activar muchos MCP simultáneamente por defecto.**
+
+Preferir:
+
+```text
+1 MCP de contexto/código
++
+1 MCP externo específico
+```
+
+solo cuando hagan falta.
+
+Un MCP debe reducir trabajo total, no aumentarlo.
+
+---
+
+# 61. Indexación recomendada
+
+Priorizar:
+
+```text
+src/
+supabase/
+contexto/
+AGENTS.md
+```
+
+Excluir:
+
+```text
+node_modules/
+.next/
+coverage/
+dist/
+build/
+.git/
+archivos generados
+binarios grandes
+.env
+credenciales
+secretos
+```
+
+No indexar datos financieros reales.
+
+---
+
+# 62. Política de skills
+
+No activar todas las skills instaladas.
+
+Usar solo la directamente relevante.
+
+Si varias se solapan:
+
+```text
+preferir la más específica
+```
+
+Orden:
+
+```text
+Contexto Maestro
+→ documentación especializada
+→ skill específica
+→ preferencia del agente
+```
+
+---
+
+# 63. Política anti-loop
+
+Ante el mismo error:
+
+```text
+máximo 2 intentos sustancialmente similares
+```
+
+Después:
+
+```text
+analizar nueva evidencia
+→ cambiar estrategia
+```
+
+Si continúa bloqueado:
+
+```text
+reportar bloqueo
+```
+
+---
+
+# 64. Pruebas proporcionales
+
+Durante desarrollo:
+
+## Cambio pequeño
+
+```text
+prueba específica
+```
+
+## Feature normal
+
+```text
+tests del módulo
++
+typecheck relevante
+```
+
+## Antes del PR
+
+```text
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+```
+
+No ejecutar E2E completo después de cada edición trivial.
+
+---
+
+# 65. Web / documentación externa
+
+Para preguntas internas:
+
+```text
+repo/index > web
+```
+
+Usar web cuando:
+
+- framework/API puede haber cambiado;
+- documentación oficial es necesaria;
+- existe error externo;
+- dependencia debe verificarse;
+- usuario pide investigación.
 
 Prioridad:
 
 ```text
-fluidez
->
-efectos visuales
+documentación oficial
+→ repositorio oficial
+→ fuentes secundarias
 ```
 
-Si blur/glass/Motion degrada:
+---
 
-- scroll;
-- input;
-- sheets;
-- carga;
+# 66. Señales de trabajo excesivo
 
-reducir el efecto.
+Detener y reevaluar si:
+
+- tarea pequeña requiere >15 archivos;
+- repite búsquedas similares;
+- modifica módulos fuera de alcance;
+- inicia refactors no solicitados;
+- ejecuta suites completas repetidamente;
+- activa MCP innecesarios;
+- sigue trabajando después de cumplir objetivo.
+
+No son prohibiciones absolutas, pero requieren justificación técnica.
 
 ---
 
-# 84. Caching
-
-No utilizar cache compartida insegura para información financiera privada.
-
-Toda estrategia de caching debe respetar ownership y frescura.
-
----
-
-# 85. Backlog P0
+# 67. Backlog P0
 
 Épicas principales:
 
@@ -2374,9 +1891,7 @@ E12 CI/CD
 
 ---
 
-# 86. Orden de implementación
-
-Orden recomendado mediante vertical slices:
+# 68. Orden de implementación
 
 ```text
 1. Bootstrap
@@ -2397,24 +1912,11 @@ Orden recomendado mediante vertical slices:
 16. Deploy
 ```
 
+Preferir vertical slices.
+
 ---
 
-# 87. Vertical slice
-
-Evitar construir todas las capas por separado durante semanas.
-
-Cada slice debe atravesar:
-
-```text
-UI
-→ Application
-→ Domain
-→ Infrastructure
-→ Database
-→ Tests
-```
-
-Primer slice de producto recomendado:
+# 69. Primer vertical slice
 
 ```text
 Login
@@ -2425,56 +1927,20 @@ Login
 → Mostrar nuevo disponible
 ```
 
----
-
-# 88. Definition of Done transversal
-
-Una funcionalidad está terminada cuando:
-
-- flujo funciona;
-- criterios se cumplen;
-- entradas se validan;
-- ownership se protege;
-- RLS aplica;
-- precisión financiera se conserva;
-- loading/error/empty existen cuando aplican;
-- mobile está revisado;
-- desktop está revisado cuando corresponda;
-- light/dark funcionan;
-- accesibilidad relevante está cubierta;
-- tests necesarios pasan;
-- lint pasa;
-- typecheck pasa;
-- build pasa;
-- documentación se actualizó si cambió una decisión.
-
----
-
-# 89. Casos de uso P0
-
-Prioridad MVP académico:
+Cada slice atraviesa:
 
 ```text
-Registro
-Login
-Logout
-Onboarding
-Crear cuenta
-Registrar ingreso
-Registrar gasto
-Crear obligación
-Configurar reserva
-Consultar saldo líquido
-Consultar dinero disponible
-Dashboard
-Estados vacíos
-Validaciones
-Errores
+UI
+→ Application
+→ Domain
+→ Infrastructure
+→ DB
+→ Tests
 ```
 
 ---
 
-# 90. Escenario principal de aceptación
+# 70. Escenario principal de aceptación
 
 Dado:
 
@@ -2490,11 +1956,11 @@ Resultado:
 Disponible         $1.000.000
 ```
 
-La UI debe explicar cómo se obtuvo.
+La UI debe explicar el cálculo.
 
 ---
 
-# 91. Escenario de déficit
+# 71. Escenario de déficit
 
 Dado:
 
@@ -2510,39 +1976,13 @@ Resultado interno:
 -$200.000
 ```
 
-Mensaje:
+Mensaje esperado:
 
 > Tus compromisos actuales superan tu saldo líquido en aproximadamente $200.000.
 
 ---
 
-# 92. Escenario de gasto
-
-Inicial:
-
-```text
-Saldo líquido      $1.800.000
-Obligaciones         $600.000
-Reserva              $200.000
-Disponible         $1.000.000
-```
-
-Gasto desde ahorro:
-
-```text
-$100.000
-```
-
-Resultado:
-
-```text
-Saldo líquido      $1.700.000
-Disponible           $900.000
-```
-
----
-
-# 93. Escenario de tarjeta
+# 72. Escenario de tarjeta
 
 Inicial:
 
@@ -2567,7 +2007,7 @@ Gastos periodo      +$100.000
 
 ---
 
-# 94. Escenario de transferencia
+# 73. Escenario de transferencia
 
 Antes:
 
@@ -2598,22 +2038,32 @@ sin cambios
 
 ---
 
-# 95. Datos y diseño responsables
+# 74. Definition of Done
 
-FinWise no debe:
+Una funcionalidad está terminada cuando, según corresponda:
 
-- celebrar gasto excesivo;
-- ocultar riesgo;
-- presentar crédito como efectivo;
-- presentar forecast como hecho;
-- manipular emocionalmente;
-- usar dark patterns.
-
-La claridad financiera prevalece sobre engagement.
+- alcance solicitado cumplido;
+- sin scope creep;
+- validación correcta;
+- seguridad preservada;
+- precisión financiera preservada;
+- ownership/RLS correctos;
+- loading/error/empty cubiertos;
+- mobile revisado;
+- desktop revisado;
+- light/dark correctos;
+- accesibilidad relevante;
+- tests pertinentes;
+- lint pasa;
+- typecheck pasa;
+- build pasa;
+- documentación actualizada si cambió una decisión;
+- rama actualizada con staging;
+- diff revisado.
 
 ---
 
-# 96. Regla anti-sobreingeniería
+# 75. Anti-sobreingeniería
 
 Cuando varias soluciones sean correctas:
 
@@ -2623,7 +2073,7 @@ No construir infraestructura para funciones que aún no existen.
 
 ---
 
-# 97. Regla contra deuda técnica inducida por agentes
+# 76. Regla contra deuda técnica inducida por agentes
 
 Un agente no debe:
 
@@ -2631,16 +2081,17 @@ Un agente no debe:
 - crear entidades duplicadas;
 - instalar dependencias por comodidad;
 - desactivar RLS;
-- mover cálculos críticos al frontend;
+- mover lógica financiera al frontend;
 - borrar tests para hacer pasar CI;
-- usar `any` para esconder errores;
+- usar `any` para ocultar errores;
 - cambiar schema sin migración;
 - reescribir ramas protegidas;
-- reemplazar stack sin ADR.
+- reemplazar stack sin ADR;
+- ampliar alcance sin solicitud.
 
 ---
 
-# 98. Cambio de decisiones
+# 77. Cambio de decisiones
 
 Si una tarea requiere cambiar una decisión establecida, documentar:
 
@@ -2664,105 +2115,99 @@ No cambiar silenciosamente:
 
 ---
 
-# 99. Uso de ui-ux-pro-max
+# 78. Uso de ui-ux-pro-max
 
-Puede utilizarse como apoyo de diseño si está disponible.
+Puede utilizarse como apoyo si está instalada.
 
 Orden:
 
 ```text
 Contexto Maestro
-↓
-Sistema de Diseño
-↓
-Wireframes
-↓
-ui-ux-pro-max
-↓
-preferencia del agente
+→ Sistema de Diseño
+→ Wireframes
+→ ui-ux-pro-max
+→ preferencia del agente
 ```
 
-La herramienta no puede reinterpretar la identidad de FinWise por su cuenta.
+La skill no puede reinterpretar la identidad de FinWise por su cuenta.
 
 ---
 
-# 100. Prioridad actual
+# 79. Estrategia documental final
 
-La fase documental base está cerrada.
+La documentación base se considera suficientemente madura para comenzar implementación.
 
-Prioridad siguiente:
+No crear nuevos `.md` preventivos por defecto.
 
-```text
-Inicializar repositorio
-↓
-Configurar Next.js
-↓
-Configurar Supabase
-↓
-Migraciones P0
-↓
-Auth
-↓
-Primer vertical slice
-```
+Crear/actualizar documentación cuando:
 
-No seguir agregando documentación preventiva salvo que aparezca una decisión nueva.
+- cambie una decisión real;
+- exista un ADR nuevo;
+- cambie dominio;
+- cambie arquitectura;
+- cambie modelo de datos;
+- cambie seguridad;
+- cambie diseño global;
+- cambie Git/GitHub;
+- cambie política de agentes.
 
 ---
 
-# 101. Checklist obligatorio antes de una feature
+# 80. Prioridad inmediata
 
-Responder:
+A partir de este documento, la prioridad es construir.
 
 ```text
-¿Qué caso de uso implementa?
-¿Es P0/P1/P2?
-¿Qué entidades toca?
-¿Qué reglas financieras toca?
-¿Qué riesgos de seguridad existen?
-¿Qué documentos aplican?
-¿Qué pruebas necesita?
-¿Qué rama debe crearse?
+repositorio
+→ configuración base
+→ Supabase
+→ migraciones P0
+→ Auth
+→ onboarding
+→ primera cuenta
+→ primer ingreso
+→ primer gasto
+→ motor de disponible
+→ obligaciones
+→ reserva
+→ dashboard MVP
+→ pruebas
+→ deploy
+```
+
+No seguir ampliando documentación salvo decisión bloqueante.
+
+---
+
+# 81. Instrucción final para agentes
+
+Antes de trabajar:
+
+```text
+1. leer AGENTS.md
+2. clasificar tarea: rápido/normal/profundo
+3. recuperar solo contexto relevante
+4. confirmar rama
+5. trabajar en rama temporal
+6. implementar mínimo cambio correcto
+7. probar proporcionalmente
+8. traer staging antes del PR
+9. resolver conflictos en la rama propia
+10. revisar diff
+11. detenerse cuando objetivo esté cumplido
 ```
 
 ---
 
-# 102. Checklist obligatorio para un agente
-
-Antes de modificar código:
-
-```text
-1. Leer AGENTS.md.
-2. Leer este contexto.
-3. Leer documentación específica.
-4. Confirmar rama.
-5. Actualizar desde staging.
-6. Crear/usar rama de trabajo.
-7. Revisar código existente.
-8. Implementar el mínimo cambio correcto.
-9. Probar.
-10. Traer staging nuevamente antes del PR.
-11. Resolver conflictos en su rama.
-12. Revisar diff.
-13. Dejar PR listo.
-```
-
----
-
-# 103. Principio final
-
-FinWise debe crecer:
-
-```text
-primero en confiabilidad y profundidad
-después en cantidad de funciones
-```
-
-Y todo cambio debe respetar dos ideas fundamentales:
+# 82. Principios finales
 
 > **El usuario necesita comprender su dinero, no solo registrar movimientos.**
 
-> **El trabajo nuevo debe adaptarse al proyecto integrado; el proyecto integrado no debe sacrificarse para acomodar una rama nueva.**
+> **La rama nueva se adapta a `staging`; `staging` no se sacrifica para acomodar trabajo nuevo.**
+
+> **El mejor agente no es el que más archivos lee ni el que más pasos ejecuta; es el que encuentra el contexto correcto, realiza el cambio mínimo correcto y sabe cuándo detenerse.**
+
+> **FinWise debe crecer primero en confiabilidad y profundidad, y después en cantidad de funciones.**
 
 ---
 
