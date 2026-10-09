@@ -4,6 +4,7 @@ import {
   createTransferPair,
   calculateAccountBalance,
   calculateLiquidBalance,
+  calculateAvailableToSpend,
   TransactionType,
   TransactionDirection,
 } from "../transactions";
@@ -401,6 +402,53 @@ describe("domain/transactions", () => {
       // El original t1 (500k INFLOW en cash) sigue activo, t1-deleted se ignora
       // Balance = 3,800,000 (original)
       expect(balance.equals(new Decimal(3800000))).toBe(true);
+    });
+  });
+
+  describe("calculateAvailableToSpend", () => {
+    it("calcula disponible normal: saldo - obligaciones - reserva", () => {
+      const result = calculateAvailableToSpend({
+        liquidBalance: new Decimal(1800000),
+        pendingObligations: new Decimal(600000),
+        safetyReserve: new Decimal(200000),
+      });
+      expect(result.equals(new Decimal(1000000))).toBe(true);
+    });
+
+    it("calcula disponible en déficit: resultado negativo", () => {
+      const result = calculateAvailableToSpend({
+        liquidBalance: new Decimal(500000),
+        pendingObligations: new Decimal(600000),
+        safetyReserve: new Decimal(100000),
+      });
+      expect(result.equals(new Decimal(-200000))).toBe(true);
+    });
+
+    it("con cero obligaciones y cero reserva: disponible = saldo líquido", () => {
+      const result = calculateAvailableToSpend({
+        liquidBalance: new Decimal(1000000),
+        pendingObligations: new Decimal(0),
+        safetyReserve: new Decimal(0),
+      });
+      expect(result.equals(new Decimal(1000000))).toBe(true);
+    });
+
+    it("con solo reserva sin obligaciones", () => {
+      const result = calculateAvailableToSpend({
+        liquidBalance: new Decimal(1000000),
+        pendingObligations: new Decimal(0),
+        safetyReserve: new Decimal(300000),
+      });
+      expect(result.equals(new Decimal(700000))).toBe(true);
+    });
+
+    it("con solo obligaciones sin reserva", () => {
+      const result = calculateAvailableToSpend({
+        liquidBalance: new Decimal(1000000),
+        pendingObligations: new Decimal(400000),
+        safetyReserve: new Decimal(0),
+      });
+      expect(result.equals(new Decimal(600000))).toBe(true);
     });
   });
 });
