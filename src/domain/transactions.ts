@@ -172,3 +172,13 @@ export function calculateLiquidBalance(
       return balance.minus(amount);
     }, new Decimal(0));
 }
+
+export interface AvailableToSpendInput {
+  liquidBalance: Decimal;
+  pendingObligations: Decimal;
+  safetyReserve: Decimal;
+}
+
+export function calculateAvailableToSpend(input: AvailableToSpendInput): Decimal {
+  return input.liquidBalance.minus(input.pendingObligations).minus(input.safetyReserve);
+}
