@@ -1,6 +1,5 @@
 import { cn } from "@/lib/utils";
 import { LayoutDashboard, CreditCard, TrendingUp, Target, Plus } from "lucide-react";
-import { LogoutButton } from "@/components/auth/LogoutButton";
 
 export default function DashboardPage() {
   return (
@@ -15,7 +14,6 @@ export default function DashboardPage() {
               Bienvenido a FinWise — tu inteligencia financiera personal
             </p>
           </div>
-          <LogoutButton />
         </header>
 
         <section aria-labelledby="available-heading" className="space-y-4">
