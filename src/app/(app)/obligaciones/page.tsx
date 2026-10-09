@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Plus, Calendar, AlertCircle, CheckCircle, XCircle, MoreHorizontal, ChevronDown } from "lucide-react";
+import { ArrowLeft, Plus, Calendar, AlertCircle, CheckCircle, XCircle, MoreHorizontal, ChevronDown, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { getObligationsAction, markObligationPaidAction, archiveObligationAction } from "@/app/actions/obligations";
+import { useToast } from "@/components/ui/toast";
 
 type Obligation = {
   id: string;
@@ -30,18 +31,23 @@ function ObligationsList() {
   const [obligations, setObligations] = useState<Obligation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       setIsLoading(true);
+      setError(null);
       const res = await getObligationsAction(
         filter === "all" ? undefined : { status: filter }
       );
-      if (mounted && res.data) {
-        setObligations(res.data);
-      }
       if (mounted) {
+        if (res.error) {
+          setError(res.error);
+        } else if (res.data) {
+          setObligations(res.data);
+        }
         setIsLoading(false);
       }
     })();
@@ -53,12 +59,23 @@ function ObligationsList() {
     const result = await markObligationPaidAction(obligationId);
     setPendingActionId(null);
     if ("success" in result && result.success) {
+      addToast({
+        title: "Obligación pagada",
+        description: "La obligación se ha marcado como pagada correctamente.",
+        type: "success",
+      });
       const res = await getObligationsAction(
         filter === "all" ? undefined : { status: filter }
       );
       if (res.data) {
         setObligations(res.data);
       }
+    } else {
+      addToast({
+        title: "Error",
+        description: result.error || "No se pudo marcar la obligación como pagada.",
+        type: "error",
+      });
     }
   };
 
@@ -68,12 +85,23 @@ function ObligationsList() {
       const result = await archiveObligationAction(obligationId);
       setPendingActionId(null);
       if ("success" in result && result.success) {
+        addToast({
+          title: "Obligación cancelada",
+          description: "La obligación se ha cancelado correctamente.",
+          type: "success",
+        });
         const res = await getObligationsAction(
           filter === "all" ? undefined : { status: filter }
         );
         if (res.data) {
           setObligations(res.data);
         }
+      } else {
+        addToast({
+          title: "Error",
+          description: result.error || "No se pudo cancelar la obligación.",
+          type: "error",
+        });
       }
     }
   };
@@ -105,6 +133,27 @@ function ObligationsList() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <div className="mx-auto w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+            <AlertCircle className="w-8 h-8 text-destructive" />
+          </div>
+          <h3 className="text-lg font-medium text-foreground">Error al cargar obligaciones</h3>
+          <p className="mt-1 text-sm text-muted-foreground max-w-xs mx-auto">{error}</p>
+          <Button
+            onClick={() => window.location.reload()}
+            className="mt-4 gap-2"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Reintentar
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -160,7 +209,7 @@ function ObligationsList() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                 filter === f
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted"

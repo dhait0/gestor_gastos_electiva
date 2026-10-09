@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Plus, CreditCard, Wallet, Landmark, PiggyBank, Smartphone, MoreHorizontal, Edit, Archive } from "lucide-react";
+import { Plus, CreditCard, Wallet, Landmark, PiggyBank, Smartphone, MoreHorizontal, Edit, Archive, RotateCcw, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
@@ -50,9 +50,19 @@ export default async function CuentasPage() {
     return (
       <main className="p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-7xl">
-          <div className="rounded-xl border border-destructive/50 bg-destructive/10 p-6 text-center">
-            <p className="text-destructive">Error al cargar las cuentas</p>
-          </div>
+          <Card className="border-destructive/50 bg-destructive/10">
+            <CardContent className="py-12 text-center">
+              <div className="mx-auto w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                <AlertCircle className="w-8 h-8 text-destructive" />
+              </div>
+              <h3 className="text-lg font-medium text-foreground">Error al cargar las cuentas</h3>
+              <p className="mt-1 text-sm text-muted-foreground max-w-xs mx-auto">{error}</p>
+              <Button onClick={() => window.location.reload()} className="mt-4 gap-2">
+                <RotateCcw className="w-4 h-4" />
+                Reintentar
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </main>
     );
@@ -156,14 +166,14 @@ function AccountCard({ account, isArchived = false }: { account: Account; isArch
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <Link href={`/cuentas/${account.id}/editar`} className="block">
-                <DropdownMenuItem className="flex items-center gap-2 px-2 py-1.5">
+                <DropdownMenuItem className="flex items-center gap-2 px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
                   <Edit className="w-4 h-4" />
                   Editar
                 </DropdownMenuItem>
               </Link>
               {isArchived ? null : (
                 <DropdownMenuItem
-                  className="flex items-center gap-2 px-2 py-1.5 text-destructive focus:text-destructive"
+                  className="flex items-center gap-2 px-2 py-1.5 text-destructive focus:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2"
                   onClick={() => archiveAccount(account.id)}
                 >
                   <Archive className="w-4 h-4" />

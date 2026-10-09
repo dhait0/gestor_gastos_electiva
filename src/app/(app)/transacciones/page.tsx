@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { cn, formatCurrency } from "@/lib/utils";
-import { Search, Filter, ArrowUpRight } from "lucide-react";
+import { Search, Filter, ArrowUpRight, RotateCcw, AlertCircle } from "lucide-react";
 import { getTransactionsAction } from "@/app/actions/transactions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,10 +15,26 @@ async function TransactionsList({
 }: {
   initialType?: "INCOME" | "EXPENSE" | "TRANSFER";
 }) {
-  const { data: transactions, count } = await getTransactionsAction({
+  const { data: transactions, count, error } = await getTransactionsAction({
     type: initialType,
     limit: 50,
   });
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-12 text-center">
+        <div className="mx-auto w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+          <AlertCircle className="w-8 h-8 text-destructive" />
+        </div>
+        <h3 className="text-lg font-medium text-foreground">Error al cargar los movimientos</h3>
+        <p className="mt-1 text-sm text-muted-foreground max-w-xs mx-auto">{error}</p>
+        <Button onClick={() => window.location.reload()} className="mt-4 gap-2">
+          <RotateCcw className="w-4 h-4" />
+          Reintentar
+        </Button>
+      </div>
+    );
+  }
 
   if (!transactions || transactions.length === 0) {
     return (
@@ -226,13 +242,13 @@ export default async function TransaccionesPage() {
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <Tabs defaultValue="all" className="w-full sm:w-auto">
               <TabsList className="grid w-full sm:w-auto grid-cols-3 bg-muted p-1">
-                <TabsTrigger value="all" className="data-[state=active]:bg-background data-[state=active]:shadow-finn-elevated">
+                <TabsTrigger value="all" className="data-[state=active]:bg-background data-[state=active]:shadow-finn-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
                   Todos
                 </TabsTrigger>
-                <TabsTrigger value="EXPENSE" className="data-[state=active]:bg-background data-[state=active]:shadow-finn-elevated">
+                <TabsTrigger value="EXPENSE" className="data-[state=active]:bg-background data-[state=active]:shadow-finn-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
                   Gastos
                 </TabsTrigger>
-                <TabsTrigger value="INCOME" className="data-[state=active]:bg-background data-[state=active]:shadow-finn-elevated">
+                <TabsTrigger value="INCOME" className="data-[state=active]:bg-background data-[state=active]:shadow-finn-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
                   Ingresos
                 </TabsTrigger>
               </TabsList>
@@ -243,11 +259,11 @@ export default async function TransaccionesPage() {
                 <Input
                   type="search"
                   placeholder="Buscar movimientos..."
-                  className="pl-10 pr-4 py-2"
+                  className="pl-10 pr-4 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                   aria-label="Buscar movimientos"
                 />
               </div>
-              <Button variant="outline" size="icon" className="hidden sm:flex">
+              <Button variant="outline" size="icon" className="hidden sm:flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
                 <Filter className="w-4 h-4" />
               </Button>
             </div>
