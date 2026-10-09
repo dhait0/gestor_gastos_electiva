@@ -9,6 +9,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTransition } from "react";
 import { logoutAction } from "@/app/actions/auth";
+import { ToastProvider } from "@/components/ui/toast";
 
 const mobileNav = [
   { href: "/dashboard", label: "Inicio", icon: Home },
@@ -177,10 +178,12 @@ export function AppLayoutClient({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <AppHeader />
-      <main className="flex-1 pb-20 lg:pb-0">{children}</main>
-      <MobileNav pathname={pathname} />
-    </div>
+    <ToastProvider>
+      <div className="min-h-screen bg-background flex flex-col">
+        <AppHeader />
+        <main className="flex-1 pb-20 lg:pb-0">{children}</main>
+        <MobileNav pathname={pathname} />
+      </div>
+    </ToastProvider>
   );
 }
