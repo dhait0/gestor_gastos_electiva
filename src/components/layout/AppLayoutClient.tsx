@@ -24,7 +24,7 @@ const desktopNav = [
   { href: "/cuentas", label: "Cuentas", icon: CreditCard },
   { href: "/obligaciones", label: "Obligaciones", icon: TrendingUp },
   { href: "/metas", label: "Metas", icon: Target, disabled: true },
-  { href: "/ajustes", label: "Ajustes", icon: Settings, disabled: true },
+  { href: "/ajustes", label: "Ajustes", icon: Settings },
 ];
 
 function MobileNav({ pathname }: { pathname: string }) {
