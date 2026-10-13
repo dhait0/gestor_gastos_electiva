@@ -1779,26 +1779,26 @@ Supabase responde
 
 ## Checklist
 
-- [ ] Auth
-- [ ] Profile
-- [ ] Cuenta
-- [ ] Categorías
-- [ ] Ingreso
-- [ ] Gasto
-- [ ] Obligaciones
-- [ ] Reserva
-- [ ] Saldo líquido
-- [ ] Disponible
-- [ ] Dashboard
-- [ ] RLS
-- [ ] Precisión decimal
-- [ ] Mobile
-- [ ] Light/Dark
-- [ ] Accesibilidad crítica
-- [ ] Vitest
-- [ ] E2E crítico
-- [ ] CI
-- [ ] Producción
+- [x] Auth
+- [x] Profile
+- [x] Cuenta
+- [x] Categorías
+- [x] Ingreso
+- [x] Gasto
+- [x] Obligaciones
+- [x] Reserva
+- [x] Saldo líquido
+- [x] Disponible
+- [x] Dashboard
+- [x] RLS
+- [x] Precisión decimal
+- [x] Mobile
+- [x] Light/Dark
+- [x] Accesibilidad crítica
+- [x] Vitest
+- [x] E2E crítico
+- [x] CI
+- [x] Producción
 
 Resultado:
 
