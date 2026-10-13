@@ -43,7 +43,7 @@ async function loginUser(page: Page, email: string, password: string) {
   await page.click('button[type="submit"]');
   // Wait for the button to not be pending (form submission complete)
   await page.waitForFunction(() => {
-    const btn = document.querySelector('button[type="submit"]');
+    const btn = document.querySelector('button[type="submit"]') as HTMLButtonElement | null;
     return btn && !btn.disabled && !btn.textContent?.includes("Iniciando");
   }, { timeout: 10000 });
   
@@ -91,8 +91,8 @@ async function completeOnboarding(page: Page, accountName: string, initialBalanc
       try {
         const body = await response.text();
         console.log("[NETWORK RESPONSE BODY]:", body.substring(0, 500));
-      } catch (e) {
-        console.log("[NETWORK RESPONSE BODY ERROR]:", e.message);
+      } catch (err) {
+        console.log("[NETWORK RESPONSE BODY ERROR]:", err instanceof Error ? err.message : String(err));
       }
     }
   });
@@ -142,25 +142,25 @@ async function completeOnboarding(page: Page, accountName: string, initialBalanc
   
   // Add console logging to capture client-side events
   await page.evaluate(() => {
-    window.onCompleteCalled = false;
-    window.handleCompleteOriginal = console.log;
+    (window as unknown as { onCompleteCalled?: boolean; handleCompleteOriginal?: (...args: unknown[]) => void }).onCompleteCalled = false;
+    (window as unknown as { onCompleteCalled?: boolean; handleCompleteOriginal?: (...args: unknown[]) => void }).handleCompleteOriginal = console.log;
     console.log = (...args) => {
-      if (args[0] && args[0].includes && args[0].includes('handleComplete')) {
-        window.onCompleteCalled = true;
+      if (args[0] && typeof args[0] === 'string' && args[0].includes('handleComplete')) {
+        (window as unknown as { onCompleteCalled?: boolean }).onCompleteCalled = true;
       }
-      window.handleCompleteOriginal.apply(console, args);
+      ((window as unknown as { handleCompleteOriginal?: (...args: unknown[]) => void }).handleCompleteOriginal || console.log).apply(console, args);
     };
   });
   
   await page.click('button:has-text("Comenzar a usar FinWise")');
   // Wait for form submission to complete (button should be disabled during submission)
   await page.waitForFunction(() => {
-    const btn = document.querySelector('button[type="submit"]');
+    const btn = document.querySelector('button[type="submit"]') as HTMLButtonElement | null;
     return btn && !btn.disabled;
   }, { timeout: 10000 });
   
   // Check if onComplete was called
-  const onCompleteCalled = await page.evaluate(() => window.onCompleteCalled);
+  const onCompleteCalled = await page.evaluate(() => (window as unknown as { onCompleteCalled?: boolean }).onCompleteCalled);
   console.log("onComplete called:", onCompleteCalled);
   
   await page.waitForURL(`${BASE_URL}/dashboard`, { timeout: 10000 });
@@ -205,7 +205,7 @@ async function logout(page: Page) {
   await page.waitForURL(`${BASE_URL}/login`, { timeout: 5000 });
 }
 
-test.describe.configure({ retries: 0 });
+// test.describe.configure({ retries: 0 }); // Playwright-specific, not for Vitest
 
 test.describe("FASE 21 - Flujo crítico MVP (E2E)", () => {
   test("registro → onboarding → crear cuenta → dashboard", async ({

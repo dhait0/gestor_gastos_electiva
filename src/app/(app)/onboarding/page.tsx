@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect } from "react";
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { updateProfileAction, createFirstAccountAction } from "@/app/actions/onboarding";
@@ -40,21 +40,16 @@ function Step1({ initialData, onNext }: { initialData: OnboardingFormData; onNex
     success: false,
     error: "",
   });
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (mounted && state.success) {
+    if (state.success) {
       const form = document.querySelector('form[data-step="1"]') as HTMLFormElement | null;
       if (form) {
         const formData = new FormData(form);
         onNext({ ...initialData, ...Object.fromEntries(formData) });
       }
     }
-  }, [mounted, state.success, initialData, onNext]);
+  }, [state.success, initialData, onNext]);
 
   return (
     <form action={formAction} data-step="1" className="space-y-6" noValidate>
@@ -166,21 +161,16 @@ function Step2({ initialData, onNext, onBack }: { initialData: OnboardingFormDat
     success: false,
     error: "",
   });
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (mounted && state.success) {
+    if (state.success) {
       const form = document.querySelector('form[data-step="2"]') as HTMLFormElement | null;
       if (form) {
         const formData = new FormData(form);
         onNext({ ...initialData, safetyReserve: Number(formData.get("safetyReserve")) || 0 });
       }
     }
-  }, [mounted, state.success, initialData, onNext]);
+  }, [state.success, initialData, onNext]);
 
   return (
     <form action={formAction} data-step="2" className="space-y-6" noValidate>
@@ -271,19 +261,12 @@ function Step3({ initialData, onComplete }: { initialData: OnboardingFormData; o
     success: false,
     error: "",
   });
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    console.log("[Step3] state changed:", { success: state.success, error: state.error, mounted });
-    if (mounted && state.success) {
-      console.log("[Step3] calling onComplete");
+    if (state.success) {
       onComplete();
     }
-  }, [mounted, state.success, onComplete]);
+  }, [state.success, onComplete]);
 
   return (
     <form action={formAction} data-step="3" className="space-y-6" noValidate>
