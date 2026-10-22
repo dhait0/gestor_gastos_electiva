@@ -31,7 +31,7 @@ export async function getFinancialSummaryAction(): Promise<
   // 1. Obtener cuentas del usuario (tipo, saldo inicial y estado de archivado)
   const { data: accounts, error: accountsError } = await supabase
     .from("accounts")
-    .select("id, type, opening_balance, is_archived")
+    .select("id, type, opening_balance, is_archived, currency_code")
     .eq("user_id", user.id)
     .eq("is_archived", false)
     .is("deleted_at", null);
@@ -77,10 +77,26 @@ export async function getFinancialSummaryAction(): Promise<
   // cuenta líquida, que es un atributo de la cuenta y no un movimiento)
   const typedTransactions = toDomainTransactions(transactions ?? [], user.id);
 
-  const liquidBalance = calculateLiquidBalance(typedTransactions, accounts || []);
+  // Política de monedas (modelo de datos §66-67): en V1 no hay conversión.
+  // El agregado líquido y las obligaciones solo suman entidades cuya moneda
+  // coincide con la moneda base del perfil. Las cuentas/transacciones/obligaciones
+  // en otras monedas se excluyen del agregado (no se mezclan monedas).
+  const baseCurrency = profile?.currency_code || "COP";
 
-  // Calcular obligaciones pendientes totales
-  const pendingObligations = (obligations || []).reduce(
+  const baseAccounts = (accounts || []).filter(
+    (a) => (a.currency_code ?? baseCurrency) === baseCurrency
+  );
+  const baseTransactions = typedTransactions.filter(
+    (t) => t.currency_code === baseCurrency
+  );
+  const baseObligations = (obligations || []).filter(
+    (o) => o.currency_code === baseCurrency
+  );
+
+  const liquidBalance = calculateLiquidBalance(baseTransactions, baseAccounts);
+
+  // Calcular obligaciones pendientes totales (solo moneda base)
+  const pendingObligations = baseObligations.reduce(
     (sum, o) => sum.plus(new Decimal(o.amount || 0)),
     new Decimal(0)
   );

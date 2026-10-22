@@ -37,6 +37,15 @@ Mantener el modo económico del agente original: búsquedas selectivas y lectura
 - Mantener `.env` fuera de commits y respuestas. No usar service-role key en navegador.
 - Mantener `CLAUDE.md` como referencia corta a `AGENTS.md`.
 
+## 4.1 Flujo Git y ramas
+
+- `main` (producción) y `staging` (integración) se tratan como **protegidas** aunque GitHub aún no tenga protección técnica habilitada. No desarrollar directamente sobre ellas.
+- Ramas de trabajo: `feature/*`, `fix/*`, `refactor/*`, `docs/*` (y otras definidas en el repo). Una rama puede contener varias microtareas relacionadas.
+- En una rama de trabajo, Kilo puede autónomamente: crear la rama, modificar archivos en alcance, ejecutar pruebas, hacer commits coherentes, corregir problemas, hacer push, sincronizar con `staging`, resolver conflictos dentro del alcance, y abrir PR hacia `staging` — sin autorización individual por commit/push.
+- La aprobación humana se requiere **exclusivamente para el merge del PR hacia `staging`** (y para cualquier merge/despliegue a producción). Kilo no aprueba ni mergea por el propietario.
+- El PR hacia `staging` se prepara sincronizando con `origin/staging`, resolviendo conflictos, re-ejecutando pruebas, revisando el diff (sin secretos/temporales/artefactos) y haciendo push; luego se entrega el enlace y se detiene antes del merge.
+- Commits convencionales y nomenclatura vigentes se conservan.
+
 ## 5. Stack y arquitectura existentes
 
 Next.js 16 App Router, React 19, TS strict, Tailwind CSS 4, Radix/shadcn, Lucide, Motion, Recharts, React Hook Form, Zod, date-fns, decimal.js; Supabase SSR/Auth/PostgreSQL/RLS/CLI; Vitest, Playwright, ESLint; pnpm, GitHub Actions, Vercel. Arquitectura monolito modular: presentación → aplicación → dominio → infraestructura → base de datos. Server Components para lecturas y Server Actions para mutaciones cuando corresponda. No incorporar Prisma, Drizzle, NestJS, Redux, nuevas APIs o proveedores sin justificación y autorización.
