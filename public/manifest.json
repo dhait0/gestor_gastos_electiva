@@ -1,6 +1,6 @@
 {
-  "name": "FinWise",
-  "short_name": "FinWise",
+  "name": "Lukiva",
+  "short_name": "Lukiva",
   "description": "Gestión e inteligencia financiera personal. ¿Cuánto dinero puedes gastar realmente sin comprometer tus obligaciones, reservas y objetivos?",
   "start_url": "/dashboard",
   "display": "standalone",

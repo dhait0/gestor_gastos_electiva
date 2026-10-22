@@ -626,3 +626,93 @@ Sincronización con staging: rama creada desde `staging` @ `76c5e01` (igual a or
 Validación: typecheck, lint (0 err/6 warn), tests 53/53, build, test:rls 36/36 PASARON.
 Pull Request: https://github.com/dhait0/gestor_gastos_electiva/pull/34 (hacia staging) — pendiente de aprobación del propietario.
 Riesgos/bloqueos: zips (`*.zip`) quedan sin versionar (artefactos); requiere intervención humana para merge del PR.
+
+---
+
+## D01 — Auditoría de identidad y diseño (2026-10-22)
+
+ID: D01
+Rama: `feature/lukiva-identidad-visual`
+Inventario de marca FinWise (referencias visibles en src/):
+- `src/app/layout.tsx`: title/applicationName/apple-mobile-web-app-title "FinWise".
+- `src/app/(auth)/login/page.tsx`: "Bienvenido a FinWise".
+- `src/app/(auth)/registro/page.tsx`: "Crea tu cuenta en FinWise".
+- `src/app/(app)/onboarding/page.tsx`: "Comenzar a usar FinWise", "Bienvenido a FinWise".
+- `src/app/(app)/dashboard/page.tsx`: "FinWise Insight".
+- `src/components/layout/AppLayoutClient.tsx`: "FinWise" (h1 + footer).
+- `src/app/globals.css`: comentarios "FinWise semantic tokens / Light theme — FinWise / Dark theme — FinWise".
+- `src/lib/motion/presets.ts`: referencia a `SISTEMA_DISENO_FINWISE.md`.
+- `src/test/smoke.test.ts`: descripción "FinWise test environment".
+Tokens Lukiva propuestos (modelo de datos §identidad): azul #315CF5, menta #20BDA5, amarillo #FFC777, fondo #F5F7FE, texto #162039; Manrope/Geist. Aún no presentes en globals.css (tokens FinWise vigentes).
+Archivos candidatos D02 (copy/nombre): layout.tsx, login, registro, onboarding, dashboard, AppLayoutClient.
+Archivos candidatos D03 (metadata/manifest/PWA): layout.tsx (metadata), manifest, icons, OG.
+Sin cambios de código en D01 (solo auditoría). No se implementó rediseño.
+Validación: no aplica (sin código). Git: rama creada desde staging @ 2f3cf95.
+
+---
+
+## D02 — Copy Lukiva aplicado (2026-10-22)
+
+ID: D02
+Rama: `feature/lukiva-identidad-visual`
+Commit: `41e590a`
+Referencias FinWise sustituidas (UI visible): login, registro, onboarding (×2), dashboard, AppLayoutClient (×2), globals.css comentarios, motion presets comentario, smoke test descripción.
+Referencias pendientes para D03: `src/app/layout.tsx` metadata (title, applicationName, apple-mobile-web-app-title) y manifest/PWA.
+Tokens visuales: no se modificaron (corresponden a D01/D03 posteriores); se conservan Manrope/Geist.
+Validaciones: lint PASÓ (0 err/6 warn), typecheck PASÓ, tests 53/53 PASÓ, build PASÓ.
+No se modificaron cálculos financieros, Server Actions ni Supabase.
+
+---
+
+## D03 — Metadata y manifest Lukiva (2026-10-22)
+
+ID: D03
+Rama: `feature/lukiva-identidad-visual`
+Commit: `def40c8`
+Cambios: `src/app/layout.tsx` (title, applicationName, appleWebApp.title, apple-mobile-web-app-title → Lukiva); `public/manifest.json` (name, short_name → Lukiva).
+Iconos/recursos PWA: sin cambios (se conservan los existentes; no hay alternativa aprobada nueva).
+Referencias FinWise restantes: `src/lib/motion/presets.ts` (comentario con nombre de doc `SISTEMA_DISENO_FINWISE.md`, histórico/técnico) — no afecta funcionalidad.
+Validaciones: lint PASÓ (0 err/6 warn), typecheck PASÓ, tests 53/53 PASÓ, build PASÓ. Metadatos y manifest contienen "Lukiva"; rutas PWA intactas.
+
+---
+
+## E01 — Navegación unificada (2026-10-22)
+
+ID: E01
+Rama: `feature/lukiva-identidad-visual`
+Commit: `4603d0b`
+Cambios: `src/components/layout/AppLayoutClient.tsx`: eliminados enlaces muertos (`/metas`, `/mas`), añadidos enlaces funcionales (`/cuentas`, `/obligaciones`, `/categorias`) en móvil y escritorio; eliminada rama de renderizado para items deshabilitados.
+Validaciones: lint PASÓ (0 err/8 warn), typecheck PASÓ, tests 53/53 PASÓ, build PASÓ.
+No se crearon módulos ni pantallas vacías. No se modificaron cálculos ni Supabase.
+
+---
+
+## E02 — Unificación de navegación y lint (2026-10-22)
+
+ID: E02
+Rama: `feature/lukiva-identidad-visual`
+Commit: `62a5e32`
+Cambios: eliminados imports no usados `Target` y `MoreHorizontal` en `AppLayoutClient.tsx` (introducidos por E01).
+Advertencias lint: 8 → 6 (vuelve al baseline). Las 6 restantes son preexistentes (unused vars en dashboard/onboarding/accounts).
+Validaciones: lint PASÓ (0 err/6 warn), typecheck PASÓ, tests 53/53 PASÓ, build PASÓ.
+Nota: la unificación completa de formularios/botones/tablas/feedback/accesibilidad (definición E02) se mantiene como trabajo incremental para E03; no se realizó rediseño masivo.
+
+---
+
+## E03 — Tokens visuales Lukiva (2026-10-22)
+
+ID: E03
+Rama: `feature/lukiva-identidad-visual`
+Commit: `efe4127`
+Cambios: `src/app/globals.css` (primary #315CF5, accent #20BDA5, background #F5F7FE, foreground #162039, ring primary, radial gradients); `src/app/layout.tsx` (themeColor light/dark → #315CF5/#5B7CF7, mask-icon).
+Validaciones: lint PASÓ (0 err/6 warn), typecheck PASÓ, tests 53/53 PASÓ, build PASÓ.
+Pendientes visuales: unificación completa de componentes (formularios/botones/tablas/feedback) para fases posteriores; iconos PWA sin actualizar (sin alternativa aprobada).
+
+---
+
+## Cierre rama identidad visual (2026-10-22)
+
+Rama: `feature/lukiva-identidad-visual`
+PR: https://github.com/dhait0/gestor_gastos_electiva/pull/35 (hacia staging) — pendiente de aprobación del propietario.
+Validaciones: lint 0 err/6 warn, typecheck PASÓ, tests 53/53 PASÓ, build PASÓ. Sincronizada con origin/staging (sin conflictos).
+No se realizó merge ni despliegue.
