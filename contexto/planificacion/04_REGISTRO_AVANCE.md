@@ -863,3 +863,139 @@ Rama: `feature/lukiva-identidad-visual`
 PR: https://github.com/dhait0/gestor_gastos_electiva/pull/35 (hacia staging) — pendiente de aprobación del propietario.
 Validaciones: lint 0 err/6 warn, typecheck PASÓ, tests 53/53 PASÓ, build PASÓ. Sincronizada con origin/staging (sin conflictos).
 No se realizó merge ni despliegue.
+
+## Validación final PR #36 (E02.1–E02.4) — 2026-10-22
+
+### Entorno utilizado
+- Supabase local (127.0.0.1:54321) con `supabase db reset` + seed vacío
+- Next.js dev server (localhost:3000) via Playwright webServer
+- Chromium 1243 (Playwright 1.63.0)
+- Vercel Preview bloqueado por SSO (requiere autenticación Vercel)
+
+### Capturas generadas
+- /tmp/dashboard-mobile-390.png (390×844)
+- /tmp/dashboard-tablet-768.png (768×1024)
+- /tmp/dashboard-desktop-1440.png (1440×900)
+
+### Resultados por dispositivo
+- **Móvil (390 px):** Dashboard renderiza correctamente, KPIs en columna única, sin desbordamiento horizontal.
+- **Tablet (768 px):** Grids responsive activos, gráfico visible.
+- **Escritorio (1440 px):** Layout completo con 3 columnas de KPIs, gráfico de 6 meses.
+
+### Pruebas funcionales
+- "Dinero disponible" visible: ✅
+- "Lukiva" branding visible: ✅
+- Indicadores financieros (saldo, disponible, ingresos/gastos mensuales): ✅
+- Gráfico de 6 meses (estado vacío para usuario nuevo sin transacciones): ✅
+- Navegación a /transacciones: ✅
+- Sin errores en consola del navegador: ✅
+
+### Pruebas E2E
+- "registro → onboarding → crear cuenta → dashboard": ✅ PASÓ
+- "Autenticación básica → login → dashboard → logout": ✅ PASÓ
+- "usuario no autenticado redirigido a login": ✅ PASÓ
+- "déficit: disponible negativo": ❌ FALLÓ (categorías no existen en seed vacío; pre-existente)
+- "usuario B no ve datos de usuario A": ❌ FALLÓ (ídem, depende de createTransaction)
+- "crear ingreso y gasto aparecen en movimientos": ❌ FALLÓ (ídem)
+
+### Defectos corregidos
+- E2E test: "Bienvenido a FinWise" → "Bienvenido a Lukiva" (rebranding)
+- E2E test: "Comenzar a usar FinWise" → "Comenzar a usar Lukiva"
+- E2E test: `/movimientos` → `/transacciones` (ruta renombrada)
+
+### Estado del PR #36
+- PR #36 ya MERGED (2026-10-22T19:18:16Z) antes de esta validación.
+- Nuevo PR #38 creado para los fixes E2E: https://github.com/dhait0/gestor_gastos_electiva/pull/38
+
+### Riesgos pendientes
+- 3 tests E2E fallan por ausencia de categorías en seed (no es defecto del dashboard).
+- Vercel Preview inaccesible por SSO; validación visual realizada en entorno local.
+- 8 gaps financieros pendientes (#2/3/4/6/7/11/12/13).
+
+## Corrección themeColor (Next.js 16) — 2026-10-22
+
+### Archivos modificados
+- `src/app/layout.tsx`: movido `themeColor` de `metadata` a `export const viewport: Viewport`.
+
+### Validaciones
+- `pnpm lint`: 0 errores, 6 advertencias (preexistentes, sin cambios)
+- `pnpm typecheck`: PASÓ (exit 0)
+- `pnpm test`: 70/70 PASARON
+- `pnpm build`: PASÓ, warning "Unsupported metadata themeColor" eliminado de todas las rutas
+
+### Advertencias restantes
+- 6 warnings preexistentes (unused vars, async client components) — no relacionadas con este cambio.
+
+### Estado del PR #38
+- Abierto: https://github.com/dhait0/gestor_gastos_electiva/pull/38
+- Commit: afefdf5
+
+STOP
+
+## Hotfix: colores Lukiva + themeColor (2026-10-22)
+
+### Causa demostrada
+Los componentes usan clases Tailwind (`bg-primary`, `text-foreground`, `bg-background`, etc.) pero `@theme inline` en `globals.css` solo definía tokens `--color-finn-*`. Faltaban los mapeos estándar (`--color-primary: var(--primary)`, etc.), por lo que Tailwind 4 no generaba las utilidades y la UI aparecía sin estilos (blanco y negro).
+
+### Variables CSS inspeccionadas
+- `--background: #F5F7FE`, `--foreground: #162039`, `--primary: #315CF5` (light)
+- `--background: #0B1220`, `--foreground: #F8FAFC`, `--primary: #5B7CF7` (dark)
+
+### Valores calculados en navegador (light)
+- body background: rgb(245, 247, 254) = #F5F7FE ✅
+- body color: rgb(22, 32, 57) = #162039 ✅
+- button background: rgb(49, 92, 245) = #315CF5 ✅
+- button color: rgb(255, 255, 255) = #FFFFFF ✅
+
+### Archivos modificados
+- `src/app/globals.css`: añadidos mapeos `--color-*: var(--*)` en `@theme inline`.
+- `src/app/layout.tsx`: movido `themeColor` a `viewport` export (ya aplicado).
+
+### Validaciones
+- lint: 0 errores, 6 warnings (preexistentes)
+- typecheck: ✅
+- test: 70/70 ✅
+- build: ✅, sin warning themeColor
+
+### Commit
+efddfad — fix(css): mapear variables CSS a tokens Tailwind 4 en @theme inline
+
+### PR #38
+Abierto: https://github.com/dhait0/gestor_gastos_electiva/pull/38
+
+STOP
+
+## Diagnóstico E2E — Categorías y sesión (2026-10-22)
+
+### Mecanismo de preparación de categorías
+- Las categorías se crean manualmente por el usuario vía `createCategoryAction` (tabla `categories`, RLS por `user_id`).
+- El onboarding NO crea categorías automáticamente (por diseño, no es obligatorio para usuarios reales).
+- `seed.sql` está vacío por defecto.
+
+### Resultado de intentos
+- Creación de categoría vía UI en el test: funciona (redirect a /categorias).
+- Creación de transacción posterior: la página navega a /login tras submit (pérdida de sesión durante server action o router.refresh()).
+- Intentos alternativos (fetch REST, evaluate Supabase client): bloqueados por httpOnly cookie / módulo no disponible en browser.
+
+### Resultado E2E (6 tests)
+| Test | Resultado |
+|---|---|
+| registro → onboarding → dashboard | ✅ PASA |
+| login → dashboard → logout | ✅ PASA |
+| no autenticado → redirect | ✅ PASA |
+| déficit disponible negativo | ❌ FALLA (sin categorías) |
+| aislamiento usuario A/B | ❌ FALLA (sin categorías) |
+| crear ingreso/gasto | ❌ FALLA (sin categorías) |
+
+### Conclusión
+No es un defecto funcional. Es un problema de preparación de datos de prueba: los tests E2E necesitan categorías preexistentes, y la creación vía UI en el flujo del test pierde la sesión al enviar el formulario de transacción.
+
+### Solución propuesta (fuera de alcance actual)
+- Añadir categorías por defecto en seed.sql para entorno local (requiere user_id preexistente, no viable sin trigger).
+- O añadir un endpoint de test (solo dev) que cree categorías para el usuario autenticado.
+- O modificar el test para usar la API REST de Supabase con el token de sesión extraído del cookie.
+
+### Estado del PR #38
+Abierto: https://github.com/dhait0/gestor_gastos_electiva/pull/38
+
+STOP

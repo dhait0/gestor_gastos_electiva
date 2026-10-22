@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Geist, Manrope } from "next/font/google";
 import { cn } from "@/lib/utils";
@@ -46,6 +46,9 @@ export const metadata: Metadata = {
     ],
   },
   manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#315CF5" },
     { media: "(prefers-color-scheme: dark)", color: "#5B7CF7" },
