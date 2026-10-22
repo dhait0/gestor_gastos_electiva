@@ -8,10 +8,29 @@
   --font-heading: var(--font-manrope);
   --font-sans: var(--font-geist);
 
-  /* FinWise semantic tokens */
-  --color-finn-primary: #2563EB;
+  /* Lukiva semantic tokens */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-finn-primary: #315CF5;
   --color-finn-primary-foreground: #FFFFFF;
-  --color-finn-accent: #06B6D4;
+  --color-finn-accent: #20BDA5;
   --color-finn-success: #16A34A;
   --color-finn-warning: #D97706;
   --color-finn-danger: #DC2626;
@@ -38,17 +57,17 @@
 }
 
 :root {
-  /* Light theme — FinWise */
-  --background: #F4F7FB;
-  --foreground: #0F172A;
+  /* Light theme — Lukiva */
+  --background: #F5F7FE;
+  --foreground: #162039;
   --card: #FFFFFF;
-  --card-foreground: #0F172A;
+  --card-foreground: #162039;
   --popover: #FFFFFF;
-  --popover-foreground: #0F172A;
-  --primary: #2563EB;
+  --popover-foreground: #162039;
+  --primary: #315CF5;
   --primary-foreground: #FFFFFF;
   --secondary: #F1F5F9;
-  --secondary-foreground: #0F172A;
+  --secondary-foreground: #162039;
   --muted: #F8FAFC;
   --muted-foreground: #475569;
   --accent: #CFFAFE;
@@ -56,24 +75,24 @@
   --destructive: #DC2626;
   --border: rgba(15, 23, 42, 0.08);
   --input: rgba(15, 23, 42, 0.08);
-  --ring: #2563EB;
+  --ring: #315CF5;
   --radius: 1rem;
 
   background:
-    radial-gradient(circle at 10% 5%, rgba(37, 99, 235, 0.06), transparent 34%),
-    radial-gradient(circle at 90% 10%, rgba(6, 182, 212, 0.035), transparent 28%),
-    #F4F7FB;
+    radial-gradient(circle at 10% 5%, rgba(49, 92, 245, 0.06), transparent 34%),
+    radial-gradient(circle at 90% 10%, rgba(32, 189, 165, 0.035), transparent 28%),
+    #F5F7FE;
 }
 
 .dark {
-  /* Dark theme — FinWise */
+  /* Dark theme — Lukiva */
   --background: #0B1220;
   --foreground: #F8FAFC;
   --card: #111827;
   --card-foreground: #F8FAFC;
   --popover: #111827;
   --popover-foreground: #F8FAFC;
-  --primary: #3B82F6;
+  --primary: #5B7CF7;
   --primary-foreground: #FFFFFF;
   --secondary: #1E293B;
   --secondary-foreground: #F8FAFC;

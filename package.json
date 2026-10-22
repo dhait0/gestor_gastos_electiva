@@ -10,7 +10,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:rls": "vitest run --config vitest.rls.config.mts"
   },
   "keywords": [],
   "author": "",

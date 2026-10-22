@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Geist, Manrope } from "next/font/google";
 import { cn } from "@/lib/utils";
@@ -16,13 +16,13 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "FinWise",
+  title: "Lukiva",
   description: "Inteligencia y gestión financiera personal. ¿Cuánto dinero puedes gastar realmente sin comprometer tus obligaciones, reservas y objetivos?",
-  applicationName: "FinWise",
+  applicationName: "Lukiva",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "FinWise",
+    title: "Lukiva",
   },
   formatDetection: {
     telephone: false,
@@ -42,13 +42,16 @@ export const metadata: Metadata = {
     apple: "/icons/apple-touch-icon.png",
     other: [
       { rel: "manifest", url: "/manifest.json" },
-      { rel: "mask-icon", url: "/icons/icon-512x512-maskable.png", color: "#2563EB" },
+      { rel: "mask-icon", url: "/icons/icon-512x512-maskable.png", color: "#315CF5" },
     ],
   },
   manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#2563EB" },
-    { media: "(prefers-color-scheme: dark)", color: "#3B82F6" },
+    { media: "(prefers-color-scheme: light)", color: "#315CF5" },
+    { media: "(prefers-color-scheme: dark)", color: "#5B7CF7" },
   ],
 };
 
@@ -62,11 +65,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-        <meta name="theme-color" content="#2563EB" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#3B82F6" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#315CF5" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#5B7CF7" media="(prefers-color-scheme: dark)" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="FinWise" />
+        <meta name="apple-mobile-web-app-title" content="Lukiva" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className={cn(geist.variable, manrope.variable)}>

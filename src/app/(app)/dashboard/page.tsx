@@ -1,17 +1,20 @@
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Plus, ArrowDownLeft, ArrowUpRight, AlertTriangle, CheckCircle, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Plus, ArrowDownLeft, ArrowUpRight, AlertTriangle, CheckCircle, ChevronRight, Wallet } from "lucide-react";
 import { getFinancialSummaryAction } from "@/app/actions/financial";
 import { getTransactionsAction } from "@/app/actions/transactions";
+import { getAccountsAction } from "@/app/actions/accounts";
+import { MonthlyTrendChart } from "@/components/dashboard/MonthlyTrendChart";
 import { formatCurrency } from "@/lib/utils";
 import { Decimal } from "decimal.js";
 
 async function getDashboardData() {
-  const [summaryResult, transactionsResult] = await Promise.all([
+  const [summaryResult, transactionsResult, accountsResult] = await Promise.all([
     getFinancialSummaryAction(),
     getTransactionsAction({ limit: 5 }),
+    getAccountsAction(),
   ]);
 
-  return { summaryResult, transactionsResult };
+  return { summaryResult, transactionsResult, accountsResult };
 }
 
 function getStatusInfo(available: Decimal, pendingObligations: Decimal, liquidBalance: Decimal) {
@@ -50,7 +53,7 @@ function formatDecimal(value: Decimal, currencyCode: string) {
 }
 
 export default async function DashboardPage() {
-  const { summaryResult, transactionsResult } = await getDashboardData();
+  const { summaryResult, transactionsResult, accountsResult } = await getDashboardData();
 
   if ("error" in summaryResult) {
     return (
@@ -64,9 +67,12 @@ export default async function DashboardPage() {
     );
   }
 
-  const { liquidBalance, pendingObligations, safetyReserve, availableToSpend, currencyCode } = summaryResult.data;
+  const { liquidBalance, pendingObligations, safetyReserve, availableToSpend, currencyCode, monthlyIncome, monthlyExpense, monthlyTrend } = summaryResult.data;
   const transactions = transactionsResult.data || [];
   const hasTransactions = transactions.length > 0;
+  const accounts = accountsResult.data || [];
+  const hasAccounts = accounts.length > 0;
+  const hasPendingObligations = pendingObligations.greaterThan(0);
 
   const statusInfo = getStatusInfo(availableToSpend, pendingObligations, liquidBalance);
   const StatusIcon = statusInfo.icon;
@@ -79,7 +85,7 @@ export default async function DashboardPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground font-heading">
               Dashboard
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="mt-1 text-muted-foreground">
               Tu panorama financiero
             </p>
           </div>
@@ -99,6 +105,31 @@ export default async function DashboardPage() {
             </a>
           </div>
         </header>
+
+        {!hasAccounts && (
+          <div className="rounded-xl border border-border bg-card p-8 text-center">
+            <div className="mx-auto w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+              <Wallet className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <h2 className="text-lg font-medium text-foreground">Aún no tienes cuentas</h2>
+            <p className="mt-1 text-sm text-muted-foreground max-w-xs mx-auto">
+              Crea tu primera cuenta para empezar a registrar tus movimientos y ver tu panorama financiero.
+            </p>
+            <a
+              href="/cuentas/nueva"
+              className={cn(
+                "mt-6 inline-flex items-center gap-2 px-4 py-2",
+                "bg-primary text-primary-foreground",
+                "rounded-lg font-medium text-sm",
+                "hover:shadow-finn-elevated hover:-translate-y-0.5",
+                "transition-all duration-150"
+              )}
+            >
+              <Plus className="w-4 h-4" />
+              Crear primera cuenta
+            </a>
+          </div>
+        )}
 
         <section aria-labelledby="available-heading" className="space-y-4">
           <h2 id="available-heading" className="sr-only">
@@ -132,7 +163,7 @@ export default async function DashboardPage() {
                 </div>
               </div>
             </div>
-            <div className="mt-6 grid grid-cols-3 gap-4 text-center">
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
               <div className="rounded-xl bg-background/50 p-4 border border-border/50">
                 <p className="text-sm text-muted-foreground">Saldo líquido</p>
                 <p className="mt-1 text-xl font-semibold text-foreground tabular-nums">
@@ -141,9 +172,15 @@ export default async function DashboardPage() {
               </div>
               <div className="rounded-xl bg-background/50 p-4 border border-border/50">
                 <p className="text-sm text-muted-foreground">Compromisos</p>
-                <p className="mt-1 text-xl font-semibold text-danger tabular-nums">
-                  -{formatDecimal(pendingObligations, currencyCode)}
-                </p>
+                {hasPendingObligations ? (
+                  <p className="mt-1 text-xl font-semibold text-danger tabular-nums">
+                    -{formatDecimal(pendingObligations, currencyCode)}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-sm font-medium text-success">
+                    Sin obligaciones pendientes
+                  </p>
+                )}
               </div>
               <div className="rounded-xl bg-background/50 p-4 border border-border/50">
                 <p className="text-sm text-muted-foreground">Reserva</p>
@@ -161,18 +198,18 @@ export default async function DashboardPage() {
               Resumen del mes
             </h2>
           </header>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className={cn(
               "rounded-xl p-4 border",
               "bg-success/5 border-success/20"
             )}>
               <p className="text-sm text-muted-foreground">Ingresos</p>
               <p className="mt-1 text-2xl font-bold text-success tabular-nums">
-                {formatDecimal(new Decimal(0), currencyCode)}
+                {formatDecimal(monthlyIncome, currencyCode)}
               </p>
               <p className="mt-1 flex items-center gap-1 text-xs text-success">
                 <ArrowUpRight className="w-3 h-3" />
-                <span>Calculando...</span>
+                <span>Este mes</span>
               </p>
             </div>
             <div className={cn(
@@ -181,11 +218,11 @@ export default async function DashboardPage() {
             )}>
               <p className="text-sm text-muted-foreground">Gastos</p>
               <p className="mt-1 text-2xl font-bold text-danger tabular-nums">
-                {formatDecimal(new Decimal(0), currencyCode)}
+                {formatDecimal(monthlyExpense, currencyCode)}
               </p>
               <p className="mt-1 flex items-center gap-1 text-xs text-danger">
                 <ArrowDownLeft className="w-3 h-3" />
-                <span>Calculando...</span>
+                <span>Este mes</span>
               </p>
             </div>
           </div>
@@ -198,18 +235,20 @@ export default async function DashboardPage() {
             </h2>
           </header>
           <div className="rounded-xl border border-border bg-card p-6">
-            <div className="h-48 flex items-center justify-center">
-              <p className="text-muted-foreground text-center px-4">
-                Gráfico de flujo de efectivo (próximamente)
-              </p>
-            </div>
+            <MonthlyTrendChart
+              data={monthlyTrend.map((p) => ({
+                month: p.month,
+                income: p.income.toNumber(),
+                expense: p.expense.toNumber(),
+              }))}
+            />
           </div>
         </section>
 
         <section aria-labelledby="insights-heading" className="space-y-4">
           <header className="flex items-center justify-between">
             <h2 id="insights-heading" className="text-lg font-semibold text-foreground">
-              FinWise Insight
+              Lukiva Insight
             </h2>
           </header>
           <div className="rounded-xl border border-border bg-card p-4">
@@ -253,7 +292,7 @@ export default async function DashboardPage() {
               Movimientos recientes
             </h2>
             <a
-              href="/movimientos"
+              href="/transacciones"
               className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
             >
               Ver todos

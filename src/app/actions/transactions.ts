@@ -87,6 +87,23 @@ export async function createTransactionAction(_prevState: FormState, formData: F
     return { error: validationError };
   }
 
+  // Política de monedas (§66-67): la moneda de la transacción debe coincidir
+  // con la moneda de la cuenta. No hay conversión automática en V1.
+  const { data: account, error: accountError } = await supabase
+    .from("accounts")
+    .select("currency_code")
+    .eq("id", parsed.data.account_id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (accountError || !account) {
+    return { error: "Cuenta no encontrada" };
+  }
+
+  if (account.currency_code !== parsed.data.currency_code) {
+    return { error: "La moneda de la transacción debe coincidir con la de la cuenta" };
+  }
+
   // Convert Decimal amount to number for database
   const dbData = {
     ...parsed.data,
@@ -142,6 +159,29 @@ export async function createTransferAction(_prevState: FormState, formData: Form
 
   if (parsed.data.from_account_id === parsed.data.to_account_id) {
     return { error: "Las cuentas de origen y destino deben ser diferentes" };
+  }
+
+  // Política de monedas (§66-67): las transferencias solo se permiten entre
+  // cuentas de la misma moneda. No hay conversión automática en V1.
+  const { data: transferAccounts, error: accountsError } = await supabase
+    .from("accounts")
+    .select("id, currency_code")
+    .in("id", [parsed.data.from_account_id, parsed.data.to_account_id])
+    .eq("user_id", user.id);
+
+  if (accountsError || !transferAccounts || transferAccounts.length !== 2) {
+    return { error: "No se pudieron verificar las cuentas de la transferencia" };
+  }
+
+  const fromAcc = transferAccounts.find((a) => a.id === parsed.data.from_account_id);
+  const toAcc = transferAccounts.find((a) => a.id === parsed.data.to_account_id);
+
+  if (!fromAcc || !toAcc || fromAcc.currency_code !== toAcc.currency_code) {
+    return { error: "Las cuentas de origen y destino deben tener la misma moneda" };
+  }
+
+  if (parsed.data.currency_code !== fromAcc.currency_code) {
+    return { error: "La moneda de la transferencia debe coincidir con la de las cuentas" };
   }
 
   const transferPair = createTransferPair(

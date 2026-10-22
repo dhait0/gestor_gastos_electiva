@@ -1,6 +1,10 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { toDomainTransactions } from "@/lib/supabase/transactions";
+import type { Database } from "@/lib/supabase/types";
+import { calculateAccountBalance } from "@/domain/transactions";
+import { Decimal } from "decimal.js";
 import { z } from "zod";
 
 const accountTypeSchema = z.enum(["CASH", "CHECKING", "SAVINGS", "CREDIT_CARD", "DIGITAL_WALLET", "OTHER"]);
@@ -33,6 +37,13 @@ const updateAccountSchema = z.object({
 
 type CreateAccountInput = z.infer<typeof createAccountSchema>;
 type UpdateAccountInput = z.infer<typeof updateAccountSchema>;
+
+type AccountRow = Database["public"]["Tables"]["accounts"]["Row"];
+
+/** Cuenta con su saldo actual calculado (estrategia B). */
+export interface AccountWithBalance extends AccountRow {
+  current_balance: Decimal;
+}
 
 type FormState =
   | { error: string }
@@ -97,19 +108,10 @@ export async function createAccountAction(_prevState: FormState, formData: FormD
     return { error: "Error al crear la cuenta" };
   }
 
-  if (opening_balance > 0) {
-    await supabase.from("transactions").insert({
-      user_id: user.id,
-      account_id: data.id,
-      type: "INCOME",
-      direction: "INFLOW",
-      amount: opening_balance,
-      currency_code,
-      description: `Saldo inicial: ${name}`,
-      transaction_date: new Date().toISOString().split("T")[0],
-    });
-  }
-
+  // Estrategia B: el saldo inicial es un atributo de la cuenta (`opening_balance`).
+  // NO se registra ninguna transacción compensatoria: el saldo inicial ya está
+  // guardado en la cuenta y una transacción de ingreso lo contabilizaría dos
+  // veces (además la base la rechaza por `transactions_income_rules`).
   return { data: { id: data.id } };
 }
 
@@ -135,6 +137,63 @@ export async function getAccountsAction() {
   if (error) {
     return { error: "Error al obtener las cuentas" };
   }
+
+  return { data };
+}
+
+/**
+ * Cuentas del usuario con su **saldo actual** calculado:
+ *
+ *   saldo actual = opening_balance + entradas − salidas
+ *
+ * El saldo inicial se toma de la propia cuenta (`opening_balance`), nunca de
+ * una transacción compensatoria, de modo que se contabiliza exactamente una vez.
+ */
+export async function getAccountsWithBalancesAction(): Promise<
+  | { data: AccountWithBalance[] }
+  | { error: string }
+> {
+  const supabase = await createSupabaseServerClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "No autorizado" };
+  }
+
+  const { data: accounts, error: accountsError } = await supabase
+    .from("accounts")
+    .select("*")
+    .eq("user_id", user.id)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
+  if (accountsError) {
+    return { error: "Error al obtener las cuentas" };
+  }
+
+  const { data: transactions, error: transactionsError } = await supabase
+    .from("transactions")
+    .select("id, account_id, type, direction, amount, currency_code, deleted_at")
+    .eq("user_id", user.id);
+
+  if (transactionsError) {
+    return { error: "Error al obtener las transacciones" };
+  }
+
+  const typedTransactions = toDomainTransactions(transactions ?? [], user.id);
+
+  const data: AccountWithBalance[] = (accounts ?? []).map((account) => ({
+    ...account,
+    current_balance: calculateAccountBalance(
+      typedTransactions,
+      account.id,
+      account.opening_balance
+    ),
+  }));
 
   return { data };
 }

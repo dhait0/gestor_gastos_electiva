@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'http://127.0.0.1:54321';
-const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
-const SUPABASE_SERVICE_KEY = 'sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz';
+const SUPABASE_URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY ?? '';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
 const anon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const service = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
@@ -66,7 +66,10 @@ describe('RLS - P0 Tables', () => {
 
   describe('profiles', () => {
     beforeEach(async () => {
-      await service.from('profiles').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await service.from('profiles').delete()
+        .neq('id', userA.id)
+        .neq('id', userB.id)
+        .neq('id', '00000000-0000-0000-0000-000000000000');
     });
     it('A can read own profile', async () => {
       const { data, error } = await clientA.from('profiles').select('*').single();

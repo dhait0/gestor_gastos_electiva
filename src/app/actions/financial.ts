@@ -1,8 +1,10 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { toDomainTransactions } from "@/lib/supabase/transactions";
 import { Decimal } from "decimal.js";
-import { calculateLiquidBalance, calculateAvailableToSpend } from "@/domain/transactions";
+import { calculateLiquidBalance, calculateAvailableToSpend, calculateMonthlyIncomeExpense, calculateMonthlyTrend } from "@/domain/transactions";
+import type { MonthlyTrendPoint } from "@/domain/transactions";
 
 export interface FinancialSummary {
   liquidBalance: Decimal;
@@ -10,6 +12,9 @@ export interface FinancialSummary {
   safetyReserve: Decimal;
   availableToSpend: Decimal;
   currencyCode: string;
+  monthlyIncome: Decimal;
+  monthlyExpense: Decimal;
+  monthlyTrend: MonthlyTrendPoint[];
 }
 
 export async function getFinancialSummaryAction(): Promise<
@@ -27,10 +32,10 @@ export async function getFinancialSummaryAction(): Promise<
     return { error: "No autorizado" };
   }
 
-  // 1. Obtener cuentas del usuario (para saber cuáles son líquidas)
+  // 1. Obtener cuentas del usuario (tipo, saldo inicial y estado de archivado)
   const { data: accounts, error: accountsError } = await supabase
     .from("accounts")
-    .select("id, type")
+    .select("id, type, opening_balance, is_archived, currency_code")
     .eq("user_id", user.id)
     .eq("is_archived", false)
     .is("deleted_at", null);
@@ -64,7 +69,7 @@ export async function getFinancialSummaryAction(): Promise<
   // 4. Obtener perfil (para safety_reserve y currency_code)
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("safety_reserve, currency_code")
+    .select("safety_reserve, currency_code, timezone")
     .eq("id", user.id)
     .single();
 
@@ -72,22 +77,30 @@ export async function getFinancialSummaryAction(): Promise<
     return { error: "Error al obtener perfil" };
   }
 
-  // Calcular saldo líquido usando el dominio
-  const typedTransactions = (transactions || []).map((t) => ({
-    ...t,
-    amount: t.amount.toString(),
-    deleted_at: t.deleted_at,
-    user_id: user.id,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    description: "",
-    transaction_date: new Date().toISOString().split("T")[0],
-  })) as import("@/domain/transactions").Transaction[];
+  // Calcular saldo líquido usando el dominio (incluye el saldo inicial de cada
+  // cuenta líquida, que es un atributo de la cuenta y no un movimiento)
+  const typedTransactions = toDomainTransactions(transactions ?? [], user.id);
 
-  const liquidBalance = calculateLiquidBalance(typedTransactions, accounts || []);
+  // Política de monedas (modelo de datos §66-67): en V1 no hay conversión.
+  // El agregado líquido y las obligaciones solo suman entidades cuya moneda
+  // coincide con la moneda base del perfil. Las cuentas/transacciones/obligaciones
+  // en otras monedas se excluyen del agregado (no se mezclan monedas).
+  const baseCurrency = profile?.currency_code || "COP";
 
-  // Calcular obligaciones pendientes totales
-  const pendingObligations = (obligations || []).reduce(
+  const baseAccounts = (accounts || []).filter(
+    (a) => (a.currency_code ?? baseCurrency) === baseCurrency
+  );
+  const baseTransactions = typedTransactions.filter(
+    (t) => t.currency_code === baseCurrency
+  );
+  const baseObligations = (obligations || []).filter(
+    (o) => o.currency_code === baseCurrency
+  );
+
+  const liquidBalance = calculateLiquidBalance(baseTransactions, baseAccounts);
+
+  // Calcular obligaciones pendientes totales (solo moneda base)
+  const pendingObligations = baseObligations.reduce(
     (sum, o) => sum.plus(new Decimal(o.amount || 0)),
     new Decimal(0)
   );
@@ -105,6 +118,16 @@ export async function getFinancialSummaryAction(): Promise<
     safetyReserve,
   });
 
+  // Ingresos y gastos reales del mes actual (moneda base, zona horaria del perfil)
+  const timezone = profile?.timezone || "America/Bogota";
+  const { income: monthlyIncome, expense: monthlyExpense } = calculateMonthlyIncomeExpense(
+    baseTransactions,
+    baseCurrency,
+    timezone
+  );
+
+  const monthlyTrend = calculateMonthlyTrend(baseTransactions, baseCurrency, timezone, 6);
+
   return {
     data: {
       liquidBalance,
@@ -112,6 +135,9 @@ export async function getFinancialSummaryAction(): Promise<
       safetyReserve,
       availableToSpend,
       currencyCode,
+      monthlyIncome,
+      monthlyExpense,
+      monthlyTrend,
     },
   };
 }
