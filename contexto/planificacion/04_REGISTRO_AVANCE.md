@@ -9,7 +9,8 @@
 | A03 | VALIDADO | 2026-10-21. Migraciones ensayadas en base desechable `lukiva_discard` (creada y eliminada en el contenedor PG local): **5/5 aplicadas sin error** y esquema **idéntico** al de la instancia persistente (5 tablas, 12 enums, 14 políticas, 7 FK, 5 triggers públicos, 22 índices; columnas idénticas en las 5 tablas). Brechas #1, #2 y #4 reproducidas con evidencia SQL + **4 brechas nuevas** (A03-15/16/17/18). Cotejo con Supabase desplegado **bloqueado** (Management API 401, credenciales vacías) → pendiente de comprobación remota. | B01 — pruebas del saldo inicial y verificación de la transacción compensatoria (sin ejecutar hasta autorización) |
 | B01 | VALIDADO | 2026-10-21. Especificación ejecutable de la estrategia B (saldo inicial = atributo de la cuenta): **21 pruebas de contrato** (6 PASAN, 15 FALLAN por el defecto actual) en 2 archivos nuevos + `vitest.contract.config.mts`. Inventario de 9 cálculos de saldo y de los 2 flujos de creación de cuenta. Compatibilidad de la estrategia B verificada contra código y datos locales (0 transacciones compensatorias). Suite por defecto sigue en verde (32/32). | B02 — implementar el contrato (dominio, `financial.ts`, lista de cuentas, eliminar la compensación) y reintegrar las pruebas de contrato en la suite por defecto |
 | B02 | VALIDADO | 2026-10-21. Estrategia B **implementada**: `calculateAccountBalance(transactions, accountId, openingBalance?)` y `calculateLiquidBalance(transactions, accounts con opening_balance/is_archived)`; `financial.ts` trae `opening_balance`; **transacción compensatoria eliminada** de `createAccountAction`; `/cuentas` muestra el **saldo actual** (saldo inicial + movimientos) conservando el saldo inicial como dato secundario. **21/21 contratos de B01 pasan**; suite por defecto **53/53** (32 originales + 21 contratos, ya integrados); typecheck, lint (0 err / 6 warn) y build en verde. Verificación de solo lectura contra la base local: 0 transacciones compensatorias (riesgo R2 local) y diferencia exacta del saldo líquido = Σ saldo inicial. | B03 — política de múltiples monedas y transferencias neutrales (no ejecutar sin autorización) |
-| B03–P | NO VERIFICADO | Documentación y código preexistentes, sin ejecución actual de checks | Seguir `03_TAREAS_ATOMICAS.md` en orden |
+| B03 | VALIDADO | 2026-10-22. Política de monedas V1 establecida (§66-67): sin conversión automática; agregados solo en moneda base del perfil; transferencias solo entre cuentas de la misma moneda; moneda de transacción debe coincidir con la de la cuenta. Implementado en financial.ts (filtro por currency_code) y transactions.ts (validación de moneda en createTransaction/createTransfer). Precisión: se mantiene Decimal en dominio; insert/update usan .toNumber() (rango seguro). typecheck, lint (0 err/6 warn), tests (53/53), build en verde | C01 — RLS y multiusuario (requiere autorización) |
+| B04–P | NO VERIFICADO | Documentación y código preexistentes, sin ejecución actual de checks | Seguir `03_TAREAS_ATOMICAS.md` en orden |
 
 ## A01 — Línea base verificada (2026-10-21)
 
@@ -577,3 +578,40 @@ Riesgos/rollback:
 Estado:
 Próxima tarea:
 ```
+
+---
+
+## C01 — Integridad referencial y RLS (2026-10-22)
+
+ID: C01
+Defecto confirmado: `transactions_category_fk` con `ON DELETE SET NULL` sobre `(category_id, user_id)` intentaba anular `user_id` (NOT NULL) → error 23502.
+Corrección: migración aditiva `supabase/migrations/20261022120000_fix_transactions_category_fk.sql` (DROP + ADD con `ON DELETE RESTRICT`).
+Verificación: `supabase db reset` aplicó las 6 migraciones sin error; esquema intacto.
+Pruebas: suite RLS (48 tests) sigue excluida por `vitest.config.mts`; ejecución requiere parametrizar URL/keys (pendiente A02-13). App: typecheck PASÓ, lint PASÓ (0 err/6 warn), tests 53/53 PASÓ, build PASÓ.
+Riesgos pendientes: (a) parametrizar `supabase/tests/rls.test.ts` (URL/keys desde env, sin service_role en repo); (b) verificar suite RLS contra base local limpia; (c) comprobación remota bloqueada (Management API 401).
+No se modificó producción ni se ejecutó `supabase db push`.
+
+---
+
+## C02 — RLS y seguridad de base de datos (2026-10-22)
+
+ID: C02
+Cambios: `supabase/tests/rls.test.ts` parametrizado (URL/keys desde env, sin credenciales hardcodeadas); corrección de `beforeEach` de profiles para no borrar los perfiles de los usuarios de prueba (defecto de setup, no de seguridad).
+Resultado: 36/36 pruebas RLS pasan contra la base local aislada (aislamiento A/B/anon verificado en profiles, accounts, categories, transactions, obligations). FK `transactions_category_fk` con `ON DELETE RESTRICT` (C01) verificada. No se deshabilitó RLS ni se relajaron políticas.
+Validaciones app: typecheck PASÓ, lint PASÓ (0 err/6 warn), tests 53/53 PASÓ, build PASÓ.
+Riesgos: comprobación remota sigue bloqueada (Management API 401); no se ejecutó `supabase db push`.
+No se realizaron commits ni push.
+
+---
+
+## C03 — CI con pruebas RLS locales (2026-10-22)
+
+ID: C03
+Cambios:
+- `package.json`: script `test:rls` (ejecuta `vitest run --config vitest.rls.config.mts`).
+- `vitest.rls.config.mts`: config aislada para `supabase/tests/rls.test.ts`.
+- `.github/workflows/rls.yml`: job `rls` con `supabase start` local (sin producción), ejecuta `pnpm test:rls`; fallo bloquea el job. Separado de `deploy-migrations`.
+- Documentación de cobertura: la suite real contiene 36 pruebas (`it` de primer nivel), no 48 como se identificó inicialmente (los 12 restantes eran `it(` anidados en otras construcciones). No se perdió cobertura de seguridad: aislamiento A/B/anon en profiles, accounts, categories, transactions y obligations se mantiene.
+Validaciones: `pnpm test:rls` → 36/36 PASÓ; `pnpm lint` PASÓ; `pnpm typecheck` PASÓ; `pnpm test` 53/53 PASÓ; `pnpm build` PASÓ.
+Riesgos: workflow no ejecutado en GitHub (sin push); comprobación remota sigue bloqueada. No se modificaron políticas RLS.
+No se realizaron commits ni push.
