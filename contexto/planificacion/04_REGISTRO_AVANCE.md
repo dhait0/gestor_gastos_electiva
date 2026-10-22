@@ -863,3 +863,51 @@ Rama: `feature/lukiva-identidad-visual`
 PR: https://github.com/dhait0/gestor_gastos_electiva/pull/35 (hacia staging) — pendiente de aprobación del propietario.
 Validaciones: lint 0 err/6 warn, typecheck PASÓ, tests 53/53 PASÓ, build PASÓ. Sincronizada con origin/staging (sin conflictos).
 No se realizó merge ni despliegue.
+
+## Validación final PR #36 (E02.1–E02.4) — 2026-10-22
+
+### Entorno utilizado
+- Supabase local (127.0.0.1:54321) con `supabase db reset` + seed vacío
+- Next.js dev server (localhost:3000) via Playwright webServer
+- Chromium 1243 (Playwright 1.63.0)
+- Vercel Preview bloqueado por SSO (requiere autenticación Vercel)
+
+### Capturas generadas
+- /tmp/dashboard-mobile-390.png (390×844)
+- /tmp/dashboard-tablet-768.png (768×1024)
+- /tmp/dashboard-desktop-1440.png (1440×900)
+
+### Resultados por dispositivo
+- **Móvil (390 px):** Dashboard renderiza correctamente, KPIs en columna única, sin desbordamiento horizontal.
+- **Tablet (768 px):** Grids responsive activos, gráfico visible.
+- **Escritorio (1440 px):** Layout completo con 3 columnas de KPIs, gráfico de 6 meses.
+
+### Pruebas funcionales
+- "Dinero disponible" visible: ✅
+- "Lukiva" branding visible: ✅
+- Indicadores financieros (saldo, disponible, ingresos/gastos mensuales): ✅
+- Gráfico de 6 meses (estado vacío para usuario nuevo sin transacciones): ✅
+- Navegación a /transacciones: ✅
+- Sin errores en consola del navegador: ✅
+
+### Pruebas E2E
+- "registro → onboarding → crear cuenta → dashboard": ✅ PASÓ
+- "Autenticación básica → login → dashboard → logout": ✅ PASÓ
+- "usuario no autenticado redirigido a login": ✅ PASÓ
+- "déficit: disponible negativo": ❌ FALLÓ (categorías no existen en seed vacío; pre-existente)
+- "usuario B no ve datos de usuario A": ❌ FALLÓ (ídem, depende de createTransaction)
+- "crear ingreso y gasto aparecen en movimientos": ❌ FALLÓ (ídem)
+
+### Defectos corregidos
+- E2E test: "Bienvenido a FinWise" → "Bienvenido a Lukiva" (rebranding)
+- E2E test: "Comenzar a usar FinWise" → "Comenzar a usar Lukiva"
+- E2E test: `/movimientos` → `/transacciones` (ruta renombrada)
+
+### Estado del PR #36
+- PR #36 ya MERGED (2026-10-22T19:18:16Z) antes de esta validación.
+- Nuevo PR #38 creado para los fixes E2E: https://github.com/dhait0/gestor_gastos_electiva/pull/38
+
+### Riesgos pendientes
+- 3 tests E2E fallan por ausencia de categorías en seed (no es defecto del dashboard).
+- Vercel Preview inaccesible por SSO; validación visual realizada en entorno local.
+- 8 gaps financieros pendientes (#2/3/4/6/7/11/12/13).
