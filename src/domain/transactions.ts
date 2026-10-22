@@ -307,3 +307,78 @@ export function calculateMonthlyIncomeExpense(
 
   return { income, expense };
 }
+export interface MonthlyTrendPoint {
+  month: string; // YYYY-MM
+  income: Decimal;
+  expense: Decimal;
+}
+
+/**
+ * Agrega ingresos y gastos por mes para los últimos `months` meses (incluido el actual),
+ * respetando la zona horaria del perfil, la moneda base, transferencias excluidas y
+ * transacciones eliminadas lógicamente.
+ */
+export function calculateMonthlyTrend(
+  transactions: Transaction[],
+  baseCurrency: string,
+  timezone: string,
+  months: number = 6,
+  now: Date = new Date()
+): MonthlyTrendPoint[] {
+  // Determinar el mes actual en la zona horaria del perfil
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+  });
+  const parts = formatter.formatToParts(now);
+  const curYear = Number(parts.find((p) => p.type === "year")!.value);
+  const curMonth = Number(parts.find((p) => p.type === "month")!.value);
+
+  // Generar los últimos `months` meses
+  const monthKeys: string[] = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(curYear, curMonth - 1 - i, 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    monthKeys.push(`${y}-${m}`);
+  }
+
+  const map = new Map<string, { income: Decimal; expense: Decimal }>();
+  for (const key of monthKeys) {
+    map.set(key, { income: new Decimal(0), expense: new Decimal(0) });
+  }
+
+  for (const t of transactions) {
+    if (t.deleted_at) continue;
+    if (t.currency_code !== baseCurrency) continue;
+    if (t.type === "TRANSFER") continue;
+    if (t.type !== "INCOME" && t.type !== "EXPENSE") continue;
+
+    // Determinar el mes de la transacción en la zona horaria del perfil
+    const txDate = new Date(t.transaction_date + "T00:00:00Z");
+    const txParts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+    }).formatToParts(txDate);
+    const txYear = txParts.find((p) => p.type === "year")!.value;
+    const txMonth = txParts.find((p) => p.type === "month")!.value;
+    const key = `${txYear}-${txMonth}`;
+
+    if (!map.has(key)) continue;
+
+    const entry = map.get(key)!;
+    const amount = new Decimal(t.amount);
+    if (t.type === "INCOME") {
+      entry.income = entry.income.plus(amount);
+    } else {
+      entry.expense = entry.expense.plus(amount);
+    }
+  }
+
+  return monthKeys.map((key) => {
+    const entry = map.get(key)!;
+    return { month: key, income: entry.income, expense: entry.expense };
+  });
+}

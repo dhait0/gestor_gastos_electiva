@@ -3,7 +3,8 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { toDomainTransactions } from "@/lib/supabase/transactions";
 import { Decimal } from "decimal.js";
-import { calculateLiquidBalance, calculateAvailableToSpend, calculateMonthlyIncomeExpense } from "@/domain/transactions";
+import { calculateLiquidBalance, calculateAvailableToSpend, calculateMonthlyIncomeExpense, calculateMonthlyTrend } from "@/domain/transactions";
+import type { MonthlyTrendPoint } from "@/domain/transactions";
 
 export interface FinancialSummary {
   liquidBalance: Decimal;
@@ -13,6 +14,7 @@ export interface FinancialSummary {
   currencyCode: string;
   monthlyIncome: Decimal;
   monthlyExpense: Decimal;
+  monthlyTrend: MonthlyTrendPoint[];
 }
 
 export async function getFinancialSummaryAction(): Promise<
@@ -124,6 +126,8 @@ export async function getFinancialSummaryAction(): Promise<
     timezone
   );
 
+  const monthlyTrend = calculateMonthlyTrend(baseTransactions, baseCurrency, timezone, 6);
+
   return {
     data: {
       liquidBalance,
@@ -133,6 +137,7 @@ export async function getFinancialSummaryAction(): Promise<
       currencyCode,
       monthlyIncome,
       monthlyExpense,
+      monthlyTrend,
     },
   };
 }

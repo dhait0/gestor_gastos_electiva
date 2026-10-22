@@ -3,6 +3,7 @@ import { LayoutDashboard, Plus, ArrowDownLeft, ArrowUpRight, AlertTriangle, Chec
 import { getFinancialSummaryAction } from "@/app/actions/financial";
 import { getTransactionsAction } from "@/app/actions/transactions";
 import { getAccountsAction } from "@/app/actions/accounts";
+import { MonthlyTrendChart } from "@/components/dashboard/MonthlyTrendChart";
 import { formatCurrency } from "@/lib/utils";
 import { Decimal } from "decimal.js";
 
@@ -66,7 +67,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const { liquidBalance, pendingObligations, safetyReserve, availableToSpend, currencyCode, monthlyIncome, monthlyExpense } = summaryResult.data;
+  const { liquidBalance, pendingObligations, safetyReserve, availableToSpend, currencyCode, monthlyIncome, monthlyExpense, monthlyTrend } = summaryResult.data;
   const transactions = transactionsResult.data || [];
   const hasTransactions = transactions.length > 0;
   const accounts = accountsResult.data || [];
@@ -234,11 +235,13 @@ export default async function DashboardPage() {
             </h2>
           </header>
           <div className="rounded-xl border border-border bg-card p-6">
-            <div className="h-48 flex items-center justify-center">
-              <p className="text-muted-foreground text-center px-4">
-                Gráfico de flujo de efectivo (próximamente)
-              </p>
-            </div>
+            <MonthlyTrendChart
+              data={monthlyTrend.map((p) => ({
+                month: p.month,
+                income: p.income.toNumber(),
+                expense: p.expense.toNumber(),
+              }))}
+            />
           </div>
         </section>
 

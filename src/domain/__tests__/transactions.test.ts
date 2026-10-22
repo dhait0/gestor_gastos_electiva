@@ -6,6 +6,7 @@ import {
   calculateLiquidBalance,
   calculateAvailableToSpend,
   calculateMonthlyIncomeExpense,
+  calculateMonthlyTrend,
   getCurrentMonthRange,
   TransactionType,
   TransactionDirection,
@@ -566,5 +567,67 @@ describe("getCurrentMonthRange", () => {
     const r = getCurrentMonthRange("America/Bogota", new Date("2026-02-10T12:00:00Z"));
     expect(r.start).toBe("2026-02-01");
     expect(r.end).toBe("2026-02-28");
+  });
+});
+
+describe("calculateMonthlyTrend", () => {
+  const tz = "America/Bogota";
+  const now = new Date("2026-10-15T12:00:00Z");
+
+  it("devuelve 6 meses incluyendo el actual", () => {
+    const res = calculateMonthlyTrend([], "COP", tz, 6, now);
+    expect(res.length).toBe(6);
+    expect(res[5].month).toBe("2026-10");
+  });
+
+  it("agrega ingresos y gastos por mes", () => {
+    const txs = [
+      txm({ id: "1", account_id: "a1", type: "INCOME", direction: "INFLOW", amount: "1000", transaction_date: "2026-10-10" }),
+      txm({ id: "2", account_id: "a1", type: "EXPENSE", direction: "OUTFLOW", amount: "300", transaction_date: "2026-10-12" }),
+      txm({ id: "3", account_id: "a1", type: "INCOME", direction: "INFLOW", amount: "500", transaction_date: "2026-09-05" }),
+    ];
+    const res = calculateMonthlyTrend(txs, "COP", tz, 6, now);
+    const oct = res.find((r) => r.month === "2026-10")!;
+    const sep = res.find((r) => r.month === "2026-09")!;
+    expect(oct.income.toString()).toBe("1000");
+    expect(oct.expense.toString()).toBe("300");
+    expect(sep.income.toString()).toBe("500");
+    expect(sep.expense.toString()).toBe("0");
+  });
+
+  it("excluye transferencias", () => {
+    const txs = [
+      txm({ id: "1", account_id: "a1", type: "TRANSFER", direction: "OUTFLOW", amount: "500", transaction_date: "2026-10-10" }),
+    ];
+    const res = calculateMonthlyTrend(txs, "COP", tz, 6, now);
+    const oct = res.find((r) => r.month === "2026-10")!;
+    expect(oct.income.toString()).toBe("0");
+    expect(oct.expense.toString()).toBe("0");
+  });
+
+  it("excluye monedas distintas", () => {
+    const txs = [
+      txm({ id: "1", account_id: "a1", type: "INCOME", direction: "INFLOW", amount: "100", currency_code: "USD", transaction_date: "2026-10-10" }),
+    ];
+    const res = calculateMonthlyTrend(txs, "COP", tz, 6, now);
+    const oct = res.find((r) => r.month === "2026-10")!;
+    expect(oct.income.toString()).toBe("0");
+  });
+
+  it("excluye transacciones eliminadas lógicamente", () => {
+    const txs = [
+      txm({ id: "1", account_id: "a1", type: "INCOME", direction: "INFLOW", amount: "1000", transaction_date: "2026-10-10", deleted_at: "2026-10-11T00:00:00Z" }),
+    ];
+    const res = calculateMonthlyTrend(txs, "COP", tz, 6, now);
+    const oct = res.find((r) => r.month === "2026-10")!;
+    expect(oct.income.toString()).toBe("0");
+  });
+
+  it("meses sin movimientos devuelven 0", () => {
+    const res = calculateMonthlyTrend([], "COP", tz, 6, now);
+    for (const p of res) {
+      expect(p.income.toString()).toBe("0");
+      expect(p.expense.toString()).toBe("0");
+    }
   });
 });
