@@ -648,3 +648,16 @@ Archivos candidatos D02 (copy/nombre): layout.tsx, login, registro, onboarding, 
 Archivos candidatos D03 (metadata/manifest/PWA): layout.tsx (metadata), manifest, icons, OG.
 Sin cambios de código en D01 (solo auditoría). No se implementó rediseño.
 Validación: no aplica (sin código). Git: rama creada desde staging @ 2f3cf95.
+
+---
+
+## D02 — Copy Lukiva aplicado (2026-10-22)
+
+ID: D02
+Rama: `feature/lukiva-identidad-visual`
+Commit: `41e590a`
+Referencias FinWise sustituidas (UI visible): login, registro, onboarding (×2), dashboard, AppLayoutClient (×2), globals.css comentarios, motion presets comentario, smoke test descripción.
+Referencias pendientes para D03: `src/app/layout.tsx` metadata (title, applicationName, apple-mobile-web-app-title) y manifest/PWA.
+Tokens visuales: no se modificaron (corresponden a D01/D03 posteriores); se conservan Manrope/Geist.
+Validaciones: lint PASÓ (0 err/6 warn), typecheck PASÓ, tests 53/53 PASÓ, build PASÓ.
+No se modificaron cálculos financieros, Server Actions ni Supabase.
