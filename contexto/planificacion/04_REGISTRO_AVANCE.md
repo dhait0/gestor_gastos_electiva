@@ -661,3 +661,15 @@ Referencias pendientes para D03: `src/app/layout.tsx` metadata (title, applicati
 Tokens visuales: no se modificaron (corresponden a D01/D03 posteriores); se conservan Manrope/Geist.
 Validaciones: lint PASÓ (0 err/6 warn), typecheck PASÓ, tests 53/53 PASÓ, build PASÓ.
 No se modificaron cálculos financieros, Server Actions ni Supabase.
+
+---
+
+## D03 — Metadata y manifest Lukiva (2026-10-22)
+
+ID: D03
+Rama: `feature/lukiva-identidad-visual`
+Commit: `def40c8`
+Cambios: `src/app/layout.tsx` (title, applicationName, appleWebApp.title, apple-mobile-web-app-title → Lukiva); `public/manifest.json` (name, short_name → Lukiva).
+Iconos/recursos PWA: sin cambios (se conservan los existentes; no hay alternativa aprobada nueva).
+Referencias FinWise restantes: `src/lib/motion/presets.ts` (comentario con nombre de doc `SISTEMA_DISENO_FINWISE.md`, histórico/técnico) — no afecta funcionalidad.
+Validaciones: lint PASÓ (0 err/6 warn), typecheck PASÓ, tests 53/53 PASÓ, build PASÓ. Metadatos y manifest contienen "Lukiva"; rutas PWA intactas.
