@@ -626,3 +626,25 @@ Sincronización con staging: rama creada desde `staging` @ `76c5e01` (igual a or
 Validación: typecheck, lint (0 err/6 warn), tests 53/53, build, test:rls 36/36 PASARON.
 Pull Request: https://github.com/dhait0/gestor_gastos_electiva/pull/34 (hacia staging) — pendiente de aprobación del propietario.
 Riesgos/bloqueos: zips (`*.zip`) quedan sin versionar (artefactos); requiere intervención humana para merge del PR.
+
+---
+
+## D01 — Auditoría de identidad y diseño (2026-10-22)
+
+ID: D01
+Rama: `feature/lukiva-identidad-visual`
+Inventario de marca FinWise (referencias visibles en src/):
+- `src/app/layout.tsx`: title/applicationName/apple-mobile-web-app-title "FinWise".
+- `src/app/(auth)/login/page.tsx`: "Bienvenido a FinWise".
+- `src/app/(auth)/registro/page.tsx`: "Crea tu cuenta en FinWise".
+- `src/app/(app)/onboarding/page.tsx`: "Comenzar a usar FinWise", "Bienvenido a FinWise".
+- `src/app/(app)/dashboard/page.tsx`: "FinWise Insight".
+- `src/components/layout/AppLayoutClient.tsx`: "FinWise" (h1 + footer).
+- `src/app/globals.css`: comentarios "FinWise semantic tokens / Light theme — FinWise / Dark theme — FinWise".
+- `src/lib/motion/presets.ts`: referencia a `SISTEMA_DISENO_FINWISE.md`.
+- `src/test/smoke.test.ts`: descripción "FinWise test environment".
+Tokens Lukiva propuestos (modelo de datos §identidad): azul #315CF5, menta #20BDA5, amarillo #FFC777, fondo #F5F7FE, texto #162039; Manrope/Geist. Aún no presentes en globals.css (tokens FinWise vigentes).
+Archivos candidatos D02 (copy/nombre): layout.tsx, login, registro, onboarding, dashboard, AppLayoutClient.
+Archivos candidatos D03 (metadata/manifest/PWA): layout.tsx (metadata), manifest, icons, OG.
+Sin cambios de código en D01 (solo auditoría). No se implementó rediseño.
+Validación: no aplica (sin código). Git: rama creada desde staging @ 2f3cf95.
