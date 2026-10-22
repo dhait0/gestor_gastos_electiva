@@ -379,6 +379,41 @@ Archivos modificados:
 - Comprobación visual real bloqueada por Playwright chromium rev mismatch (A03-17).
 
 **Próxima microtarea sugerida:** E02.4 (requiere autorización del propietario).
+
+## E02.4 — Validación responsive, accesibilidad y cierre visual del dashboard (2026-10-22)
+
+```
+Fecha: 2026-10-22
+ID: E02.4
+Rama: feature/lukiva-dashboard-responsive @ 8ce36c0
+Archivos modificados:
+  - src/app/(app)/dashboard/page.tsx (grid responsive: grid-cols-1 sm:grid-cols-3, grid-cols-1 sm:grid-cols-2)
+```
+
+**Estado de Playwright:** Chromium 1243 instalado exitosamente (`pnpm exec playwright install chromium`). Playwright 1.63.0 funcional. 7 tests E2E enumerados. La ejecución completa requiere dev server + Supabase local con datos; no ejecutada en esta microtarea.
+
+**Resultados responsive:** Ajustes de breakpoints para KPIs (1 columna en móvil, 3 en desktop) e ingresos/gastos (1 columna en móvil, 2 en tablet/desktop). Gráfico usa ResponsiveContainer. Sin scroll horizontal esperado.
+
+**Problemas encontrados:** Grids de KPIs eran fijos (3 y 2 columnas) sin adaptación móvil. Corregido.
+
+**Accesibilidad verificada (código):** Semántica aria-labelledby en secciones. Navegación por teclado con elementos estándar (a, button). Focus visible por defecto del navegador. Tema claro/oscuro vía CSS variables.
+
+**Pruebas ejecutadas:**
+- `pnpm lint`: 0 errores, 6 warnings (baseline).
+- `pnpm typecheck`: OK.
+- `pnpm test`: 70/70 PASÓ.
+- `pnpm build`: OK.
+
+**Commits realizados:**
+- `8ce36c0` feat(ui): E02.4 — ajustes responsive y accesibilidad del dashboard
+
+**Riesgos pendientes:**
+- Comprobación visual real con capturas no ejecutada (requiere dev server + auth + datos locales). Procedimiento reproducible documentado: `pnpm dev` + Playwright con viewport 390x844, 768x1024, 1440x900.
+- E2E completo bloqueado por datos de prueba y auth.
+
+**Estado actualizado de E02.4:** Completado (ajustes de código). Validación visual completa pendiente de entorno con datos.
+
+**Próxima microtarea sugerida:** Ninguna dentro de E02 (serie completada). Esperando autorización del propietario para PR o siguiente fase.
 Fecha: 2026-10-21
 ID: B01
 Responsable/agente: Kilo
