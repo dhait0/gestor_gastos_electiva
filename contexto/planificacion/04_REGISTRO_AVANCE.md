@@ -684,3 +684,15 @@ Commit: `4603d0b`
 Cambios: `src/components/layout/AppLayoutClient.tsx`: eliminados enlaces muertos (`/metas`, `/mas`), añadidos enlaces funcionales (`/cuentas`, `/obligaciones`, `/categorias`) en móvil y escritorio; eliminada rama de renderizado para items deshabilitados.
 Validaciones: lint PASÓ (0 err/8 warn), typecheck PASÓ, tests 53/53 PASÓ, build PASÓ.
 No se crearon módulos ni pantallas vacías. No se modificaron cálculos ni Supabase.
+
+---
+
+## E02 — Unificación de navegación y lint (2026-10-22)
+
+ID: E02
+Rama: `feature/lukiva-identidad-visual`
+Commit: `62a5e32`
+Cambios: eliminados imports no usados `Target` y `MoreHorizontal` en `AppLayoutClient.tsx` (introducidos por E01).
+Advertencias lint: 8 → 6 (vuelve al baseline). Las 6 restantes son preexistentes (unused vars en dashboard/onboarding/accounts).
+Validaciones: lint PASÓ (0 err/6 warn), typecheck PASÓ, tests 53/53 PASÓ, build PASÓ.
+Nota: la unificación completa de formularios/botones/tablas/feedback/accesibilidad (definición E02) se mantiene como trabajo incremental para E03; no se realizó rediseño masivo.
