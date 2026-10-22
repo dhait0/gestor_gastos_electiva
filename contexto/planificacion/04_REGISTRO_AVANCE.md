@@ -673,3 +673,14 @@ Cambios: `src/app/layout.tsx` (title, applicationName, appleWebApp.title, apple-
 Iconos/recursos PWA: sin cambios (se conservan los existentes; no hay alternativa aprobada nueva).
 Referencias FinWise restantes: `src/lib/motion/presets.ts` (comentario con nombre de doc `SISTEMA_DISENO_FINWISE.md`, histórico/técnico) — no afecta funcionalidad.
 Validaciones: lint PASÓ (0 err/6 warn), typecheck PASÓ, tests 53/53 PASÓ, build PASÓ. Metadatos y manifest contienen "Lukiva"; rutas PWA intactas.
+
+---
+
+## E01 — Navegación unificada (2026-10-22)
+
+ID: E01
+Rama: `feature/lukiva-identidad-visual`
+Commit: `4603d0b`
+Cambios: `src/components/layout/AppLayoutClient.tsx`: eliminados enlaces muertos (`/metas`, `/mas`), añadidos enlaces funcionales (`/cuentas`, `/obligaciones`, `/categorias`) en móvil y escritorio; eliminada rama de renderizado para items deshabilitados.
+Validaciones: lint PASÓ (0 err/8 warn), typecheck PASÓ, tests 53/53 PASÓ, build PASÓ.
+No se crearon módulos ni pantallas vacías. No se modificaron cálculos ni Supabase.
