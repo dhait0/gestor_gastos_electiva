@@ -3,15 +3,17 @@ import { Plus, CreditCard, Wallet, Landmark, PiggyBank, Smartphone, MoreHorizont
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { getAccountsAction } from "@/app/actions/accounts";
+import { getAccountsWithBalancesAction } from "@/app/actions/accounts";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { archiveAccountAction } from "@/app/actions/accounts";
+import type { Decimal } from "decimal.js";
 
 interface Account {
   id: string;
   name: string;
   type: string;
   opening_balance: number;
+  current_balance: Decimal;
   currency_code: string;
   color: string | null;
   icon: string | null;
@@ -44,9 +46,9 @@ const accountTypeLabels: Record<string, string> = {
 };
 
 export default async function CuentasPage() {
-  const { data: accounts, error } = await getAccountsAction();
+  const result = await getAccountsWithBalancesAction();
 
-  if (error) {
+  if ("error" in result) {
     return (
       <main className="p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-7xl">
@@ -56,7 +58,7 @@ export default async function CuentasPage() {
                 <AlertCircle className="w-8 h-8 text-destructive" />
               </div>
               <h3 className="text-lg font-medium text-foreground">Error al cargar las cuentas</h3>
-              <p className="mt-1 text-sm text-muted-foreground max-w-xs mx-auto">{error}</p>
+              <p className="mt-1 text-sm text-muted-foreground max-w-xs mx-auto">{result.error}</p>
               <Button onClick={() => window.location.reload()} className="mt-4 gap-2">
                 <RotateCcw className="w-4 h-4" />
                 Reintentar
@@ -68,7 +70,7 @@ export default async function CuentasPage() {
     );
   }
 
-  const accountList = accounts ?? [];
+  const accountList = result.data ?? [];
   const activeAccounts = accountList.filter((a) => !a.is_archived);
   const archivedAccounts = accountList.filter((a) => a.is_archived);
 
@@ -188,11 +190,19 @@ function AccountCard({ account, isArchived = false }: { account: Account; isArch
         <div className="flex items-center justify-between">
           <div className="text-right">
             <p className="text-2xl font-bold text-foreground tabular-nums">
-              {formatCurrency(account.opening_balance, account.currency_code)}
+              {formatCurrency(account.current_balance.toNumber(), account.currency_code)}
             </p>
-            <p className="text-xs text-muted-foreground">Saldo inicial</p>
+            <p className="text-xs text-muted-foreground">Saldo actual</p>
           </div>
         </div>
+        {account.opening_balance !== 0 && (
+          <div className="mt-3 pt-3 border-t border-border flex items-center justify-between gap-4">
+            <p className="text-xs text-muted-foreground">Saldo inicial</p>
+            <p className="text-sm font-medium text-muted-foreground tabular-nums">
+              {formatCurrency(account.opening_balance, account.currency_code)}
+            </p>
+          </div>
+        )}
         {account.type === "CREDIT_CARD" && account.credit_limit && (
           <div className="mt-3 pt-3 border-t border-border">
             <p className="text-xs text-muted-foreground">Límite de crédito</p>

@@ -29,6 +29,37 @@ export interface TransferPair {
   inflow: TransactionInput;
 }
 
+/**
+ * Valor monetario admisible por el dominio. Se normaliza siempre con
+ * `decimal.js`; nunca se usan flotantes para calcular saldos.
+ */
+export type Money = string | number | Decimal;
+
+/**
+ * Cuenta con los datos mínimos para agregar saldos (estrategia B).
+ *
+ * `opening_balance` es un **atributo de la cuenta**, no una transacción: es el
+ * saldo con el que la cuenta empieza a existir y se contabiliza exactamente
+ * una vez (ver `contexto/arquitectura/MODELO_DATOS_Y_SEGURIDAD.md` §12.1-12.2).
+ */
+export interface BalanceAccount {
+  id: string;
+  type: string;
+  opening_balance?: Money | null;
+  is_archived?: boolean | null;
+}
+
+/** Tipos de cuenta que componen el saldo líquido (dinero disponible). */
+export const LIQUID_ACCOUNT_TYPES: string[] = ["CASH", "CHECKING", "SAVINGS", "DIGITAL_WALLET"];
+
+/** Normaliza cualquier entrada monetaria a `Decimal`; vacío equivale a cero. */
+function toDecimal(value: Money | null | undefined): Decimal {
+  if (value === null || value === undefined || value === "") {
+    return new Decimal(0);
+  }
+  return new Decimal(value);
+}
+
 export function validateTransaction(input: TransactionInput): string | null {
   if (!input.account_id) {
     return "account_id es requerido";
@@ -138,11 +169,21 @@ export function createTransferPair(
   };
 }
 
+/**
+ * Saldo actual de una cuenta (estrategia B).
+ *
+ *   saldo actual = opening_balance + entradas − salidas
+ *
+ * El saldo inicial se contabiliza **una sola vez**: es un atributo de la
+ * cuenta, no un movimiento, de modo que nunca se duplica por tener
+ * transacciones registradas.
+ */
 export function calculateAccountBalance(
   transactions: Transaction[],
-  accountId: string
+  accountId: string,
+  openingBalance: Money = 0
 ): Decimal {
-  return transactions
+  const movements = transactions
     .filter((t) => t.account_id === accountId && !t.deleted_at)
     .reduce((balance, t) => {
       const amount = new Decimal(t.amount);
@@ -151,18 +192,26 @@ export function calculateAccountBalance(
       }
       return balance.minus(amount);
     }, new Decimal(0));
+
+  return movements.plus(toDecimal(openingBalance));
 }
 
+/**
+ * Saldo líquido: suma el saldo actual de las cuentas líquidas y no archivadas.
+ *
+ * Las cuentas archivadas se excluyen (defensa en profundidad: el filtro de
+ * `is_archived` en las consultas no debe ser la única barrera).
+ */
 export function calculateLiquidBalance(
   transactions: Transaction[],
-  accounts: Array<{ id: string; type: string }>
+  accounts: BalanceAccount[]
 ): Decimal {
-  const liquidAccountTypes = ["CASH", "CHECKING", "SAVINGS", "DIGITAL_WALLET"];
-  const liquidAccountIds = accounts
-    .filter((a) => liquidAccountTypes.includes(a.type))
-    .map((a) => a.id);
+  const liquidAccounts = accounts.filter(
+    (a) => LIQUID_ACCOUNT_TYPES.includes(a.type) && !a.is_archived
+  );
+  const liquidAccountIds = liquidAccounts.map((a) => a.id);
 
-  return transactions
+  const movements = transactions
     .filter((t) => liquidAccountIds.includes(t.account_id) && !t.deleted_at)
     .reduce((balance, t) => {
       const amount = new Decimal(t.amount);
@@ -171,6 +220,13 @@ export function calculateLiquidBalance(
       }
       return balance.minus(amount);
     }, new Decimal(0));
+
+  const openingBalances = liquidAccounts.reduce(
+    (balance, a) => balance.plus(toDecimal(a.opening_balance)),
+    new Decimal(0)
+  );
+
+  return movements.plus(openingBalances);
 }
 
 export interface AvailableToSpendInput {

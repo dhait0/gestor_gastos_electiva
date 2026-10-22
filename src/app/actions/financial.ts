@@ -1,6 +1,7 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { toDomainTransactions } from "@/lib/supabase/transactions";
 import { Decimal } from "decimal.js";
 import { calculateLiquidBalance, calculateAvailableToSpend } from "@/domain/transactions";
 
@@ -27,10 +28,10 @@ export async function getFinancialSummaryAction(): Promise<
     return { error: "No autorizado" };
   }
 
-  // 1. Obtener cuentas del usuario (para saber cuáles son líquidas)
+  // 1. Obtener cuentas del usuario (tipo, saldo inicial y estado de archivado)
   const { data: accounts, error: accountsError } = await supabase
     .from("accounts")
-    .select("id, type")
+    .select("id, type, opening_balance, is_archived")
     .eq("user_id", user.id)
     .eq("is_archived", false)
     .is("deleted_at", null);
@@ -72,17 +73,9 @@ export async function getFinancialSummaryAction(): Promise<
     return { error: "Error al obtener perfil" };
   }
 
-  // Calcular saldo líquido usando el dominio
-  const typedTransactions = (transactions || []).map((t) => ({
-    ...t,
-    amount: t.amount.toString(),
-    deleted_at: t.deleted_at,
-    user_id: user.id,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    description: "",
-    transaction_date: new Date().toISOString().split("T")[0],
-  })) as import("@/domain/transactions").Transaction[];
+  // Calcular saldo líquido usando el dominio (incluye el saldo inicial de cada
+  // cuenta líquida, que es un atributo de la cuenta y no un movimiento)
+  const typedTransactions = toDomainTransactions(transactions ?? [], user.id);
 
   const liquidBalance = calculateLiquidBalance(typedTransactions, accounts || []);
 
