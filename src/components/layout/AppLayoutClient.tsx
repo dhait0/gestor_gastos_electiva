@@ -15,8 +15,8 @@ const mobileNav = [
   { href: "/dashboard", label: "Inicio", icon: Home },
   { href: "/transacciones", label: "Movimientos", icon: List },
   { href: null, label: "Crear", icon: Plus, isAction: true },
-  { href: "/metas", label: "Metas", icon: Target, disabled: true },
-  { href: "/mas", label: "Más", icon: MoreHorizontal, disabled: true },
+  { href: "/cuentas", label: "Cuentas", icon: CreditCard },
+  { href: "/obligaciones", label: "Obligaciones", icon: TrendingUp },
 ];
 
 const desktopNav = [
@@ -24,7 +24,7 @@ const desktopNav = [
   { href: "/transacciones", label: "Movimientos", icon: List },
   { href: "/cuentas", label: "Cuentas", icon: CreditCard },
   { href: "/obligaciones", label: "Obligaciones", icon: TrendingUp },
-  { href: "/metas", label: "Metas", icon: Target, disabled: true },
+  { href: "/categorias", label: "Categorías", icon: List },
   { href: "/ajustes", label: "Ajustes", icon: Settings },
 ];
 
@@ -39,7 +39,7 @@ function MobileNav({ pathname }: { pathname: string }) {
           <button
             key={item.label}
             onClick={() => item.href && (window.location.href = item.href)}
-            disabled={item.disabled || item.isAction}
+            disabled={item.isAction}
             className={cn(
               "flex flex-col items-center gap-1 py-3 px-2",
               "text-xs font-medium transition-colors",
@@ -47,11 +47,10 @@ function MobileNav({ pathname }: { pathname: string }) {
               pathname === item.href
                 ? "text-primary"
                 : "text-muted-foreground hover:text-foreground",
-              item.disabled && "opacity-40 cursor-not-allowed",
-              item.isAction && "text-primary"
+                            item.isAction && "text-primary"
             )}
             aria-current={pathname === item.href ? "page" : undefined}
-            aria-disabled={item.disabled || item.isAction}
+            aria-disabled={item.isAction}
           >
             <item.icon className={cn("w-5 h-5", item.isAction && "text-primary")} />
             {item.label}
@@ -81,35 +80,21 @@ function DesktopSidebar({ pathname }: { pathname: string }) {
             <ul className="flex-1 space-y-1 p-4" role="list">
               {desktopNav.map((item) => (
                 <li key={item.label}>
-                  {item.disabled ? (
-                    <span
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2.5",
-                        "rounded-xl text-sm font-medium",
-                        "opacity-40 cursor-not-allowed"
-                      )}
-                      aria-disabled="true"
-                    >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
-                      {item.label}
-                    </span>
-                  ) : (
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2.5",
-                        "rounded-xl text-sm font-medium transition-colors",
-                        "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                        pathname === item.href
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                      )}
-                      aria-current={pathname === item.href ? "page" : undefined}
-                    >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
-                      {item.label}
-                    </Link>
-                  )}
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5",
+                      "rounded-xl text-sm font-medium transition-colors",
+                      "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                      pathname === item.href
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    )}
+                    aria-current={pathname === item.href ? "page" : undefined}
+                  >
+                    <item.icon className="w-5 h-5 flex-shrink-0" />
+                    {item.label}
+                  </Link>
                 </li>
               ))}
             </ul>
