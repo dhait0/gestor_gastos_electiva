@@ -16,13 +16,13 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "FinWise",
+  title: "Lukiva",
   description: "Inteligencia y gestión financiera personal. ¿Cuánto dinero puedes gastar realmente sin comprometer tus obligaciones, reservas y objetivos?",
-  applicationName: "FinWise",
+  applicationName: "Lukiva",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "FinWise",
+    title: "Lukiva",
   },
   formatDetection: {
     telephone: false,
@@ -66,7 +66,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#3B82F6" media="(prefers-color-scheme: dark)" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="FinWise" />
+        <meta name="apple-mobile-web-app-title" content="Lukiva" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className={cn(geist.variable, manrope.variable)}>
