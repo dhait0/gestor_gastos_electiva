@@ -209,7 +209,7 @@ export default async function DashboardPage() {
         <section aria-labelledby="insights-heading" className="space-y-4">
           <header className="flex items-center justify-between">
             <h2 id="insights-heading" className="text-lg font-semibold text-foreground">
-              FinWise Insight
+              Lukiva Insight
             </h2>
           </header>
           <div className="rounded-xl border border-border bg-card p-4">

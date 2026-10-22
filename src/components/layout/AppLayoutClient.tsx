@@ -76,7 +76,7 @@ function DesktopSidebar({ pathname }: { pathname: string }) {
         <SheetContent side="left" className="w-72 p-0">
           <nav className="flex flex-col h-full" aria-label="Navegación principal">
             <div className="p-4 border-b border-border">
-              <h1 className="text-xl font-bold text-foreground font-heading">FinWise</h1>
+              <h1 className="text-xl font-bold text-foreground font-heading">Lukiva</h1>
             </div>
             <ul className="flex-1 space-y-1 p-4" role="list">
               {desktopNav.map((item) => (
@@ -165,7 +165,7 @@ function AppHeader() {
         <div className="flex items-center gap-4">
           <DesktopSidebar pathname={pathname} />
           <h1 className="text-lg font-bold text-foreground font-heading hidden sm:block">
-            FinWise
+            Lukiva
           </h1>
         </div>
         <UserMenu />

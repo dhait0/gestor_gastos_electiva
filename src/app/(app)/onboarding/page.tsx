@@ -376,7 +376,7 @@ function Step3({ initialData, onComplete }: { initialData: OnboardingFormData; o
           "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:hover:translate-y-0"
         )}
       >
-        {isPending ? "Creando cuenta..." : "Comenzar a usar FinWise"}
+        {isPending ? "Creando cuenta..." : "Comenzar a usar Lukiva"}
         <CheckCircle className="w-4 h-4 ml-2" />
       </button>
     </form>
@@ -412,7 +412,7 @@ export default function OnboardingPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground font-heading tracking-tight">
-            Bienvenido a FinWise
+            Bienvenido a Lukiva
           </h1>
           <p className="mt-2 text-muted-foreground">
             Configuremos lo esencial para que empieces a gestionar tus finanzas
