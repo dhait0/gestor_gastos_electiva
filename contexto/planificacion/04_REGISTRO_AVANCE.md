@@ -264,7 +264,38 @@ No se ejecutó ningún `db push`, `db pull` ni operación contra producción. **
 
 **B01** — escribir las pruebas del saldo inicial y verificar si el flujo genera la transacción compensatoria (incluye el caso adverso de la categoría INCOME obligatoria, A03-15). No ejecutada en A03; requiere autorización explícita.
 
-## B01 — Pruebas y especificación del saldo inicial (estrategia B) (2026-10-21)
+## E02.1 — Navegación y estados vacíos del dashboard (2026-10-22)
+
+```
+Fecha: 2026-10-22
+ID: E02.1
+Rama: feature/lukiva-dashboard-responsive @ 5fbd603
+Archivos modificados: src/app/(app)/dashboard/page.tsx
+```
+
+**Nota de discrepancia:** E02 aparece en el historial como "limpieza de imports" (E02 del trabajo real, PR #35) y en la planificación vigente como "Rediseñar dashboard responsive". Se registra E02.1 para esta intervención sin modificar identificadores de tareas completadas ni borrar resultados históricos.
+
+**Objetivo:** Corregir navegación y estados vacíos del dashboard sin modificar cálculos financieros ni estructura visual completa.
+
+**Cambios realizados:**
+1. Enlace `/movimientos` → `/transacciones` (resuelve 404, brecha A02-12 para dashboard).
+2. Fetch de cuentas añadido (`getAccountsAction`) para detectar ausencia de cuentas.
+3. Estado vacío para sin cuentas: mensaje + CTA "Crear primera cuenta" → `/cuentas/nueva`.
+4. Estado vacío para sin obligaciones pendientes: "Sin obligaciones pendientes" en lugar de `-0`.
+5. Estado vacío para sin movimientos ya existente, mantenido.
+
+**Validaciones:**
+- `pnpm lint`: 0 errores, 6 warnings (baseline).
+- `pnpm typecheck`: OK.
+- `pnpm test`: 53/53.
+- `pnpm build`: OK.
+
+**Riesgos pendientes:**
+- Ingresos/gastos mensuales siguen hardcodeados (deferido a E02.2).
+- Sección "Flujo mensual" sigue como placeholder (deferido a E02.3).
+- Comprobación visual real no ejecutada (Playwright chromium rev mismatch, brecha A03-17).
+
+**Próxima microtarea sugerida:** E02.2 (autorización requerida).
 
 ```
 Fecha: 2026-10-21
