@@ -235,6 +235,150 @@ export interface AvailableToSpendInput {
   safetyReserve: Decimal;
 }
 
+export interface MonthlyIncomeExpense {
+  income: Decimal;
+  expense: Decimal;
+}
+
+/**
+ * Calcula el rango del mes actual (inicio y fin) en la zona horaria indicada.
+ * Devuelve fechas ISO (YYYY-MM-DD) para comparar con `transaction_date` (tipo date).
+ */
 export function calculateAvailableToSpend(input: AvailableToSpendInput): Decimal {
   return input.liquidBalance.minus(input.pendingObligations).minus(input.safetyReserve);
+}
+
+export function getCurrentMonthRange(
+  timezone: string,
+  now: Date = new Date()
+): { start: string; end: string } {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+  });
+  const parts = formatter.formatToParts(now);
+  const year = parts.find((p) => p.type === "year")!.value;
+  const month = parts.find((p) => p.type === "month")!.value;
+
+  const start = `${year}-${month}-01`;
+  // Día último del mes (independiente de zona horaria: solo depende del mes)
+  const lastDay = new Date(Number(year), Number(month), 0).getDate();
+  const end = `${year}-${month}-${String(lastDay).padStart(2, "0")}`;
+
+  return { start, end };
+}
+
+/**
+ * Calcula los ingresos y gastos reales del mes actual para la moneda base.
+ *
+ * Reglas:
+ * - Excluye transacciones eliminadas lógicamente (deleted_at != null).
+ * - Excluye transferencias internas (type === "TRANSFER").
+ * - Excluye transacciones en monedas distintas a baseCurrency.
+ * - No considera opening_balance como ingreso (es atributo de cuenta).
+ * - Solo suma INCOME (INFLOW) y EXPENSE (OUTFLOW) del mes actual
+ *   según la zona horaria del perfil.
+ */
+export function calculateMonthlyIncomeExpense(
+  transactions: Transaction[],
+  baseCurrency: string,
+  timezone: string,
+  now: Date = new Date()
+): MonthlyIncomeExpense {
+  const { start, end } = getCurrentMonthRange(timezone, now);
+
+  let income = new Decimal(0);
+  let expense = new Decimal(0);
+
+  for (const t of transactions) {
+    if (t.deleted_at) continue;
+    if (t.currency_code !== baseCurrency) continue;
+    if (t.type === "TRANSFER") continue;
+    if (t.transaction_date < start || t.transaction_date > end) continue;
+
+    const amount = new Decimal(t.amount);
+    if (t.type === "INCOME") {
+      income = income.plus(amount);
+    } else if (t.type === "EXPENSE") {
+      expense = expense.plus(amount);
+    }
+  }
+
+  return { income, expense };
+}
+export interface MonthlyTrendPoint {
+  month: string; // YYYY-MM
+  income: Decimal;
+  expense: Decimal;
+}
+
+/**
+ * Agrega ingresos y gastos por mes para los últimos `months` meses (incluido el actual),
+ * respetando la zona horaria del perfil, la moneda base, transferencias excluidas y
+ * transacciones eliminadas lógicamente.
+ */
+export function calculateMonthlyTrend(
+  transactions: Transaction[],
+  baseCurrency: string,
+  timezone: string,
+  months: number = 6,
+  now: Date = new Date()
+): MonthlyTrendPoint[] {
+  // Determinar el mes actual en la zona horaria del perfil
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+  });
+  const parts = formatter.formatToParts(now);
+  const curYear = Number(parts.find((p) => p.type === "year")!.value);
+  const curMonth = Number(parts.find((p) => p.type === "month")!.value);
+
+  // Generar los últimos `months` meses
+  const monthKeys: string[] = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(curYear, curMonth - 1 - i, 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    monthKeys.push(`${y}-${m}`);
+  }
+
+  const map = new Map<string, { income: Decimal; expense: Decimal }>();
+  for (const key of monthKeys) {
+    map.set(key, { income: new Decimal(0), expense: new Decimal(0) });
+  }
+
+  for (const t of transactions) {
+    if (t.deleted_at) continue;
+    if (t.currency_code !== baseCurrency) continue;
+    if (t.type === "TRANSFER") continue;
+    if (t.type !== "INCOME" && t.type !== "EXPENSE") continue;
+
+    // Determinar el mes de la transacción en la zona horaria del perfil
+    const txDate = new Date(t.transaction_date + "T00:00:00Z");
+    const txParts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+    }).formatToParts(txDate);
+    const txYear = txParts.find((p) => p.type === "year")!.value;
+    const txMonth = txParts.find((p) => p.type === "month")!.value;
+    const key = `${txYear}-${txMonth}`;
+
+    if (!map.has(key)) continue;
+
+    const entry = map.get(key)!;
+    const amount = new Decimal(t.amount);
+    if (t.type === "INCOME") {
+      entry.income = entry.income.plus(amount);
+    } else {
+      entry.expense = entry.expense.plus(amount);
+    }
+  }
+
+  return monthKeys.map((key) => {
+    const entry = map.get(key)!;
+    return { month: key, income: entry.income, expense: entry.expense };
+  });
 }

@@ -264,9 +264,156 @@ No se ejecutó ningún `db push`, `db pull` ni operación contra producción. **
 
 **B01** — escribir las pruebas del saldo inicial y verificar si el flujo genera la transacción compensatoria (incluye el caso adverso de la categoría INCOME obligatoria, A03-15). No ejecutada en A03; requiere autorización explícita.
 
-## B01 — Pruebas y especificación del saldo inicial (estrategia B) (2026-10-21)
+## E02.1 — Navegación y estados vacíos del dashboard (2026-10-22)
 
 ```
+Fecha: 2026-10-22
+ID: E02.1
+Rama: feature/lukiva-dashboard-responsive @ 5fbd603
+Archivos modificados: src/app/(app)/dashboard/page.tsx
+```
+
+**Nota de discrepancia:** E02 aparece en el historial como "limpieza de imports" (E02 del trabajo real, PR #35) y en la planificación vigente como "Rediseñar dashboard responsive". Se registra E02.1 para esta intervención sin modificar identificadores de tareas completadas ni borrar resultados históricos.
+
+**Objetivo:** Corregir navegación y estados vacíos del dashboard sin modificar cálculos financieros ni estructura visual completa.
+
+**Cambios realizados:**
+1. Enlace `/movimientos` → `/transacciones` (resuelve 404, brecha A02-12 para dashboard).
+2. Fetch de cuentas añadido (`getAccountsAction`) para detectar ausencia de cuentas.
+3. Estado vacío para sin cuentas: mensaje + CTA "Crear primera cuenta" → `/cuentas/nueva`.
+4. Estado vacío para sin obligaciones pendientes: "Sin obligaciones pendientes" en lugar de `-0`.
+5. Estado vacío para sin movimientos ya existente, mantenido.
+
+**Validaciones:**
+- `pnpm lint`: 0 errores, 6 warnings (baseline).
+- `pnpm typecheck`: OK.
+- `pnpm test`: 53/53.
+- `pnpm build`: OK.
+
+**Riesgos pendientes:**
+- Ingresos/gastos mensuales siguen hardcodeados (deferido a E02.2).
+- Sección "Flujo mensual" sigue como placeholder (deferido a E02.3).
+- Comprobación visual real no ejecutada (Playwright chromium rev mismatch, brecha A03-17).
+
+**Próxima microtarea sugerida:** E02.2 (autorización requerida).
+
+```
+
+## E02.2 — Ingresos y gastos mensuales reales del dashboard (2026-10-22)
+
+```
+Fecha: 2026-10-22
+ID: E02.2
+Rama: feature/lukiva-dashboard-responsive @ 1849ccd
+Archivos modificados:
+  - src/domain/transactions.ts (calculateMonthlyIncomeExpense, getCurrentMonthRange)
+  - src/app/actions/financial.ts (monthlyIncome/monthlyExpense en FinancialSummary, timezone del perfil)
+  - src/app/(app)/dashboard/page.tsx (valores reales en lugar de hardcodeados)
+  - src/domain/__tests__/transactions.test.ts (10 pruebas nuevas)
+```
+
+**Objetivo:** Mostrar ingresos y gastos reales del mes actual en el dashboard.
+
+**Reglas de filtrado aplicadas:**
+1. Solo movimientos reales de ingreso (INCOME) y gasto (EXPENSE).
+2. Transferencias internas excluidas (type === "TRANSFER").
+3. opening_balance no se considera ingreso (es atributo de cuenta).
+4. Moneda base del perfil: solo transacciones con currency_code === baseCurrency.
+5. Decimal para sumas (sin conversión a Number).
+6. Período mensual según zona horaria del perfil (Intl.DateTimeFormat).
+7. Transacciones eliminadas lógicamente excluidas (deleted_at != null).
+8. Aislamiento por usuario (Server Action filtra por user_id).
+9. No se calcula a partir de diferencias de saldos.
+
+**Pruebas añadidas (10):** ingresos+gastos del mes, transferencias excluidas, monedas distintas, eliminación lógica, meses anteriores, sin transacciones, solo ingresos, solo gastos, límite de mes en zona horaria, rango de mes (octubre y febrero).
+
+**Validaciones:**
+- `pnpm lint`: 0 errores, 6 warnings (baseline).
+- `pnpm typecheck`: OK.
+- `pnpm test`: 64/64 PASÓ.
+- `pnpm build`: OK.
+
+**Confirmación:** Valores hardcodeados ("Calculando...") eliminados; ahora muestran "Este mes".
+
+**Riesgos pendientes:**
+- Sección "Flujo mensual" sigue como placeholder — deferido a E02.3.
+- Comprobación visual real bloqueada por Playwright chromium rev mismatch (A03-17).
+
+**Próxima microtarea sugerida:** E02.3 (requiere autorización del propietario).
+
+## E02.3 — Flujo mensual y jerarquía visual del dashboard (2026-10-22)
+
+```
+Fecha: 2026-10-22
+ID: E02.3
+Rama: feature/lukiva-dashboard-responsive @ 21b1403
+Archivos modificados:
+  - src/domain/transactions.ts (calculateMonthlyTrend)
+  - src/app/actions/financial.ts (monthlyTrend en FinancialSummary)
+  - src/app/(app)/dashboard/page.tsx (Recharts en lugar de placeholder)
+  - src/components/dashboard/MonthlyTrendChart.tsx (nuevo, client component)
+  - src/domain/__tests__/transactions.test.ts (6 pruebas nuevas)
+```
+
+**Origen y cálculo de los datos del gráfico:**
+- Agregación mensual en dominio (`calculateMonthlyTrend`): últimos 6 meses, ingresos y gastos por mes.
+- Excluye transferencias, monedas distintas, eliminadas lógicamente, saldos iniciales.
+- Zona horaria del perfil para límites mensuales.
+- Decimal para agregaciones.
+
+**Biblioteca/componente utilizado:** Recharts 3.10.1 (ya instalada). Componente client `MonthlyTrendChart` con BarChart, estado vacío incluido.
+
+**Mejoras de jerarquía visual:** Dinero disponible sigue como KPI principal (card destacada). Ingresos/gastos del mes como KPIs secundarios. Gráfico de flujo mensual reemplaza el placeholder.
+
+**Pruebas añadidas (6):** 6 meses, agregación por mes, transferencias, monedas, eliminación lógica, meses sin movimientos. Total: 70/70 PASÓ.
+
+**Aclaración del conteo de pruebas:** 53 originales + 10 (E02.2) + 1 (getCurrentMonthRange) + 6 (E02.3) = 70. La diferencia reportada anteriormente (64) correspondía a 53 + 11 (10 de E02.2 + 1 de getCurrentMonthRange). Ahora 70 tras añadir 6 de E02.3.
+
+**Validaciones:**
+- `pnpm lint`: 0 errores, 6 warnings (baseline).
+- `pnpm typecheck`: OK.
+- `pnpm test`: 70/70 PASÓ.
+- `pnpm build`: OK.
+
+**Riesgos pendientes:**
+- Comprobación visual real bloqueada por Playwright chromium rev mismatch (A03-17).
+
+**Próxima microtarea sugerida:** E02.4 (requiere autorización del propietario).
+
+## E02.4 — Validación responsive, accesibilidad y cierre visual del dashboard (2026-10-22)
+
+```
+Fecha: 2026-10-22
+ID: E02.4
+Rama: feature/lukiva-dashboard-responsive @ 8ce36c0
+Archivos modificados:
+  - src/app/(app)/dashboard/page.tsx (grid responsive: grid-cols-1 sm:grid-cols-3, grid-cols-1 sm:grid-cols-2)
+```
+
+**Estado de Playwright:** Chromium 1243 instalado exitosamente (`pnpm exec playwright install chromium`). Playwright 1.63.0 funcional. 7 tests E2E enumerados. La ejecución completa requiere dev server + Supabase local con datos; no ejecutada en esta microtarea.
+
+**Resultados responsive:** Ajustes de breakpoints para KPIs (1 columna en móvil, 3 en desktop) e ingresos/gastos (1 columna en móvil, 2 en tablet/desktop). Gráfico usa ResponsiveContainer. Sin scroll horizontal esperado.
+
+**Problemas encontrados:** Grids de KPIs eran fijos (3 y 2 columnas) sin adaptación móvil. Corregido.
+
+**Accesibilidad verificada (código):** Semántica aria-labelledby en secciones. Navegación por teclado con elementos estándar (a, button). Focus visible por defecto del navegador. Tema claro/oscuro vía CSS variables.
+
+**Pruebas ejecutadas:**
+- `pnpm lint`: 0 errores, 6 warnings (baseline).
+- `pnpm typecheck`: OK.
+- `pnpm test`: 70/70 PASÓ.
+- `pnpm build`: OK.
+
+**Commits realizados:**
+- `8ce36c0` feat(ui): E02.4 — ajustes responsive y accesibilidad del dashboard
+
+**Riesgos pendientes:**
+- Comprobación visual real con capturas no ejecutada (requiere dev server + auth + datos locales). Procedimiento reproducible documentado: `pnpm dev` + Playwright con viewport 390x844, 768x1024, 1440x900.
+- E2E completo bloqueado por datos de prueba y auth.
+
+**Estado actualizado de E02.4:** Completado (ajustes de código). Validación visual completa pendiente de entorno con datos.
+
+**Próxima microtarea sugerida:** Ninguna dentro de E02 (serie completada). Esperando autorización del propietario para PR o siguiente fase.
 Fecha: 2026-10-21
 ID: B01
 Responsable/agente: Kilo

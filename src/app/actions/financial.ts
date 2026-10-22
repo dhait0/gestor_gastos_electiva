@@ -3,7 +3,8 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { toDomainTransactions } from "@/lib/supabase/transactions";
 import { Decimal } from "decimal.js";
-import { calculateLiquidBalance, calculateAvailableToSpend } from "@/domain/transactions";
+import { calculateLiquidBalance, calculateAvailableToSpend, calculateMonthlyIncomeExpense, calculateMonthlyTrend } from "@/domain/transactions";
+import type { MonthlyTrendPoint } from "@/domain/transactions";
 
 export interface FinancialSummary {
   liquidBalance: Decimal;
@@ -11,6 +12,9 @@ export interface FinancialSummary {
   safetyReserve: Decimal;
   availableToSpend: Decimal;
   currencyCode: string;
+  monthlyIncome: Decimal;
+  monthlyExpense: Decimal;
+  monthlyTrend: MonthlyTrendPoint[];
 }
 
 export async function getFinancialSummaryAction(): Promise<
@@ -65,7 +69,7 @@ export async function getFinancialSummaryAction(): Promise<
   // 4. Obtener perfil (para safety_reserve y currency_code)
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("safety_reserve, currency_code")
+    .select("safety_reserve, currency_code, timezone")
     .eq("id", user.id)
     .single();
 
@@ -114,6 +118,16 @@ export async function getFinancialSummaryAction(): Promise<
     safetyReserve,
   });
 
+  // Ingresos y gastos reales del mes actual (moneda base, zona horaria del perfil)
+  const timezone = profile?.timezone || "America/Bogota";
+  const { income: monthlyIncome, expense: monthlyExpense } = calculateMonthlyIncomeExpense(
+    baseTransactions,
+    baseCurrency,
+    timezone
+  );
+
+  const monthlyTrend = calculateMonthlyTrend(baseTransactions, baseCurrency, timezone, 6);
+
   return {
     data: {
       liquidBalance,
@@ -121,6 +135,9 @@ export async function getFinancialSummaryAction(): Promise<
       safetyReserve,
       availableToSpend,
       currencyCode,
+      monthlyIncome,
+      monthlyExpense,
+      monthlyTrend,
     },
   };
 }
