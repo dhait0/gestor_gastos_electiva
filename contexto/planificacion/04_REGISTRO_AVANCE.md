@@ -298,6 +298,48 @@ Archivos modificados: src/app/(app)/dashboard/page.tsx
 **Próxima microtarea sugerida:** E02.2 (autorización requerida).
 
 ```
+
+## E02.2 — Ingresos y gastos mensuales reales del dashboard (2026-10-22)
+
+```
+Fecha: 2026-10-22
+ID: E02.2
+Rama: feature/lukiva-dashboard-responsive @ 1849ccd
+Archivos modificados:
+  - src/domain/transactions.ts (calculateMonthlyIncomeExpense, getCurrentMonthRange)
+  - src/app/actions/financial.ts (monthlyIncome/monthlyExpense en FinancialSummary, timezone del perfil)
+  - src/app/(app)/dashboard/page.tsx (valores reales en lugar de hardcodeados)
+  - src/domain/__tests__/transactions.test.ts (10 pruebas nuevas)
+```
+
+**Objetivo:** Mostrar ingresos y gastos reales del mes actual en el dashboard.
+
+**Reglas de filtrado aplicadas:**
+1. Solo movimientos reales de ingreso (INCOME) y gasto (EXPENSE).
+2. Transferencias internas excluidas (type === "TRANSFER").
+3. opening_balance no se considera ingreso (es atributo de cuenta).
+4. Moneda base del perfil: solo transacciones con currency_code === baseCurrency.
+5. Decimal para sumas (sin conversión a Number).
+6. Período mensual según zona horaria del perfil (Intl.DateTimeFormat).
+7. Transacciones eliminadas lógicamente excluidas (deleted_at != null).
+8. Aislamiento por usuario (Server Action filtra por user_id).
+9. No se calcula a partir de diferencias de saldos.
+
+**Pruebas añadidas (10):** ingresos+gastos del mes, transferencias excluidas, monedas distintas, eliminación lógica, meses anteriores, sin transacciones, solo ingresos, solo gastos, límite de mes en zona horaria, rango de mes (octubre y febrero).
+
+**Validaciones:**
+- `pnpm lint`: 0 errores, 6 warnings (baseline).
+- `pnpm typecheck`: OK.
+- `pnpm test`: 64/64 PASÓ.
+- `pnpm build`: OK.
+
+**Confirmación:** Valores hardcodeados ("Calculando...") eliminados; ahora muestran "Este mes".
+
+**Riesgos pendientes:**
+- Sección "Flujo mensual" sigue como placeholder — deferido a E02.3.
+- Comprobación visual real bloqueada por Playwright chromium rev mismatch (A03-17).
+
+**Próxima microtarea sugerida:** E02.3 (requiere autorización del propietario).
 Fecha: 2026-10-21
 ID: B01
 Responsable/agente: Kilo
