@@ -911,3 +911,23 @@ No se realizó merge ni despliegue.
 - 3 tests E2E fallan por ausencia de categorías en seed (no es defecto del dashboard).
 - Vercel Preview inaccesible por SSO; validación visual realizada en entorno local.
 - 8 gaps financieros pendientes (#2/3/4/6/7/11/12/13).
+
+## Corrección themeColor (Next.js 16) — 2026-10-22
+
+### Archivos modificados
+- `src/app/layout.tsx`: movido `themeColor` de `metadata` a `export const viewport: Viewport`.
+
+### Validaciones
+- `pnpm lint`: 0 errores, 6 advertencias (preexistentes, sin cambios)
+- `pnpm typecheck`: PASÓ (exit 0)
+- `pnpm test`: 70/70 PASARON
+- `pnpm build`: PASÓ, warning "Unsupported metadata themeColor" eliminado de todas las rutas
+
+### Advertencias restantes
+- 6 warnings preexistentes (unused vars, async client components) — no relacionadas con este cambio.
+
+### Estado del PR #38
+- Abierto: https://github.com/dhait0/gestor_gastos_electiva/pull/38
+- Commit: afefdf5
+
+STOP
