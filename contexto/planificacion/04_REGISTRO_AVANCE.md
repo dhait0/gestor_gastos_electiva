@@ -964,3 +964,38 @@ efddfad — fix(css): mapear variables CSS a tokens Tailwind 4 en @theme inline
 Abierto: https://github.com/dhait0/gestor_gastos_electiva/pull/38
 
 STOP
+
+## Diagnóstico E2E — Categorías y sesión (2026-10-22)
+
+### Mecanismo de preparación de categorías
+- Las categorías se crean manualmente por el usuario vía `createCategoryAction` (tabla `categories`, RLS por `user_id`).
+- El onboarding NO crea categorías automáticamente (por diseño, no es obligatorio para usuarios reales).
+- `seed.sql` está vacío por defecto.
+
+### Resultado de intentos
+- Creación de categoría vía UI en el test: funciona (redirect a /categorias).
+- Creación de transacción posterior: la página navega a /login tras submit (pérdida de sesión durante server action o router.refresh()).
+- Intentos alternativos (fetch REST, evaluate Supabase client): bloqueados por httpOnly cookie / módulo no disponible en browser.
+
+### Resultado E2E (6 tests)
+| Test | Resultado |
+|---|---|
+| registro → onboarding → dashboard | ✅ PASA |
+| login → dashboard → logout | ✅ PASA |
+| no autenticado → redirect | ✅ PASA |
+| déficit disponible negativo | ❌ FALLA (sin categorías) |
+| aislamiento usuario A/B | ❌ FALLA (sin categorías) |
+| crear ingreso/gasto | ❌ FALLA (sin categorías) |
+
+### Conclusión
+No es un defecto funcional. Es un problema de preparación de datos de prueba: los tests E2E necesitan categorías preexistentes, y la creación vía UI en el flujo del test pierde la sesión al enviar el formulario de transacción.
+
+### Solución propuesta (fuera de alcance actual)
+- Añadir categorías por defecto en seed.sql para entorno local (requiere user_id preexistente, no viable sin trigger).
+- O añadir un endpoint de test (solo dev) que cree categorías para el usuario autenticado.
+- O modificar el test para usar la API REST de Supabase con el token de sesión extraído del cookie.
+
+### Estado del PR #38
+Abierto: https://github.com/dhait0/gestor_gastos_electiva/pull/38
+
+STOP
