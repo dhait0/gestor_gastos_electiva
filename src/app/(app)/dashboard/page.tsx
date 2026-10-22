@@ -163,7 +163,7 @@ export default async function DashboardPage() {
                 </div>
               </div>
             </div>
-            <div className="mt-6 grid grid-cols-3 gap-4 text-center">
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
               <div className="rounded-xl bg-background/50 p-4 border border-border/50">
                 <p className="text-sm text-muted-foreground">Saldo líquido</p>
                 <p className="mt-1 text-xl font-semibold text-foreground tabular-nums">
@@ -198,7 +198,7 @@ export default async function DashboardPage() {
               Resumen del mes
             </h2>
           </header>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className={cn(
               "rounded-xl p-4 border",
               "bg-success/5 border-success/20"
