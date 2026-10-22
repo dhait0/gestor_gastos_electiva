@@ -103,7 +103,7 @@ async function completeOnboarding(page: Page, accountName: string, initialBalanc
   }
 
   // Step 1: Profile
-  await expect(page.locator("main h1")).toContainText("Bienvenido a FinWise");
+  await expect(page.locator("main h1")).toContainText("Bienvenido a Lukiva");
   await page.waitForSelector('input[name="displayName"]', { state: "visible" });
   await page.fill('input[name="displayName"]', "Test User");
   await page.selectOption('select[name="currencyCode"]', "COP");
@@ -128,14 +128,14 @@ async function completeOnboarding(page: Page, accountName: string, initialBalanc
   await page.waitForSelector('input[name="safetyReserve"]', { state: "visible", timeout: 10000 });
 
   // Step 2: Safety Reserve
-  await expect(page.locator("main h1")).toContainText("Bienvenido a FinWise");
+  await expect(page.locator("main h1")).toContainText("Bienvenido a Lukiva");
   await page.fill('input[name="safetyReserve"]', "100000");
   await page.click('button:has-text("Continuar")');
   await page.waitForLoadState("networkidle");
   await page.waitForSelector('input[name="name"]', { state: "visible", timeout: 10000 });
 
   // Step 3: Account
-  await expect(page.locator("main h1")).toContainText("Bienvenido a FinWise");
+  await expect(page.locator("main h1")).toContainText("Bienvenido a Lukiva");
   await page.fill('input[name="name"]', accountName);
   await page.click('input[name="type"][value="CHECKING"]');
   await page.fill('input[name="initialBalance"]', initialBalance);
@@ -152,7 +152,7 @@ async function completeOnboarding(page: Page, accountName: string, initialBalanc
     };
   });
   
-  await page.click('button:has-text("Comenzar a usar FinWise")');
+  await page.click('button:has-text("Comenzar a usar Lukiva")');
   // Wait for form submission to complete (button should be disabled during submission)
   await page.waitForFunction(() => {
     const btn = document.querySelector('button[type="submit"]') as HTMLButtonElement | null;
@@ -269,7 +269,7 @@ test.describe("FASE 21 - Flujo crítico MVP (E2E)", () => {
     await expect(page.locator("text=Saldo A")).not.toBeVisible();
     await expect(page.locator("text=Salario A")).not.toBeVisible();
 
-await page.goto(`${BASE_URL}/movimientos`);
+await page.goto(`${BASE_URL}/transacciones`);
     await expect(page.locator("text=Salario A")).not.toBeVisible();
   });
 });
@@ -312,7 +312,7 @@ test.describe("Transacciones", () => {
     await createTransaction(page, "income", "100000", "Freelance");
     await createTransaction(page, "expense", "30000", "Transporte");
 
-    await page.goto(`${BASE_URL}/movimientos`);
+    await page.goto(`${BASE_URL}/transacciones`);
     await expect(page.locator("text=Freelance")).toBeVisible();
     await expect(page.locator("text=Transporte")).toBeVisible();
   });
