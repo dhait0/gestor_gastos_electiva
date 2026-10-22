@@ -707,3 +707,12 @@ Commit: `efe4127`
 Cambios: `src/app/globals.css` (primary #315CF5, accent #20BDA5, background #F5F7FE, foreground #162039, ring primary, radial gradients); `src/app/layout.tsx` (themeColor light/dark → #315CF5/#5B7CF7, mask-icon).
 Validaciones: lint PASÓ (0 err/6 warn), typecheck PASÓ, tests 53/53 PASÓ, build PASÓ.
 Pendientes visuales: unificación completa de componentes (formularios/botones/tablas/feedback) para fases posteriores; iconos PWA sin actualizar (sin alternativa aprobada).
+
+---
+
+## Cierre rama identidad visual (2026-10-22)
+
+Rama: `feature/lukiva-identidad-visual`
+PR: https://github.com/dhait0/gestor_gastos_electiva/pull/35 (hacia staging) — pendiente de aprobación del propietario.
+Validaciones: lint 0 err/6 warn, typecheck PASÓ, tests 53/53 PASÓ, build PASÓ. Sincronizada con origin/staging (sin conflictos).
+No se realizó merge ni despliegue.
