@@ -615,3 +615,14 @@ Cambios:
 Validaciones: `pnpm test:rls` → 36/36 PASÓ; `pnpm lint` PASÓ; `pnpm typecheck` PASÓ; `pnpm test` 53/53 PASÓ; `pnpm build` PASÓ.
 Riesgos: workflow no ejecutado en GitHub (sin push); comprobación remota sigue bloqueada. No se modificaron políticas RLS.
 No se realizaron commits ni push.
+
+---
+
+## Regularización Git (2026-10-22)
+
+Rama de trabajo: `feature/lukiva-b03-c03-seguridad-monedas-rls`
+Commits: `af77d78` (B03/C01/C02/C03), `090ecd0` (sección 4.1 Git en AGENTS.md)
+Sincronización con staging: rama creada desde `staging` @ `76c5e01` (igual a origin/staging); sin conflictos.
+Validación: typecheck, lint (0 err/6 warn), tests 53/53, build, test:rls 36/36 PASARON.
+Pull Request: https://github.com/dhait0/gestor_gastos_electiva/pull/34 (hacia staging) — pendiente de aprobación del propietario.
+Riesgos/bloqueos: zips (`*.zip`) quedan sin versionar (artefactos); requiere intervención humana para merge del PR.
