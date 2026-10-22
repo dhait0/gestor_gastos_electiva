@@ -55,16 +55,16 @@ Como desarrollador quiero una base reproducible para que el proyecto pueda ejecu
 
 ### Criterios de aceptación
 
-- [x] Next.js con App Router.
-- [x] TypeScript strict.
-- [x] pnpm.
-- [x] Tailwind.
-- [x] shadcn/ui configurado.
-- [x] ESLint/configuración de calidad.
-- [x] estructura inicial.
-- [x] `.env.example`.
-- [x] README de arranque.
-- [x] proyecto compila.
+- [ ] Next.js con App Router.
+- [ ] TypeScript strict.
+- [ ] pnpm.
+- [ ] Tailwind.
+- [ ] shadcn/ui configurado.
+- [ ] ESLint/configuración de calidad.
+- [ ] estructura modular inicial.
+- [ ] `.env.example`.
+- [ ] README de arranque.
+- [ ] proyecto compila.
 
 ---
 
@@ -590,11 +590,11 @@ Glass + colapsable.
 
 P0.
 
-- [x] manifest.
-- [x] icons.
-- [x] standalone.
-- [x] safe areas.
-- [x] theme colors.
+- [ ] manifest.
+- [ ] icons.
+- [ ] standalone.
+- [ ] safe areas.
+- [ ] theme colors.
 
 ---
 
@@ -751,17 +751,17 @@ y posponer el resto.
 
 Una historia está terminada cuando:
 
-- [x] funciona flujo principal;
-- [x] validaciones;
-- [x] seguridad/ownership;
-- [x] loading;
-- [x] error;
-- [x] empty si aplica;
-- [x] mobile;
-- [x] desktop cuando corresponde;
-- [x] light/dark;
-- [x] accesibilidad;
-- [x] pruebas relevantes;
-- [x] sin errores TypeScript;
-- [x] build pasa;
-- [x] documentación actualizada si cambia decisión.
+- [ ] funciona flujo principal;
+- [ ] validaciones;
+- [ ] seguridad/ownership;
+- [ ] loading;
+- [ ] error;
+- [ ] empty si aplica;
+- [ ] mobile;
+- [ ] desktop cuando corresponda;
+- [ ] light/dark;
+- [ ] accesibilidad;
+- [ ] pruebas relevantes;
+- [ ] sin errores TypeScript;
+- [ ] build pasa;
+- [ ] documentación actualizada si cambia decisión.
