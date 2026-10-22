@@ -66,7 +66,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const { liquidBalance, pendingObligations, safetyReserve, availableToSpend, currencyCode } = summaryResult.data;
+  const { liquidBalance, pendingObligations, safetyReserve, availableToSpend, currencyCode, monthlyIncome, monthlyExpense } = summaryResult.data;
   const transactions = transactionsResult.data || [];
   const hasTransactions = transactions.length > 0;
   const accounts = accountsResult.data || [];
@@ -204,11 +204,11 @@ export default async function DashboardPage() {
             )}>
               <p className="text-sm text-muted-foreground">Ingresos</p>
               <p className="mt-1 text-2xl font-bold text-success tabular-nums">
-                {formatDecimal(new Decimal(0), currencyCode)}
+                {formatDecimal(monthlyIncome, currencyCode)}
               </p>
               <p className="mt-1 flex items-center gap-1 text-xs text-success">
                 <ArrowUpRight className="w-3 h-3" />
-                <span>Calculando...</span>
+                <span>Este mes</span>
               </p>
             </div>
             <div className={cn(
@@ -217,11 +217,11 @@ export default async function DashboardPage() {
             )}>
               <p className="text-sm text-muted-foreground">Gastos</p>
               <p className="mt-1 text-2xl font-bold text-danger tabular-nums">
-                {formatDecimal(new Decimal(0), currencyCode)}
+                {formatDecimal(monthlyExpense, currencyCode)}
               </p>
               <p className="mt-1 flex items-center gap-1 text-xs text-danger">
                 <ArrowDownLeft className="w-3 h-3" />
-                <span>Calculando...</span>
+                <span>Este mes</span>
               </p>
             </div>
           </div>
