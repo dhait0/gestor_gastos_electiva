@@ -45,7 +45,8 @@ type AccountBalanceWithOpening = (
 /** Contrato de `calculateLiquidBalance`. */
 type LiquidBalanceWithOpening = (
   transactions: Transaction[],
-  accounts: BalanceAccount[]
+  accounts: BalanceAccount[],
+  baseCurrency: string
 ) => Decimal;
 
 // La asignación verifica en tiempo de compilación que la implementación
@@ -162,7 +163,7 @@ describe("estrategia B — saldo inicial como atributo de la cuenta", () => {
         { id: "acc-savings", type: "SAVINGS", opening_balance: 2000000 },
       ];
 
-      const balance = liquidBalance([], accounts);
+      const balance = liquidBalance([], accounts, "COP");
       expect(balance.equals(new Decimal(3500000))).toBe(true);
     });
 
@@ -173,7 +174,7 @@ describe("estrategia B — saldo inicial como atributo de la cuenta", () => {
         { id: "acc-other", type: "OTHER", opening_balance: 700000 },
       ];
 
-      const balance = liquidBalance([], accounts);
+      const balance = liquidBalance([], accounts, "COP");
       expect(balance.equals(new Decimal(1000000))).toBe(true);
     });
 
@@ -183,7 +184,7 @@ describe("estrategia B — saldo inicial como atributo de la cuenta", () => {
         { id: "acc-archivada", type: "CHECKING", opening_balance: 9000000, is_archived: true },
       ];
 
-      const balance = liquidBalance([], accounts);
+      const balance = liquidBalance([], accounts, "COP");
       expect(balance.equals(new Decimal(1000000))).toBe(true);
     });
 
@@ -205,7 +206,7 @@ describe("estrategia B — saldo inicial como atributo de la cuenta", () => {
       ];
 
       // (1.000.000 + 500.000) + (250.000 - 50.000) = 1.700.000
-      const balance = liquidBalance(transactions, accounts);
+      const balance = liquidBalance(transactions, accounts, "COP");
       expect(balance.equals(new Decimal(1700000))).toBe(true);
     });
 
@@ -215,7 +216,7 @@ describe("estrategia B — saldo inicial como atributo de la cuenta", () => {
         { id: "acc-2", type: "SAVINGS", opening_balance: 250000 },
       ];
 
-      const sinTransferencia = liquidBalance([], accounts);
+      const sinTransferencia = liquidBalance([], accounts, "COP");
 
       const transferencia = [
         tx({
@@ -236,7 +237,7 @@ describe("estrategia B — saldo inicial como atributo de la cuenta", () => {
         }),
       ];
 
-      const conTransferencia = liquidBalance(transferencia, accounts);
+      const conTransferencia = liquidBalance(transferencia, accounts, "COP");
 
       // El patrimonio total se conserva...
       expect(conTransferencia.equals(sinTransferencia)).toBe(true);
@@ -250,7 +251,7 @@ describe("estrategia B — saldo inicial como atributo de la cuenta", () => {
     it("el disponible se calcula sobre el saldo líquido que incluye el saldo inicial", () => {
       const accounts: BalanceAccount[] = [{ id: "acc-1", type: "CHECKING", opening_balance: 1000000 }];
 
-      const liquid = liquidBalance([INCOME], accounts);
+      const liquid = liquidBalance([INCOME], accounts, "COP");
 
       const disponible = calculateAvailableToSpend({
         liquidBalance: liquid,

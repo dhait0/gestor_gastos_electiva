@@ -47,6 +47,8 @@ export interface BalanceAccount {
   type: string;
   opening_balance?: Money | null;
   is_archived?: boolean | null;
+  /** Moneda de la cuenta. Si se omite, se asume la moneda base del agregado. */
+  currency_code?: string | null;
 }
 
 /** Tipos de cuenta que componen el saldo líquido (dinero disponible). */
@@ -178,6 +180,16 @@ export function createTransferPair(
  * cuenta, no un movimiento, de modo que nunca se duplica por tener
  * transacciones registradas.
  */
+/**
+ * Saldo actual de una cuenta (estrategia B).
+ *
+ * Precondición de moneda: se asume que todas las transacciones del `accountId`
+ * comparten la moneda de la cuenta (validado en `createTransactionAction` y
+ * `createTransferAction`). Esta función no filtra por moneda ni convierte; si se
+ * le pasan movimientos en otra moneda, los sumará sin distinción.
+ *
+ *   saldo actual = opening_balance + entradas − salidas
+ */
 export function calculateAccountBalance(
   transactions: Transaction[],
   accountId: string,
@@ -202,17 +214,34 @@ export function calculateAccountBalance(
  * Las cuentas archivadas se excluyen (defensa en profundidad: el filtro de
  * `is_archived` en las consultas no debe ser la única barrera).
  */
+/**
+ * Saldo líquido: suma el saldo actual de las cuentas líquidas y no archivadas,
+ * **filtrando internamente por `baseCurrency`** para no mezclar monedas.
+ *
+ * Las cuentas archivadas se excluyen (defensa en profundidad). Las cuentas y
+ * transacciones cuya moneda no coincida con `baseCurrency` se excluyen del
+ * agregado; no se realiza conversión.
+ */
 export function calculateLiquidBalance(
   transactions: Transaction[],
-  accounts: BalanceAccount[]
+  accounts: BalanceAccount[],
+  baseCurrency: string
 ): Decimal {
   const liquidAccounts = accounts.filter(
-    (a) => LIQUID_ACCOUNT_TYPES.includes(a.type) && !a.is_archived
+    (a) =>
+      LIQUID_ACCOUNT_TYPES.includes(a.type) &&
+      !a.is_archived &&
+      (a.currency_code ?? baseCurrency) === baseCurrency
   );
   const liquidAccountIds = liquidAccounts.map((a) => a.id);
 
   const movements = transactions
-    .filter((t) => liquidAccountIds.includes(t.account_id) && !t.deleted_at)
+    .filter(
+      (t) =>
+        liquidAccountIds.includes(t.account_id) &&
+        !t.deleted_at &&
+        t.currency_code === baseCurrency
+    )
     .reduce((balance, t) => {
       const amount = new Decimal(t.amount);
       if (t.direction === "INFLOW") {

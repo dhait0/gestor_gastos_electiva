@@ -386,13 +386,13 @@ describe("domain/transactions", () => {
     ];
 
     it("incluye solo cuentas líquidas (CASH, CHECKING, SAVINGS, DIGITAL_WALLET)", () => {
-      const balance = calculateLiquidBalance(transactions, accounts);
+      const balance = calculateLiquidBalance(transactions, accounts, "COP");
       // 500000 + 1000000 + 2000000 + 300000 = 3,800,000
       expect(balance.equals(new Decimal(3800000))).toBe(true);
     });
 
     it("excluye CREDIT_CARD y OTHER", () => {
-      const balance = calculateLiquidBalance(transactions, accounts);
+      const balance = calculateLiquidBalance(transactions, accounts, "COP");
       // La compra con tarjeta (400k) y otro (100k) NO restan del saldo líquido
       expect(balance.equals(new Decimal(3800000))).toBe(true);
     });
@@ -402,10 +402,24 @@ describe("domain/transactions", () => {
         ...transactions,
         { ...transactions[0], id: "t1-deleted", deleted_at: "2026-01-02T00:00:00Z" },
       ];
-      const balance = calculateLiquidBalance(withDeleted, accounts);
+      const balance = calculateLiquidBalance(withDeleted, accounts, "COP");
       // El original t1 (500k INFLOW en cash) sigue activo, t1-deleted se ignora
       // Balance = 3,800,000 (original)
       expect(balance.equals(new Decimal(3800000))).toBe(true);
+    });
+
+    it("excluye movimientos en moneda distinta a la base (COP vs USD)", () => {
+      const mixed = [
+        ...transactions,
+        { id: "t-usd", account_id: "acc-cash", type: "INCOME" as TransactionType, direction: "INFLOW" as TransactionDirection, amount: "999", currency_code: "USD", description: "USD", transaction_date: "2026-01-01", created_at: "", updated_at: "", deleted_at: null, user_id: "u1" },
+      ];
+      const usdAccounts = accounts.map((a) =>
+        a.id === "acc-cash" ? { ...a, currency_code: "USD" } : a
+      );
+      // Con base COP, la cuenta cash pasa a ser USD y se excluye junto con su movimiento USD
+      const balance = calculateLiquidBalance(mixed, usdAccounts, "COP");
+      // Solo checking+savings+wallet = 1,000,000+2,000,000+300,000 = 3,300,000
+      expect(balance.equals(new Decimal(3300000))).toBe(true);
     });
   });
 
