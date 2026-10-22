@@ -340,6 +340,45 @@ Archivos modificados:
 - Comprobación visual real bloqueada por Playwright chromium rev mismatch (A03-17).
 
 **Próxima microtarea sugerida:** E02.3 (requiere autorización del propietario).
+
+## E02.3 — Flujo mensual y jerarquía visual del dashboard (2026-10-22)
+
+```
+Fecha: 2026-10-22
+ID: E02.3
+Rama: feature/lukiva-dashboard-responsive @ 21b1403
+Archivos modificados:
+  - src/domain/transactions.ts (calculateMonthlyTrend)
+  - src/app/actions/financial.ts (monthlyTrend en FinancialSummary)
+  - src/app/(app)/dashboard/page.tsx (Recharts en lugar de placeholder)
+  - src/components/dashboard/MonthlyTrendChart.tsx (nuevo, client component)
+  - src/domain/__tests__/transactions.test.ts (6 pruebas nuevas)
+```
+
+**Origen y cálculo de los datos del gráfico:**
+- Agregación mensual en dominio (`calculateMonthlyTrend`): últimos 6 meses, ingresos y gastos por mes.
+- Excluye transferencias, monedas distintas, eliminadas lógicamente, saldos iniciales.
+- Zona horaria del perfil para límites mensuales.
+- Decimal para agregaciones.
+
+**Biblioteca/componente utilizado:** Recharts 3.10.1 (ya instalada). Componente client `MonthlyTrendChart` con BarChart, estado vacío incluido.
+
+**Mejoras de jerarquía visual:** Dinero disponible sigue como KPI principal (card destacada). Ingresos/gastos del mes como KPIs secundarios. Gráfico de flujo mensual reemplaza el placeholder.
+
+**Pruebas añadidas (6):** 6 meses, agregación por mes, transferencias, monedas, eliminación lógica, meses sin movimientos. Total: 70/70 PASÓ.
+
+**Aclaración del conteo de pruebas:** 53 originales + 10 (E02.2) + 1 (getCurrentMonthRange) + 6 (E02.3) = 70. La diferencia reportada anteriormente (64) correspondía a 53 + 11 (10 de E02.2 + 1 de getCurrentMonthRange). Ahora 70 tras añadir 6 de E02.3.
+
+**Validaciones:**
+- `pnpm lint`: 0 errores, 6 warnings (baseline).
+- `pnpm typecheck`: OK.
+- `pnpm test`: 70/70 PASÓ.
+- `pnpm build`: OK.
+
+**Riesgos pendientes:**
+- Comprobación visual real bloqueada por Playwright chromium rev mismatch (A03-17).
+
+**Próxima microtarea sugerida:** E02.4 (requiere autorización del propietario).
 Fecha: 2026-10-21
 ID: B01
 Responsable/agente: Kilo
