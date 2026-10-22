@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Home, List, Plus, Target, MoreHorizontal, LayoutDashboard, CreditCard, TrendingUp, Settings, LogOut, User } from "lucide-react";
+import { Home, List, Plus, LayoutDashboard, CreditCard, TrendingUp, Settings, LogOut, User } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
