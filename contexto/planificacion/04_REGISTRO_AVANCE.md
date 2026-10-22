@@ -696,3 +696,14 @@ Cambios: eliminados imports no usados `Target` y `MoreHorizontal` en `AppLayoutC
 Advertencias lint: 8 → 6 (vuelve al baseline). Las 6 restantes son preexistentes (unused vars en dashboard/onboarding/accounts).
 Validaciones: lint PASÓ (0 err/6 warn), typecheck PASÓ, tests 53/53 PASÓ, build PASÓ.
 Nota: la unificación completa de formularios/botones/tablas/feedback/accesibilidad (definición E02) se mantiene como trabajo incremental para E03; no se realizó rediseño masivo.
+
+---
+
+## E03 — Tokens visuales Lukiva (2026-10-22)
+
+ID: E03
+Rama: `feature/lukiva-identidad-visual`
+Commit: `efe4127`
+Cambios: `src/app/globals.css` (primary #315CF5, accent #20BDA5, background #F5F7FE, foreground #162039, ring primary, radial gradients); `src/app/layout.tsx` (themeColor light/dark → #315CF5/#5B7CF7, mask-icon).
+Validaciones: lint PASÓ (0 err/6 warn), typecheck PASÓ, tests 53/53 PASÓ, build PASÓ.
+Pendientes visuales: unificación completa de componentes (formularios/botones/tablas/feedback) para fases posteriores; iconos PWA sin actualizar (sin alternativa aprobada).
