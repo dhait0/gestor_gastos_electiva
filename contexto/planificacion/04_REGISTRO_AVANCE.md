@@ -931,3 +931,36 @@ No se realizó merge ni despliegue.
 - Commit: afefdf5
 
 STOP
+
+## Hotfix: colores Lukiva + themeColor (2026-10-22)
+
+### Causa demostrada
+Los componentes usan clases Tailwind (`bg-primary`, `text-foreground`, `bg-background`, etc.) pero `@theme inline` en `globals.css` solo definía tokens `--color-finn-*`. Faltaban los mapeos estándar (`--color-primary: var(--primary)`, etc.), por lo que Tailwind 4 no generaba las utilidades y la UI aparecía sin estilos (blanco y negro).
+
+### Variables CSS inspeccionadas
+- `--background: #F5F7FE`, `--foreground: #162039`, `--primary: #315CF5` (light)
+- `--background: #0B1220`, `--foreground: #F8FAFC`, `--primary: #5B7CF7` (dark)
+
+### Valores calculados en navegador (light)
+- body background: rgb(245, 247, 254) = #F5F7FE ✅
+- body color: rgb(22, 32, 57) = #162039 ✅
+- button background: rgb(49, 92, 245) = #315CF5 ✅
+- button color: rgb(255, 255, 255) = #FFFFFF ✅
+
+### Archivos modificados
+- `src/app/globals.css`: añadidos mapeos `--color-*: var(--*)` en `@theme inline`.
+- `src/app/layout.tsx`: movido `themeColor` a `viewport` export (ya aplicado).
+
+### Validaciones
+- lint: 0 errores, 6 warnings (preexistentes)
+- typecheck: ✅
+- test: 70/70 ✅
+- build: ✅, sin warning themeColor
+
+### Commit
+efddfad — fix(css): mapear variables CSS a tokens Tailwind 4 en @theme inline
+
+### PR #38
+Abierto: https://github.com/dhait0/gestor_gastos_electiva/pull/38
+
+STOP
