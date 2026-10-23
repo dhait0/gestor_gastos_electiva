@@ -999,3 +999,36 @@ No es un defecto funcional. Es un problema de preparación de datos de prueba: l
 Abierto: https://github.com/dhait0/gestor_gastos_electiva/pull/38
 
 STOP
+
+---
+
+## B03.2 — Endurecimiento de contratos multimoneda (2026-10-22)
+
+ID: B03.2
+Rama: fix/lukiva-b03-2-currency-contracts
+Archivos modificados:
+  - src/domain/transactions.ts (calculateLiquidBalance ahora exige baseCurrency y filtra internamente por moneda; BalanceAccount.currency_code opcional; documentación de precondición en calculateAccountBalance)
+  - src/app/actions/financial.ts (pasa baseCurrency a calculateLiquidBalance)
+  - src/app/actions/obligations.ts (eliminada getPendingObligationsTotalAction, código muerto que mezclaba monedas con aritmética number)
+  - src/domain/__tests__/transactions.test.ts (+1 caso multimoneda)
+  - src/domain/__tests__/opening-balance.contract.test.ts (firma actualizada para baseCurrency)
+  - contexto/planificacion/04_REGISTRO_AVANCE.md (este registro)
+
+Cambios:
+- `calculateLiquidBalance(transactions, accounts, baseCurrency)` ahora filtra internamente cuentas y movimientos por moneda base. Ya no depende del llamador para evitar mezcla.
+- Eliminada función muerta `getPendingObligationsTotalAction` (sin consumidores; mezclaba monedas y usaba number).
+- Documentada precondición de moneda única en `calculateAccountBalance`.
+
+Validaciones:
+- `pnpm lint`: 0 errores, 6 warnings (baseline).
+- `pnpm typecheck`: PASÓ.
+- `pnpm test`: 71/71 PASARON.
+- `pnpm build`: PASÓ.
+
+Riesgos pendientes:
+- CREDIT_CARD (B02-02) sigue separado, sin cambios.
+- `calculateAccountBalance` sigue currency-agnóstico por diseño; precondición documentada.
+
+Estado: VALIDADO (sin merge a staging).
+Próxima microtarea sugerida: B02-02 (decisión de propietario) o F01.
+STOP

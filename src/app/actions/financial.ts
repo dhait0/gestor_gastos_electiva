@@ -97,7 +97,7 @@ export async function getFinancialSummaryAction(): Promise<
     (o) => o.currency_code === baseCurrency
   );
 
-  const liquidBalance = calculateLiquidBalance(baseTransactions, baseAccounts);
+  const liquidBalance = calculateLiquidBalance(baseTransactions, baseAccounts, baseCurrency);
 
   // Calcular obligaciones pendientes totales (solo moneda base)
   const pendingObligations = baseObligations.reduce(
