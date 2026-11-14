@@ -27,11 +27,9 @@ export async function updateProfileAction(
     locale: formData.get("locale") as string | null,
   };
 
-  console.log("[updateProfileAction] rawData:", rawData);
 
   const validation = updateProfileSchema.safeParse(rawData);
   if (!validation.success) {
-    console.log("[updateProfileAction] validation error:", validation.error.flatten().fieldErrors);
     return {
       success: false,
       error: "Datos inválidos",
@@ -44,7 +42,6 @@ export async function updateProfileAction(
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    console.log("[updateProfileAction] no user");
     return { success: false, error: "No autenticado" };
   }
 
@@ -61,7 +58,6 @@ export async function updateProfileAction(
   if (data.safetyReserve !== undefined && data.safetyReserve !== null) updateData.safety_reserve = data.safetyReserve;
   if (data.locale !== undefined && data.locale !== null) updateData.locale = data.locale;
 
-  console.log("[updateProfileAction] updateData:", updateData, "user:", user.id);
 
   const { error } = await supabase
     .from("profiles")
@@ -69,11 +65,10 @@ export async function updateProfileAction(
     .eq("id", user.id);
 
   if (error) {
-    console.log("[updateProfileAction] db error:", error);
+    console.error("[updateProfileAction] db error:", error.message);
     return { success: false, error: "No se pudo actualizar el perfil" };
   }
 
-  console.log("[updateProfileAction] success");
   return { success: true };
 }
 
@@ -90,7 +85,6 @@ export async function createFirstAccountAction(
   _prevState: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  console.error("[createFirstAccountAction] START");
   try {
     const rawData = {
       name: formData.get("name") as string,
@@ -101,11 +95,9 @@ export async function createFirstAccountAction(
       icon: formData.get("icon") as string | null,
     };
 
-    console.error("[createFirstAccountAction] rawData:", rawData);
 
     const validation = createAccountSchema.safeParse(rawData);
     if (!validation.success) {
-      console.error("[createFirstAccountAction] validation error:", validation.error.flatten().fieldErrors);
       return {
         success: false,
         error: "Datos de cuenta inválidos",
@@ -118,11 +110,9 @@ export async function createFirstAccountAction(
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      console.error("[createFirstAccountAction] no user");
       return { success: false, error: "No autenticado" };
     }
 
-    console.error("[createFirstAccountAction] user:", user.id);
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -146,11 +136,10 @@ export async function createFirstAccountAction(
       });
 
     if (accountError) {
-      console.error("[createFirstAccountAction] account error:", accountError);
+      console.error("[createFirstAccountAction] account error:", accountError.message);
       return { success: false, error: "No se pudo crear la cuenta" };
     }
 
-    console.error("[createFirstAccountAction] success, returning redirect");
     return { success: true, redirectTo: "/dashboard" };
   } catch (err) {
     console.error("[createFirstAccountAction] UNCAUGHT ERROR:", err);
