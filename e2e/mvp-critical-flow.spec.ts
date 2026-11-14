@@ -731,3 +731,114 @@ test.describe("Inteligencia financiera (O03)", () => {
     await expect(page.getByText(/no alcanzas a cubrir los pagos mínimos/)).toBeVisible();
   });
 });
+
+
+test.describe("Movimientos: transferir, editar, eliminar y filtrar (UC-11, 12, 13, 21)", () => {
+  test.skip(!SERVICE_URL || !SERVICE_KEY, "Requiere E2E_SUPABASE_URL y E2E_SERVICE_ROLE_KEY para crear la segunda cuenta");
+
+  async function addAccount(email: string, name: string, type = "SAVINGS") {
+    const userId = await findUserId(email);
+    const { error } = await serviceClient().from("accounts").insert({ user_id: userId, name, type, opening_balance: 0 });
+    if (error) throw error;
+  }
+
+  test("una transferencia es neutral, no se edita y se elimina completa", async ({ page }) => {
+    const uniqueId = Date.now() + 17;
+    const email = `test-transfer-${uniqueId}@finwise.test`;
+    await registerUser(page, email, "TestPass123!", `Usuario Transfer ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Principal", "1000000");
+    await addAccount(email, "Ahorros E2E");
+
+    await page.goto(`${BASE_URL}/transacciones/transferir`);
+    await page.waitForLoadState("networkidle");
+    await page.selectOption('select[name="from_account_id"]', { label: "Cuenta Principal (COP)" });
+    await page.selectOption('select[name="to_account_id"]', { label: "Ahorros E2E" });
+    await page.fill('input[name="amount"]', "200000");
+    await page.click('main form button[type="submit"]');
+    await page.waitForURL(/\/transacciones(\?|$)/, { timeout: 10000 });
+    // Cada transferencia genera dos movimientos: salida y entrada
+    await expect(page.getByRole("link", { name: /Ver o editar Transferencia/ })).toHaveCount(2);
+
+    // Neutral: el saldo líquido total no cambia (1.000.000 − reserva 100.000)
+    await page.goto(`${BASE_URL}/dashboard`);
+    await expect(page.locator("main").first()).toContainText(/900[.,]000/);
+
+    // No se puede editar: solo informa y ofrece eliminar
+    await page.goto(`${BASE_URL}/transacciones`);
+    await page.getByRole("link", { name: /Ver o editar Transferencia/ }).first().click();
+    await expect(page.getByText(/no se editan/)).toBeVisible();
+
+    // Eliminar borra ambas patas
+    page.once("dialog", (d) => d.accept());
+    await page.getByRole("button", { name: "Eliminar transferencia" }).click();
+    await page.waitForURL(/\/transacciones(\?|$)/, { timeout: 10000 });
+    await expect(page.getByRole("link", { name: /Ver o editar Transferencia/ })).toHaveCount(0);
+  });
+
+  test("las cuentas de otra moneda no se ofrecen como destino", async ({ page }) => {
+    const uniqueId = Date.now() + 18;
+    const email = `test-transfer-fx-${uniqueId}@finwise.test`;
+    await registerUser(page, email, "TestPass123!", `Usuario FX ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta COP", "1000");
+    const userId = await findUserId(email);
+    await serviceClient().from("accounts").insert({ user_id: userId, name: "Cuenta USD", type: "SAVINGS", currency_code: "USD", opening_balance: 0 });
+
+    await page.goto(`${BASE_URL}/transacciones/transferir`);
+    await page.waitForLoadState("networkidle");
+    await page.selectOption('select[name="from_account_id"]', { label: "Cuenta COP (COP)" });
+    await expect(page.locator('select[name="to_account_id"] option', { hasText: "Cuenta USD" })).toHaveCount(0);
+  });
+
+  test("editar y eliminar un gasto actualiza el disponible; los filtros acotan la lista sin errores de hidratación", async ({ page }) => {
+    const hydrationErrors: string[] = [];
+    page.on("console", (m) => {
+      if (m.type() === "error" && /Hydration|hydrat/i.test(m.text())) hydrationErrors.push(m.text().slice(0, 120));
+    });
+
+    const uniqueId = Date.now() + 19;
+    await registerUser(page, `test-edit-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Edición ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Edición", "1000000");
+    await createTransaction(page, "expense", "30000", "Pizza viernes");
+    await createTransaction(page, "income", "50000", "Venta usada");
+
+    // Filtros
+    await page.goto(`${BASE_URL}/transacciones?q=pizza`);
+    await expect(page.getByText("Pizza viernes")).toBeVisible();
+    await expect(page.getByText("Venta usada")).toHaveCount(0);
+    await page.goto(`${BASE_URL}/transacciones?type=INCOME`);
+    await expect(page.getByText("Venta usada")).toBeVisible();
+    await expect(page.getByText("Pizza viernes")).toHaveCount(0);
+    await page.goto(`${BASE_URL}/transacciones?q=inexistente`);
+    await expect(page.getByText("Ningún movimiento coincide")).toBeVisible();
+    await page.getByRole("link", { name: /Limpiar filtros/ }).click();
+    await expect(page.getByText("Pizza viernes")).toBeVisible();
+    // Parámetros inválidos no rompen la página
+    await page.goto(`${BASE_URL}/transacciones?type=HACK&from=basura&page=-3&account=%27%20or%201%3D1`);
+    await expect(page.getByRole("heading", { name: "Movimientos" })).toBeVisible();
+
+    // Editar: 30.000 → 45.000 y nueva descripción
+    await page.goto(`${BASE_URL}/transacciones`);
+    await page.getByRole("link", { name: "Ver o editar Pizza viernes" }).click();
+    await page.fill('input[name="amount"]', "45000");
+    await page.fill('input[name="description"]', "Pizza y bebidas");
+    await page.click('main form button[type="submit"]');
+    await page.waitForURL(/\/transacciones(\?|$)/, { timeout: 10000 });
+    await expect(page.getByText("Pizza y bebidas")).toBeVisible();
+
+    // 1.000.000 + 50.000 − 45.000 − 100.000 (reserva) = 905.000
+    await page.goto(`${BASE_URL}/dashboard`);
+    await expect(page.locator("main").first()).toContainText(/905[.,]000/);
+
+    // Eliminar devuelve el disponible: 950.000 − 100.000 = 950.000
+    await page.goto(`${BASE_URL}/transacciones`);
+    await page.getByRole("link", { name: "Ver o editar Pizza y bebidas" }).click();
+    page.once("dialog", (d) => d.accept());
+    await page.getByRole("button", { name: "Eliminar movimiento" }).click();
+    await page.waitForURL(/\/transacciones(\?|$)/, { timeout: 10000 });
+    await expect(page.getByText("Pizza y bebidas")).toHaveCount(0);
+    await page.goto(`${BASE_URL}/dashboard`);
+    await expect(page.locator("main").first()).toContainText(/950[.,]000/);
+
+    expect(hydrationErrors, hydrationErrors.join("\n")).toEqual([]);
+  });
+});
