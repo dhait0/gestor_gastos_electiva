@@ -403,7 +403,6 @@ export default function OnboardingPage() {
   };
 
   const handleComplete = () => {
-    console.log("[OnboardingPage] handleComplete called, navigating to dashboard");
     router.push("/dashboard");
   };
 

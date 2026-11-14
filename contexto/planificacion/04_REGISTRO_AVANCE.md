@@ -1032,3 +1032,60 @@ Riesgos pendientes:
 Estado: VALIDADO (sin merge a staging).
 Próxima microtarea sugerida: B02-02 (decisión de propietario) o F01.
 STOP
+
+---
+
+## B0.1 — Estabilización E2E (2026-11-14)
+
+ID: B0.1 (Bloque 0, punto 1 del plan F→P; el punto 2 queda parcial: script añadido, job de CI pendiente)
+Rama: fix/lukiva-estabilizacion-e2e
+Archivos modificados:
+  - supabase/migrations/20261114120000_seed_default_categories.sql (nuevo: `private.handle_new_user()` siembra 9 categorías `is_default` por usuario nuevo; sin backfill)
+  - supabase/tests/rls.test.ts (+2 casos: defaults sembrados y aislamiento A/B)
+  - e2e/mvp-critical-flow.spec.ts (selectores acotados a `main form button[type="submit"]`; `.first()` en el aviso de déficit; test de flujo completo reactivado con aserción numérica del disponible 770.000)
+  - playwright.config.ts (puerto configurable con `E2E_PORT`/`BASE_URL`)
+  - package.json (script `test:e2e`)
+  - src/components/layout/AppLayoutClient.tsx (`<main>` reserva siempre `pb-20`, antes `lg:pb-0`)
+
+Diagnóstico corregido respecto a "Diagnóstico E2E — Categorías y sesión" (2026-10-22):
+- La "pérdida de sesión" no existía: el primer `button[type="submit"]` de las páginas internas es el de **cerrar sesión** del header, y los tests lo pulsaban en lugar del del formulario (el log del servidor mostraba `logoutAction()` justo antes del redirect a `/login`).
+- Además faltaban categorías (resuelto con el sembrado en la BD), el bottom nav fijo tapaba el botón del formulario en viewport de escritorio, y había un selector ambiguo (`strict mode violation`).
+- `playwright.config.ts` tenía `reuseExistingServer: true` con puerto fijo 3000: en esta máquina :3000 lo ocupa otro proyecto, y la suite se ejecutó una vez contra esa app (sin escrituras; fallaron por 404). Ahora se usa `E2E_PORT`.
+
+Pruebas / evidencia:
+- `pnpm test:e2e` (servidor propio en :3217, Supabase local): **7/7 PASÓ** (antes 3 fallando + 1 skip).
+- `pnpm lint`: 0 errores, 5 warnings. `pnpm typecheck`: PASÓ. `pnpm test`: **71/71 PASÓ**. `pnpm build`: PASÓ (exit 0).
+- Trigger verificado por SQL en transacción con ROLLBACK: usuario nuevo → 2 INCOME + 7 EXPENSE, todas `is_default`; sin residuos.
+- `pnpm test:rls`: **NO EJECUTADO** localmente. La suite hace `delete` con service role sobre toda `categories`/`transactions`/`accounts` y borraría datos de desarrollo de la instancia local. Los 2 casos nuevos los verificará `rls.yml` en CI sobre base limpia.
+
+Hallazgos nuevos (no corregidos):
+- **B0.1-a** El escritorio no tiene navegación propia: el bottom nav móvil es la única navegación en `lg` (el `Sheet` tiene el disparador `lg:hidden` y no hay sidebar fija). Destino: E/F.
+- **B0.1-b** El dashboard muestra dos veces "Tus compromisos superan tu saldo líquido" y renderiza dos `<main>` anidados. Destino: F01.
+- **B0.1-c** Aviso de hidratación en el navegador durante el E2E. Destino: F01 (investigar).
+- **B0.1-d** Next.js 16.4.0 es marcado por `next dev`/`next build` como afectado por una vulnerabilidad conocida; el primer arranque de cada comando falla con exit 1 (el aviso es intermitente). Decisión del propietario sobre actualizar.
+- **B0.1-e** Los usuarios de prueba E2E se crean en la base local con `@finwise.test`; hay que limpiarlos o aislarlos antes de activar E2E en CI.
+- Usuarios existentes **no** reciben categorías por defecto (sin backfill; decisión del propietario si se desea).
+
+Rollback: archivar las categorías sembradas con `deleted_at` y restaurar la versión previa de `handle_new_user()` con una migración nueva.
+Registro actualizado: sí.
+Siguiente microtarea sugerida: B0.2 (job E2E en CI + limpieza de usuarios de prueba) y luego B0.3 (quitar `console.log/error` de onboarding), B0.4 (tarjetas, B02-02).
+STOP
+
+---
+
+## B0.2–B0.4 y Bloque F (2026-11-14)
+
+Rama: fix/lukiva-estabilizacion-e2e (el Bloque 0 y el Bloque F comparten rama y PR; desviación de "una rama por bloque" por dependencia directa).
+
+| ID | Estado | Evidencia |
+|---|---|---|
+| B0.2 | VALIDADO (CI pendiente de primera ejecución remota) | `.github/workflows/e2e.yml`: `supabase start`, credenciales locales vía `supabase status -o env`, Playwright chromium, sube `test-results/` si falla |
+| B0.3 | VALIDADO | Eliminados los `console.log/error` de depuración de `onboarding.ts` y `onboarding/page.tsx`; solo quedan 3 `console.error` de error real, sin datos del usuario |
+| B0.4 | VALIDADO | B02-02: `calculateCreditCardDebt` (deuda = saldo inicial + salidas − entradas) y `calculateAccountCurrentValue` (despacha por tipo); `/cuentas` muestra "Deuda actual/inicial" en tarjetas. B02-01: archivar solo marca `is_archived` (ya no `deleted_at`), la sección "Archivadas" se llena y las archivadas no se ofrecen para nuevos movimientos. 9 pruebas nuevas |
+| F01 | VALIDADO | **Bug real encontrado:** la consulta de `financial.ts` no traía `transaction_date` y `toDomainTransactions` ponía la fecha de hoy a todas las filas → ingresos/gastos "del mes" y tendencia contaban todo el historial. Corregido; 2 pruebas de regresión (rojas antes del fix: 520 vs 20) |
+| F02 | VALIDADO | `src/domain/analytics.ts` (períodos current/previous/last3/year con zona horaria del perfil, ingresos/gastos por rango, desglose por categoría con Decimal); selector de período por `searchParams`; `ExpenseBreakdown`; 12 pruebas de dominio + aserciones E2E |
+
+Pruebas: `pnpm lint` 0 errores/5 warnings; `pnpm typecheck` PASÓ; `pnpm test` **94/94**; `pnpm test:e2e` **7/7** (Supabase local, :3217); `pnpm build` PASÓ.
+Pendiente: job `e2e.yml` y los 2 casos RLS nuevos aún no se han ejecutado en CI remoto; `pnpm test:rls` no se ejecuta en local (borra datos de la base de desarrollo).
+Hallazgo abierto: B0.1-c (aviso de hidratación en el E2E) sin investigar.
+Siguiente microtarea sugerida: G01.

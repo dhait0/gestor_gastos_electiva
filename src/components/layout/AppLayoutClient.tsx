@@ -166,7 +166,7 @@ export function AppLayoutClient({ children }: { children: React.ReactNode }) {
     <ToastProvider>
       <div className="min-h-screen bg-background flex flex-col">
         <AppHeader />
-        <main className="flex-1 pb-20 lg:pb-0">{children}</main>
+        <main className="flex-1 pb-20">{children}</main>
         <MobileNav pathname={pathname} />
       </div>
     </ToastProvider>

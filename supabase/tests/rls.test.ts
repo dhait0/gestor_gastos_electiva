@@ -611,3 +611,32 @@ it('composite FK prevents A transaction on B account', async () => {
     });
   });
 });
+
+describe('default categories on signup', () => {
+  it('a new user gets default INCOME and EXPENSE categories, owned by that user', async () => {
+    const fresh = await createTestUser('defaults');
+
+    const { data, error } = await service
+      .from('categories')
+      .select('user_id, type, is_default')
+      .eq('user_id', fresh.id);
+
+    expect(error).toBeNull();
+    expect(data!.length).toBeGreaterThan(0);
+    expect(data!.every((c) => c.user_id === fresh.id && c.is_default)).toBe(true);
+    expect(data!.some((c) => c.type === 'INCOME')).toBe(true);
+    expect(data!.some((c) => c.type === 'EXPENSE')).toBe(true);
+  });
+
+  it('seeded categories are isolated: B cannot read the defaults of A', async () => {
+    const fresh = await createTestUser('defaults-iso');
+
+    const { data, error } = await clientB
+      .from('categories')
+      .select('id')
+      .eq('user_id', fresh.id);
+
+    expect(error).toBeNull();
+    expect(data).toEqual([]);
+  });
+});
