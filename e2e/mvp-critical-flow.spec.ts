@@ -174,7 +174,8 @@ async function createTransaction(page: Page, type: "income" | "expense", amount:
   await page.selectOption('select[name="account_id"]', { index: 1 });
   await page.selectOption('select[name="category_id"]', { index: 1 });
   await page.fill('input[name="description"]', description);
-  await page.click('button[type="submit"]');
+  // El layout tiene su propio submit (cerrar sesión): acotar al formulario de la página.
+  await page.click('main form button[type="submit"]');
   await page.waitForURL(`${BASE_URL}/dashboard`, { timeout: 10000 });
 }
 
@@ -186,7 +187,7 @@ async function createObligation(page: Page, name: string, amount: string, dueDat
   await page.fill('input[name="amount"]', amount);
   await page.selectOption('select[name="currency_code"]', "COP");
   await page.fill('input[name="due_date"]', dueDate);
-  await page.click('button[type="submit"]');
+  await page.click('main form button[type="submit"]');
   await page.waitForURL(`${BASE_URL}/obligaciones`, { timeout: 10000 });
 }
 
@@ -195,7 +196,7 @@ async function setSafetyReserve(page: Page, amount: string) {
   await page.waitForLoadState("networkidle");
 
   await page.fill('input[name="safetyReserve"]', amount);
-  await page.click('button[type="submit"]');
+  await page.click('main form button[type="submit"]');
   await page.waitForLoadState("networkidle");
 }
 
@@ -225,9 +226,28 @@ test.describe("FASE 21 - Flujo crítico MVP (E2E)", () => {
     // Test passes - onboarding flow works
   });
 
-  test.skip("registro → onboarding → crear cuenta → ingreso → gasto → obligación → reserva → disponible", async ({
+  test("registro → onboarding → crear cuenta → ingreso → gasto → obligación → reserva → disponible", async ({
     page,
   }) => {
+    const uniqueId = Date.now() + 5;
+    const email = `test-flow-${uniqueId}@finwise.test`;
+    const password = "TestPass123!";
+
+    await registerUser(page, email, password, `Usuario Flujo ${uniqueId}`);
+    // El onboarding fija una reserva de seguridad de 100.000.
+    await completeOnboarding(page, "Cuenta Flujo", "1000000");
+
+    await createTransaction(page, "income", "100000", "Ingreso flujo");
+    await createTransaction(page, "expense", "30000", "Gasto flujo");
+
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 30);
+    const dueDate = futureDate.toISOString().split("T")[0];
+    await createObligation(page, "Obligación flujo", "200000", dueDate);
+
+    // 1.000.000 + 100.000 - 30.000 - 200.000 - 100.000 (reserva) = 770.000
+    await page.goto(`${BASE_URL}/dashboard`);
+    await expect(page.locator("main").first()).toContainText(/770[.,]000/);
   });
 
   test("déficit: disponible negativo cuando obligaciones > saldo", async ({ page }) => {
@@ -247,7 +267,7 @@ test.describe("FASE 21 - Flujo crítico MVP (E2E)", () => {
     await createObligation(page, "Deuda grande", "200000", dueDate);
 
     await page.goto(`${BASE_URL}/dashboard`);
-    await expect(page.locator("text=compromisos superan tu saldo")).toBeVisible();
+    await expect(page.locator("text=compromisos superan tu saldo").first()).toBeVisible();
   });
 
   test("usuario B no ve datos de usuario A", async ({ page, context }) => {

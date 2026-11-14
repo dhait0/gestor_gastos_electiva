@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:watch": "vitest",
-    "test:rls": "vitest run --config vitest.rls.config.mts"
+    "test:rls": "vitest run --config vitest.rls.config.mts",
+    "test:e2e": "playwright test"
   },
   "keywords": [],
   "author": "",
