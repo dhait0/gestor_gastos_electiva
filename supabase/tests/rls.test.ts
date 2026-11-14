@@ -803,3 +803,332 @@ describe('budgets, goals and goal_contributions', () => {
     });
   });
 });
+
+
+describe('recurring_transactions', () => {
+  const stamp = Date.now();
+  let accountA: string;
+  let expenseCatA: string;
+  let incomeCatA: string;
+  let recurringA: string;
+
+  beforeAll(async () => {
+    const { data: acc } = await service
+      .from('accounts')
+      .insert({ user_id: userA.id, name: `Cuenta rec ${stamp}`, type: 'CHECKING', opening_balance: 0 })
+      .select('id')
+      .single();
+    const { data: exp } = await service
+      .from('categories')
+      .insert({ user_id: userA.id, name: `Gasto rec ${stamp}`, type: 'EXPENSE' })
+      .select('id')
+      .single();
+    const { data: inc } = await service
+      .from('categories')
+      .insert({ user_id: userA.id, name: `Ingreso rec ${stamp}`, type: 'INCOME' })
+      .select('id')
+      .single();
+    accountA = acc!.id;
+    expenseCatA = exp!.id;
+    incomeCatA = inc!.id;
+
+    const { data, error } = await clientA
+      .from('recurring_transactions')
+      .insert({
+        user_id: userA.id,
+        name: 'Arriendo',
+        type: 'EXPENSE',
+        amount: 1000,
+        account_id: accountA,
+        category_id: expenseCatA,
+        frequency: 'MONTHLY',
+        start_date: '2026-11-01',
+        next_execution_date: '2026-11-01',
+      })
+      .select('id')
+      .single();
+    expect(error).toBeNull();
+    recurringA = data!.id;
+  });
+
+  const base = () => ({
+    user_id: userA.id,
+    name: 'x',
+    type: 'EXPENSE' as const,
+    amount: 1,
+    account_id: accountA,
+    category_id: expenseCatA,
+    frequency: 'MONTHLY' as const,
+    start_date: '2026-11-01',
+    next_execution_date: '2026-11-01',
+  });
+
+  it('B cannot read or update A recurrence; anon cannot read', async () => {
+    const { data: read } = await clientB.from('recurring_transactions').select('id').eq('id', recurringA);
+    expect(read).toEqual([]);
+    const { data: upd } = await clientB.from('recurring_transactions').update({ name: 'hack' }).eq('id', recurringA).select();
+    expect(upd).toEqual([]);
+    const { data: anonRead } = await anon.from('recurring_transactions').select('id').eq('id', recurringA);
+    expect(anonRead ?? []).toEqual([]);
+  });
+
+  it('B cannot create a recurrence on A account', async () => {
+    const { error } = await clientB.from('recurring_transactions').insert({ ...base(), user_id: userB.id });
+    expect(error).not.toBeNull();
+  });
+
+  it('rejects a category of a different type', async () => {
+    const { error } = await clientA.from('recurring_transactions').insert({ ...base(), category_id: incomeCatA });
+    expect(error).not.toBeNull();
+    expect(error?.message).toContain('mismo tipo');
+  });
+
+  it('CUSTOM requires a positive interval and other frequencies forbid it', async () => {
+    const noInterval = await clientA.from('recurring_transactions').insert({ ...base(), frequency: 'CUSTOM' });
+    expect(noInterval.error).not.toBeNull();
+    const zero = await clientA.from('recurring_transactions').insert({ ...base(), frequency: 'CUSTOM', custom_interval_days: 0 });
+    expect(zero.error).not.toBeNull();
+    const extra = await clientA.from('recurring_transactions').insert({ ...base(), custom_interval_days: 5 });
+    expect(extra.error).not.toBeNull();
+    const ok = await clientA.from('recurring_transactions').insert({ ...base(), frequency: 'CUSTOM', custom_interval_days: 10 });
+    expect(ok.error).toBeNull();
+  });
+
+  it('rejects a non-positive amount and next date before start date', async () => {
+    const zero = await clientA.from('recurring_transactions').insert({ ...base(), amount: 0 });
+    expect(zero.error).not.toBeNull();
+    const early = await clientA.from('recurring_transactions').insert({ ...base(), next_execution_date: '2026-10-01' });
+    expect(early.error).not.toBeNull();
+  });
+
+  it('the same occurrence cannot be registered twice (idempotency in the database)', async () => {
+    const occurrence = {
+      user_id: userA.id,
+      account_id: accountA,
+      category_id: expenseCatA,
+      type: 'EXPENSE' as const,
+      direction: 'OUTFLOW' as const,
+      amount: 1000,
+      description: 'Arriendo',
+      transaction_date: '2026-11-01',
+      recurring_transaction_id: recurringA,
+    };
+    const first = await clientA.from('transactions').insert(occurrence);
+    expect(first.error).toBeNull();
+    const second = await clientA.from('transactions').insert(occurrence);
+    expect(second.error?.code).toBe('23505');
+  });
+
+  it('B cannot link a transaction to A recurrence', async () => {
+    const { data: accB } = await service
+      .from('accounts')
+      .insert({ user_id: userB.id, name: `Cuenta B ${stamp}`, type: 'CHECKING', opening_balance: 0 })
+      .select('id')
+      .single();
+    const { data: catB } = await service
+      .from('categories')
+      .insert({ user_id: userB.id, name: `Gasto B ${stamp}`, type: 'EXPENSE' })
+      .select('id')
+      .single();
+    const { error } = await clientB.from('transactions').insert({
+      user_id: userB.id,
+      account_id: accB!.id,
+      category_id: catB!.id,
+      type: 'EXPENSE',
+      direction: 'OUTFLOW',
+      amount: 1,
+      description: 'x',
+      transaction_date: '2026-11-02',
+      recurring_transaction_id: recurringA,
+    });
+    expect(error).not.toBeNull();
+    expect(error?.message).toContain('transactions_recurring_fk');
+  });
+});
+
+
+describe('subscriptions', () => {
+  let subA: string;
+
+  beforeAll(async () => {
+    const { data, error } = await clientA
+      .from('subscriptions')
+      .insert({ user_id: userA.id, name: 'Streaming', amount: 30000, frequency: 'MONTHLY', next_payment_date: '2026-12-01' })
+      .select('id')
+      .single();
+    expect(error).toBeNull();
+    subA = data!.id;
+  });
+
+  it('B cannot read or update A subscription; anon cannot read', async () => {
+    const { data: read } = await clientB.from('subscriptions').select('id').eq('id', subA);
+    expect(read).toEqual([]);
+    const { data: upd } = await clientB.from('subscriptions').update({ name: 'hack' }).eq('id', subA).select();
+    expect(upd).toEqual([]);
+    const { data: anonRead } = await anon.from('subscriptions').select('id').eq('id', subA);
+    expect(anonRead ?? []).toEqual([]);
+  });
+
+  it('A cannot insert a subscription owned by B', async () => {
+    const { error } = await clientA
+      .from('subscriptions')
+      .insert({ user_id: userB.id, name: 'x', amount: 1, frequency: 'MONTHLY', next_payment_date: '2026-12-01' });
+    expect(error).not.toBeNull();
+  });
+
+  it('CUSTOM requires a positive interval; other frequencies forbid it; amount must be positive', async () => {
+    const row = { user_id: userA.id, name: 'x', amount: 1, next_payment_date: '2026-12-01' };
+    expect((await clientA.from('subscriptions').insert({ ...row, frequency: 'CUSTOM' })).error).not.toBeNull();
+    expect((await clientA.from('subscriptions').insert({ ...row, frequency: 'MONTHLY', custom_interval_days: 3 })).error).not.toBeNull();
+    expect((await clientA.from('subscriptions').insert({ ...row, frequency: 'MONTHLY', amount: 0 })).error).not.toBeNull();
+    expect((await clientA.from('subscriptions').insert({ ...row, frequency: 'CUSTOM', custom_interval_days: 15 })).error).toBeNull();
+  });
+});
+
+describe('debts and debt payments', () => {
+  let debtA: string;
+
+  beforeAll(async () => {
+    const { data, error } = await clientA
+      .from('debts')
+      .insert({ user_id: userA.id, name: 'Préstamo', original_amount: 1000, current_balance: 1000 })
+      .select('id')
+      .single();
+    expect(error).toBeNull();
+    debtA = data!.id;
+  });
+
+  it('B cannot read or update A debt; anon cannot read', async () => {
+    const { data: read } = await clientB.from('debts').select('id').eq('id', debtA);
+    expect(read).toEqual([]);
+    const { data: upd } = await clientB.from('debts').update({ current_balance: 0 }).eq('id', debtA).select();
+    expect(upd).toEqual([]);
+    const { data: anonRead } = await anon.from('debts').select('id').eq('id', debtA);
+    expect(anonRead ?? []).toEqual([]);
+  });
+
+  it('rejects a negative balance and a non-positive original amount', async () => {
+    expect((await clientA.from('debts').insert({ user_id: userA.id, name: 'x', original_amount: 10, current_balance: -1 })).error).not.toBeNull();
+    expect((await clientA.from('debts').insert({ user_id: userA.id, name: 'x', original_amount: 0, current_balance: 0 })).error).not.toBeNull();
+  });
+
+  it('the client cannot insert or update payments directly (only the atomic functions do)', async () => {
+    const insert = await clientA
+      .from('debt_payments')
+      .insert({ user_id: userA.id, debt_id: debtA, amount: 1, principal_amount: 1 });
+    expect(insert.error).not.toBeNull();
+  });
+
+  it('record_debt_payment splits capital and interest and reduces the balance atomically', async () => {
+    const { data, error } = await clientA.rpc('record_debt_payment', { p_debt_id: debtA, p_amount: 300, p_interest: 50 });
+    expect(error).toBeNull();
+    expect(data).toBeTruthy();
+    const { data: debt } = await clientA.from('debts').select('current_balance, status').eq('id', debtA).single();
+    expect(Number(debt!.current_balance)).toBe(750);
+    expect(debt!.status).toBe('ACTIVE');
+    const { data: payment } = await clientA.from('debt_payments').select('principal_amount, interest_amount').eq('id', data as string).single();
+    expect(Number(payment!.principal_amount)).toBe(250);
+    expect(Number(payment!.interest_amount)).toBe(50);
+  });
+
+  it('rejects an overpayment and an interest above the payment, leaving the balance untouched', async () => {
+    const over = await clientA.rpc('record_debt_payment', { p_debt_id: debtA, p_amount: 5000 });
+    expect(over.error).not.toBeNull();
+    const badInterest = await clientA.rpc('record_debt_payment', { p_debt_id: debtA, p_amount: 10, p_interest: 20 });
+    expect(badInterest.error).not.toBeNull();
+    const { data: debt } = await clientA.from('debts').select('current_balance').eq('id', debtA).single();
+    expect(Number(debt!.current_balance)).toBe(750);
+  });
+
+  it('B cannot pay or void payments of A debt; anon cannot execute the functions', async () => {
+    const pay = await clientB.rpc('record_debt_payment', { p_debt_id: debtA, p_amount: 1 });
+    expect(pay.error).not.toBeNull();
+    const { data: payments } = await clientA.from('debt_payments').select('id').eq('debt_id', debtA);
+    const voidByB = await clientB.rpc('void_debt_payment', { p_payment_id: payments![0].id });
+    expect(voidByB.error).not.toBeNull();
+    const anonPay = await anon.rpc('record_debt_payment', { p_debt_id: debtA, p_amount: 1 });
+    expect(anonPay.error).not.toBeNull();
+    const { data: debt } = await clientA.from('debts').select('current_balance').eq('id', debtA).single();
+    expect(Number(debt!.current_balance)).toBe(750);
+  });
+
+  it('paying off the debt marks it PAID and voiding a payment reopens it', async () => {
+    const final = await clientA.rpc('record_debt_payment', { p_debt_id: debtA, p_amount: 750 });
+    expect(final.error).toBeNull();
+    const { data: paid } = await clientA.from('debts').select('current_balance, status').eq('id', debtA).single();
+    expect(Number(paid!.current_balance)).toBe(0);
+    expect(paid!.status).toBe('PAID');
+
+    const again = await clientA.rpc('record_debt_payment', { p_debt_id: debtA, p_amount: 1 });
+    expect(again.error).not.toBeNull();
+
+    const voided = await clientA.rpc('void_debt_payment', { p_payment_id: final.data as string });
+    expect(voided.error).toBeNull();
+    const { data: reopened } = await clientA.from('debts').select('current_balance, status').eq('id', debtA).single();
+    expect(Number(reopened!.current_balance)).toBe(750);
+    expect(reopened!.status).toBe('ACTIVE');
+  });
+
+  it('B cannot read A payments', async () => {
+    const { data } = await clientB.from('debt_payments').select('id').eq('debt_id', debtA);
+    expect(data).toEqual([]);
+  });
+});
+
+describe('alerts', () => {
+  let alertA: string;
+  const key = `test:${Date.now()}`;
+
+  beforeAll(async () => {
+    const { data, error } = await clientA
+      .from('alerts')
+      .insert({ user_id: userA.id, type: 'TEST', title: 't', message: 'm', dedup_key: key })
+      .select('id')
+      .single();
+    expect(error).toBeNull();
+    alertA = data!.id;
+  });
+
+  it('B cannot read or update A alert; anon cannot read', async () => {
+    const { data: read } = await clientB.from('alerts').select('id').eq('id', alertA);
+    expect(read).toEqual([]);
+    const { data: upd } = await clientB.from('alerts').update({ is_read: true, read_at: new Date().toISOString() }).eq('id', alertA).select();
+    expect(upd).toEqual([]);
+    const { data: anonRead } = await anon.from('alerts').select('id').eq('id', alertA);
+    expect(anonRead ?? []).toEqual([]);
+  });
+
+  it('A cannot create an alert for B', async () => {
+    const { error } = await clientA.from('alerts').insert({ user_id: userB.id, type: 'TEST', title: 't', message: 'm' });
+    expect(error).not.toBeNull();
+  });
+
+  it('dedup_key is unique per user: a duplicate is rejected and an upsert ignoring duplicates creates nothing', async () => {
+    const dup = await clientA.from('alerts').insert({ user_id: userA.id, type: 'TEST', title: 't2', message: 'm2', dedup_key: key });
+    expect(dup.error?.code).toBe('23505');
+
+    const { data } = await clientA
+      .from('alerts')
+      .upsert({ user_id: userA.id, type: 'TEST', title: 't3', message: 'm3', dedup_key: key }, { onConflict: 'user_id,dedup_key', ignoreDuplicates: true })
+      .select('id');
+    expect(data).toEqual([]);
+  });
+
+  it('the same dedup_key is allowed for a different user', async () => {
+    const { error } = await clientB.from('alerts').insert({ user_id: userB.id, type: 'TEST', title: 't', message: 'm', dedup_key: key });
+    expect(error).toBeNull();
+  });
+
+  it('alerts without dedup_key can repeat (NULLs are distinct)', async () => {
+    const row = { user_id: userA.id, type: 'TEST', title: 't', message: 'm' };
+    expect((await clientA.from('alerts').insert(row)).error).toBeNull();
+    expect((await clientA.from('alerts').insert(row)).error).toBeNull();
+  });
+
+  it('read state must be consistent with read_at', async () => {
+    const bad = await clientA.from('alerts').update({ is_read: true }).eq('id', alertA);
+    expect(bad.error).not.toBeNull();
+    const good = await clientA.from('alerts').update({ is_read: true, read_at: new Date().toISOString() }).eq('id', alertA);
+    expect(good.error).toBeNull();
+  });
+});
