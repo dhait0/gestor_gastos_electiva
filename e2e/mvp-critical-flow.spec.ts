@@ -344,3 +344,41 @@ test.describe("Transacciones", () => {
     await expect(page.locator("text=Transporte")).toBeVisible();
   });
 });});
+
+
+test.describe("Presupuestos (G03)", () => {
+  test("crear presupuesto, consumirlo con un gasto y ver el estado", async ({ page }) => {
+    const uniqueId = Date.now() + 6;
+    await registerUser(page, `test-budget-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Presupuesto ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Presupuesto", "1000000");
+
+    // Gasto de 80.000 en la primera categoría de gasto (índice 1 del select)
+    await createTransaction(page, "expense", "80000", "Compra del mes");
+
+    await page.goto(`${BASE_URL}/presupuestos/nuevo`);
+    await page.waitForLoadState("networkidle");
+    await page.selectOption('select[name="category_id"]', { index: 1 });
+    await page.fill('input[name="limit_amount"]', "100000");
+    await page.click('main form button[type="submit"]');
+    await page.waitForURL(/\/presupuestos(\?|$)/, { timeout: 10000 });
+
+    // 80.000 de 100.000 = 80 % → "Atención"
+    await expect(page.getByRole("heading", { level: 2 }).first()).toBeVisible();
+    await expect(page.locator("text=Atención")).toBeVisible();
+    await expect(page.getByRole("progressbar").first()).toHaveAttribute("aria-valuenow", "80");
+
+    // Duplicado: mismo mes y categoría → error legible
+    await page.goto(`${BASE_URL}/presupuestos/nuevo`);
+    await page.waitForLoadState("networkidle");
+    await page.selectOption('select[name="category_id"]', { index: 1 });
+    await page.fill('input[name="limit_amount"]', "50000");
+    await page.click('main form button[type="submit"]');
+    await expect(page.locator("text=Ya existe un presupuesto")).toBeVisible();
+
+    // Eliminar (soft delete) y volver al estado vacío
+    await page.goto(`${BASE_URL}/presupuestos`);
+    page.once("dialog", (d) => d.accept());
+    await page.getByRole("button", { name: /Eliminar presupuesto/ }).click();
+    await expect(page.locator("text=Sin presupuestos en este mes")).toBeVisible();
+  });
+});
