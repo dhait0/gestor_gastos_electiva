@@ -47,7 +47,7 @@ export async function getFinancialSummaryAction(): Promise<
   // 2. Obtener transacciones del usuario (para calcular saldos)
   const { data: transactions, error: transactionsError } = await supabase
     .from("transactions")
-    .select("id, account_id, type, direction, amount, currency_code, deleted_at")
+    .select("id, account_id, category_id, type, direction, amount, currency_code, transaction_date, deleted_at")
     .eq("user_id", user.id);
 
   if (transactionsError) {
