@@ -1135,3 +1135,24 @@ Nota de entorno: con la máquina bajo carga alta (promedio 30 por otros procesos
 Matriz RLS de recurrentes, suscripciones, deudas (incluidas las RPC), abonos y alertas añadida a `supabase/tests/rls.test.ts`: **NO EJECUTADA en local** (la suite borra datos de desarrollo); la ejecuta `rls.yml`. Las restricciones y las funciones sí se verificaron por SQL con ROLLBACK.
 Brechas: la deuda de tarjeta (`debts.type = CREDIT_CARD`) y la cuenta `CREDIT_CARD` de `accounts` son entidades independientes; no hay conciliación entre ambas (decisión de producto pendiente). Las alertas no tienen badge de no leídas en la navegación. El "dinero disponible" aún no descuenta pagos mínimos de deudas ni el compromiso mensual de metas.
 Siguiente microtarea sugerida: M01 (matriz de permisos; requiere aprobación del propietario).
+
+---
+
+## Bloque M-N — Roles y consola de administración (2026-11-14)
+
+Rama: feature/lukiva-fase-m-n (apilada sobre feature/lukiva-fase-i-l, PR #42).
+
+| ID | Estado | Evidencia |
+|---|---|---|
+| M01 | PROPUESTO — **requiere ratificación del propietario** | `contexto/arquitectura/adr/ADR-008-RBAC-Y-ADMINISTRACION.md`: roles `user`/`support`/`admin`, **un rol elevado por usuario**, matriz de permisos, amenazas, procedimiento de primer admin. Decisiones tomadas por defecto seguro (ver ADR) y marcadas para tu revisión |
+| M02 | VALIDADO | `20261114180000_rbac_admin.sql`: `roles`, `permissions`, `role_permissions`, `user_roles`, `admin_audit_logs`; RLS sin políticas de escritura y sin lectura de tablas de referencia/auditoría (denegación por defecto); funciones SECURITY DEFINER con `search_path` vacío y `auth.uid()` explícito; `admin_set_user_role` cambia el rol y audita en la misma transacción; guardias de no-autocambio y último admin; `bootstrap_first_admin` solo en el esquema `private`, solo si no hay admin |
+| M03 | VALIDADO | 29 casos RBAC en `supabase/tests/rls.test.ts` (**ejecutados contra el Supabase local: 29/29**, filtrando por bloque porque es independiente y solo inserta): denegación por defecto, sin autoescalada, soporte no escala, auditoría inalterable, **admin y soporte no leen ni modifican datos financieros ajenos en 13 tablas**, lista de usuarios con solo 5 columnas mínimas. Además 6 pruebas de contrato de la matriz en `src/domain/permissions.ts` |
+| N01 | VALIDADO | `/admin` con `requirePermission()` en servidor (sin sesión → /login; sin permiso → 404) y enlace visible solo con `admin.access`; la autorización se comprueba otra vez en cada acción y en la BD |
+| N02 | VALIDADO | `/admin/usuarios` (nombre, email, rol, alta; selector de rol solo con `users.roles.manage` y nunca sobre la propia fila) y `/admin/auditoria` |
+| N03 | VALIDADO | `/admin` con métricas agregadas (solo conteos, sin importes); E2E: usuario sin rol → 404, soporte sin gestión ni auditoría, admin cambia rol y queda auditado, las métricas no muestran importes |
+
+**Defecto previo corregido en la suite RLS:** `createTestUser` y el test de signup hacían `signIn/signUp` sobre el cliente compartido `anon`, dejándolo autenticado como el último usuario; todas las pruebas "anon cannot …" probaban en realidad a un usuario logueado. Ahora usan un cliente desechable. Las pruebas "anon" existentes y nuevas verifican ya a un anon real.
+Pruebas: lint 0 errores/5 warnings; typecheck PASÓ; `pnpm test` **178/178**; `pnpm build` PASÓ; E2E de administración **3/3** (requieren `E2E_SUPABASE_URL` y `E2E_SERVICE_ROLE_KEY`; el workflow `e2e.yml` los exporta del Supabase local del runner y sin ellos los tests se omiten). Los E2E anteriores siguen pasando.
+Suite RLS completa: **NO EJECUTADA en local** (el resto de bloques borra datos de desarrollo); la cubre `rls.yml`. Se ejecutó solo el bloque RBAC y se eliminaron los usuarios de prueba creados.
+**Acciones manuales:** (1) ratificar o ajustar el ADR-008; (2) tras desplegar la migración, crear el primer admin con `select private.bootstrap_first_admin('<uuid>')` desde el SQL editor (no hay UI a propósito); (3) no desplegar a producción sin aprobar el ADR.
+Siguiente microtarea sugerida: O01.
