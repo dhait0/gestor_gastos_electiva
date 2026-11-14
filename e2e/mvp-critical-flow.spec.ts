@@ -248,6 +248,13 @@ test.describe("FASE 21 - Flujo crítico MVP (E2E)", () => {
     // 1.000.000 + 100.000 - 30.000 - 200.000 - 100.000 (reserva) = 770.000
     await page.goto(`${BASE_URL}/dashboard`);
     await expect(page.locator("main").first()).toContainText(/770[.,]000/);
+
+    // F02: desglose por categoría y filtro de período
+    await expect(page.getByRole("heading", { name: "Gasto por categoría" })).toBeVisible();
+    await expect(page.getByRole("progressbar").first()).toBeVisible();
+    await page.getByRole("link", { name: "Mes anterior" }).click();
+    await expect(page).toHaveURL(/period=previous/);
+    await expect(page.locator("text=No hay gastos registrados")).toBeVisible();
   });
 
   test("déficit: disponible negativo cuando obligaciones > saldo", async ({ page }) => {

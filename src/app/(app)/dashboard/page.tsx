@@ -6,10 +6,12 @@ import { getAccountsAction } from "@/app/actions/accounts";
 import { MonthlyTrendChart } from "@/components/dashboard/MonthlyTrendChart";
 import { formatCurrency } from "@/lib/utils";
 import { Decimal } from "decimal.js";
+import { DASHBOARD_PERIODS, parseDashboardPeriod, type DashboardPeriod } from "@/domain/analytics";
+import { ExpenseBreakdown } from "@/components/dashboard/ExpenseBreakdown";
 
-async function getDashboardData() {
+async function getDashboardData(period: DashboardPeriod) {
   const [summaryResult, transactionsResult, accountsResult] = await Promise.all([
-    getFinancialSummaryAction(),
+    getFinancialSummaryAction(period),
     getTransactionsAction({ limit: 5 }),
     getAccountsAction(),
   ]);
@@ -52,8 +54,14 @@ function formatDecimal(value: Decimal, currencyCode: string) {
   return formatCurrency(value.toNumber(), currencyCode);
 }
 
-export default async function DashboardPage() {
-  const { summaryResult, transactionsResult, accountsResult } = await getDashboardData();
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string | string[] }>;
+}) {
+  const period = parseDashboardPeriod((await searchParams).period);
+  const periodLabel = DASHBOARD_PERIODS.find((p) => p.value === period)!.label;
+  const { summaryResult, transactionsResult, accountsResult } = await getDashboardData(period);
 
   if ("error" in summaryResult) {
     return (
@@ -67,7 +75,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const { liquidBalance, pendingObligations, safetyReserve, availableToSpend, currencyCode, monthlyIncome, monthlyExpense, monthlyTrend } = summaryResult.data;
+  const { liquidBalance, pendingObligations, safetyReserve, availableToSpend, currencyCode, periodIncome, periodExpense, expenseBreakdown, monthlyTrend } = summaryResult.data;
   const transactions = transactionsResult.data || [];
   const hasTransactions = transactions.length > 0;
   const accounts = accountsResult.data || [];
@@ -193,10 +201,27 @@ export default async function DashboardPage() {
         </section>
 
         <section aria-labelledby="income-expense-heading" className="space-y-4">
-          <header className="flex items-center justify-between">
+          <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <h2 id="income-expense-heading" className="text-lg font-semibold text-foreground">
-              Resumen del mes
+              Resumen del período
             </h2>
+            <nav aria-label="Período del resumen" className="flex flex-wrap gap-2">
+              {DASHBOARD_PERIODS.map((p) => (
+                <a
+                  key={p.value}
+                  href={`/dashboard?period=${p.value}`}
+                  aria-current={p.value === period ? "true" : undefined}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-sm border transition-colors",
+                    p.value === period
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-card text-muted-foreground border-border hover:text-foreground"
+                  )}
+                >
+                  {p.label}
+                </a>
+              ))}
+            </nav>
           </header>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className={cn(
@@ -205,11 +230,11 @@ export default async function DashboardPage() {
             )}>
               <p className="text-sm text-muted-foreground">Ingresos</p>
               <p className="mt-1 text-2xl font-bold text-success tabular-nums">
-                {formatDecimal(monthlyIncome, currencyCode)}
+                {formatDecimal(periodIncome, currencyCode)}
               </p>
               <p className="mt-1 flex items-center gap-1 text-xs text-success">
                 <ArrowUpRight className="w-3 h-3" />
-                <span>Este mes</span>
+                <span>{periodLabel}</span>
               </p>
             </div>
             <div className={cn(
@@ -218,13 +243,32 @@ export default async function DashboardPage() {
             )}>
               <p className="text-sm text-muted-foreground">Gastos</p>
               <p className="mt-1 text-2xl font-bold text-danger tabular-nums">
-                {formatDecimal(monthlyExpense, currencyCode)}
+                {formatDecimal(periodExpense, currencyCode)}
               </p>
               <p className="mt-1 flex items-center gap-1 text-xs text-danger">
                 <ArrowDownLeft className="w-3 h-3" />
-                <span>Este mes</span>
+                <span>{periodLabel}</span>
               </p>
             </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="breakdown-heading" className="space-y-4">
+          <header className="flex items-center justify-between">
+            <h2 id="breakdown-heading" className="text-lg font-semibold text-foreground">
+              Gasto por categoría
+            </h2>
+          </header>
+          <div className="rounded-xl border border-border bg-card p-6">
+            <ExpenseBreakdown
+              items={expenseBreakdown.map((i) => ({
+                name: i.name,
+                color: i.color,
+                amount: formatDecimal(i.amount, currencyCode),
+                percent: i.percent,
+              }))}
+              periodLabel={periodLabel}
+            />
           </div>
         </section>
 

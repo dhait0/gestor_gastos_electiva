@@ -1070,3 +1070,22 @@ Rollback: archivar las categorías sembradas con `deleted_at` y restaurar la ver
 Registro actualizado: sí.
 Siguiente microtarea sugerida: B0.2 (job E2E en CI + limpieza de usuarios de prueba) y luego B0.3 (quitar `console.log/error` de onboarding), B0.4 (tarjetas, B02-02).
 STOP
+
+---
+
+## B0.2–B0.4 y Bloque F (2026-11-14)
+
+Rama: fix/lukiva-estabilizacion-e2e (el Bloque 0 y el Bloque F comparten rama y PR; desviación de "una rama por bloque" por dependencia directa).
+
+| ID | Estado | Evidencia |
+|---|---|---|
+| B0.2 | VALIDADO (CI pendiente de primera ejecución remota) | `.github/workflows/e2e.yml`: `supabase start`, credenciales locales vía `supabase status -o env`, Playwright chromium, sube `test-results/` si falla |
+| B0.3 | VALIDADO | Eliminados los `console.log/error` de depuración de `onboarding.ts` y `onboarding/page.tsx`; solo quedan 3 `console.error` de error real, sin datos del usuario |
+| B0.4 | VALIDADO | B02-02: `calculateCreditCardDebt` (deuda = saldo inicial + salidas − entradas) y `calculateAccountCurrentValue` (despacha por tipo); `/cuentas` muestra "Deuda actual/inicial" en tarjetas. B02-01: archivar solo marca `is_archived` (ya no `deleted_at`), la sección "Archivadas" se llena y las archivadas no se ofrecen para nuevos movimientos. 9 pruebas nuevas |
+| F01 | VALIDADO | **Bug real encontrado:** la consulta de `financial.ts` no traía `transaction_date` y `toDomainTransactions` ponía la fecha de hoy a todas las filas → ingresos/gastos "del mes" y tendencia contaban todo el historial. Corregido; 2 pruebas de regresión (rojas antes del fix: 520 vs 20) |
+| F02 | VALIDADO | `src/domain/analytics.ts` (períodos current/previous/last3/year con zona horaria del perfil, ingresos/gastos por rango, desglose por categoría con Decimal); selector de período por `searchParams`; `ExpenseBreakdown`; 12 pruebas de dominio + aserciones E2E |
+
+Pruebas: `pnpm lint` 0 errores/5 warnings; `pnpm typecheck` PASÓ; `pnpm test` **94/94**; `pnpm test:e2e` **7/7** (Supabase local, :3217); `pnpm build` PASÓ.
+Pendiente: job `e2e.yml` y los 2 casos RLS nuevos aún no se han ejecutado en CI remoto; `pnpm test:rls` no se ejecuta en local (borra datos de la base de desarrollo).
+Hallazgo abierto: B0.1-c (aviso de hidratación en el E2E) sin investigar.
+Siguiente microtarea sugerida: G01.

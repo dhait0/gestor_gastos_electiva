@@ -3,8 +3,15 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { toDomainTransactions } from "@/lib/supabase/transactions";
 import { Decimal } from "decimal.js";
-import { calculateLiquidBalance, calculateAvailableToSpend, calculateMonthlyIncomeExpense, calculateMonthlyTrend } from "@/domain/transactions";
+import { calculateLiquidBalance, calculateAvailableToSpend, calculateMonthlyTrend } from "@/domain/transactions";
 import type { MonthlyTrendPoint } from "@/domain/transactions";
+import {
+  calculateExpenseBreakdown,
+  calculateIncomeExpenseInRange,
+  getPeriodRange,
+  type BreakdownItem,
+  type DashboardPeriod,
+} from "@/domain/analytics";
 
 export interface FinancialSummary {
   liquidBalance: Decimal;
@@ -12,12 +19,14 @@ export interface FinancialSummary {
   safetyReserve: Decimal;
   availableToSpend: Decimal;
   currencyCode: string;
-  monthlyIncome: Decimal;
-  monthlyExpense: Decimal;
+  period: DashboardPeriod;
+  periodIncome: Decimal;
+  periodExpense: Decimal;
+  expenseBreakdown: BreakdownItem[];
   monthlyTrend: MonthlyTrendPoint[];
 }
 
-export async function getFinancialSummaryAction(): Promise<
+export async function getFinancialSummaryAction(period: DashboardPeriod = "current"): Promise<
   | { data: FinancialSummary }
   | { error: string }
 > {
@@ -52,6 +61,16 @@ export async function getFinancialSummaryAction(): Promise<
 
   if (transactionsError) {
     return { error: "Error al obtener transacciones" };
+  }
+
+  // 2b. Categorías (nombre y color) para el desglose del gasto
+  const { data: categories, error: categoriesError } = await supabase
+    .from("categories")
+    .select("id, name, color")
+    .eq("user_id", user.id);
+
+  if (categoriesError) {
+    return { error: "Error al obtener categorías" };
   }
 
   // 3. Obtener obligaciones pendientes
@@ -118,12 +137,19 @@ export async function getFinancialSummaryAction(): Promise<
     safetyReserve,
   });
 
-  // Ingresos y gastos reales del mes actual (moneda base, zona horaria del perfil)
+  // Ingresos, gastos y desglose del período elegido (moneda base, zona horaria del perfil)
   const timezone = profile?.timezone || "America/Bogota";
-  const { income: monthlyIncome, expense: monthlyExpense } = calculateMonthlyIncomeExpense(
+  const range = getPeriodRange(period, timezone);
+  const { income: periodIncome, expense: periodExpense } = calculateIncomeExpenseInRange(
     baseTransactions,
     baseCurrency,
-    timezone
+    range
+  );
+  const expenseBreakdown = calculateExpenseBreakdown(
+    baseTransactions,
+    categories ?? [],
+    baseCurrency,
+    range
   );
 
   const monthlyTrend = calculateMonthlyTrend(baseTransactions, baseCurrency, timezone, 6);
@@ -135,8 +161,10 @@ export async function getFinancialSummaryAction(): Promise<
       safetyReserve,
       availableToSpend,
       currencyCode,
-      monthlyIncome,
-      monthlyExpense,
+      period,
+      periodIncome,
+      periodExpense,
+      expenseBreakdown,
       monthlyTrend,
     },
   };
