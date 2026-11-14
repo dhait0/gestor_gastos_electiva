@@ -640,3 +640,166 @@ describe('default categories on signup', () => {
     expect(data).toEqual([]);
   });
 });
+
+
+describe('budgets, goals and goal_contributions', () => {
+  const stamp = Date.now();
+  let expenseCatA: string;
+  let incomeCatA: string;
+  let budgetA: string;
+  let goalA: string;
+
+  beforeAll(async () => {
+    const { data: exp } = await service
+      .from('categories')
+      .insert({ user_id: userA.id, name: `Presupuesto ${stamp}`, type: 'EXPENSE' })
+      .select('id')
+      .single();
+    const { data: inc } = await service
+      .from('categories')
+      .insert({ user_id: userA.id, name: `Ingreso ${stamp}`, type: 'INCOME' })
+      .select('id')
+      .single();
+    expenseCatA = exp!.id;
+    incomeCatA = inc!.id;
+
+    const { data: budget, error: budgetError } = await clientA
+      .from('budgets')
+      .insert({ user_id: userA.id, category_id: expenseCatA, period_month: '2026-11-01', limit_amount: 500000 })
+      .select('id')
+      .single();
+    expect(budgetError).toBeNull();
+    budgetA = budget!.id;
+
+    const { data: goal, error: goalError } = await clientA
+      .from('goals')
+      .insert({ user_id: userA.id, name: `Meta ${stamp}`, target_amount: 1000000 })
+      .select('id')
+      .single();
+    expect(goalError).toBeNull();
+    goalA = goal!.id;
+  });
+
+  describe('budgets', () => {
+    it('A can read own budget', async () => {
+      const { data } = await clientA.from('budgets').select('id').eq('id', budgetA).single();
+      expect(data?.id).toBe(budgetA);
+    });
+
+    it('B cannot read A budget', async () => {
+      const { data } = await clientB.from('budgets').select('id').eq('id', budgetA);
+      expect(data).toEqual([]);
+    });
+
+    it('anon cannot read budgets', async () => {
+      const { data } = await anon.from('budgets').select('id').eq('id', budgetA);
+      expect(data ?? []).toEqual([]);
+    });
+
+    it('B cannot update A budget', async () => {
+      const { data } = await clientB.from('budgets').update({ limit_amount: 1 }).eq('id', budgetA).select();
+      expect(data).toEqual([]);
+    });
+
+    it('A cannot insert a budget owned by B', async () => {
+      const { error } = await clientA
+        .from('budgets')
+        .insert({ user_id: userB.id, category_id: expenseCatA, period_month: '2026-12-01', limit_amount: 1 });
+      expect(error).not.toBeNull();
+    });
+
+    it('blocks a budget on a category owned by another user', async () => {
+      const { error } = await clientB
+        .from('budgets')
+        .insert({ user_id: userB.id, category_id: expenseCatA, period_month: '2026-11-01', limit_amount: 1 });
+      // El trigger BEFORE (categoría de gasto del propio usuario) salta antes que la FK compuesta.
+      expect(error).not.toBeNull();
+    });
+
+    it('rejects a budget on an INCOME category', async () => {
+      const { error } = await clientA
+        .from('budgets')
+        .insert({ user_id: userA.id, category_id: incomeCatA, period_month: '2026-11-01', limit_amount: 1 });
+      expect(error).not.toBeNull();
+      expect(error?.message).toContain('EXPENSE');
+    });
+
+    it('rejects a period_month that is not the first day', async () => {
+      const { error } = await clientA
+        .from('budgets')
+        .insert({ user_id: userA.id, category_id: expenseCatA, period_month: '2026-10-15', limit_amount: 1 });
+      expect(error).not.toBeNull();
+    });
+
+    it('rejects a non-positive limit', async () => {
+      const { error } = await clientA
+        .from('budgets')
+        .insert({ user_id: userA.id, category_id: expenseCatA, period_month: '2027-01-01', limit_amount: 0 });
+      expect(error).not.toBeNull();
+    });
+
+    it('rejects a duplicate active budget for the same category and month, allows it after soft delete', async () => {
+      const dup = { user_id: userA.id, category_id: expenseCatA, period_month: '2026-11-01', limit_amount: 1 };
+      const { error } = await clientA.from('budgets').insert(dup);
+      expect(error).not.toBeNull();
+
+      await clientA.from('budgets').update({ deleted_at: new Date().toISOString() }).eq('id', budgetA);
+      const { error: afterDelete } = await clientA.from('budgets').insert(dup);
+      expect(afterDelete).toBeNull();
+    });
+  });
+
+  describe('goals', () => {
+    it('A can read own goal, B cannot, anon cannot', async () => {
+      const { data: own } = await clientA.from('goals').select('id').eq('id', goalA).single();
+      expect(own?.id).toBe(goalA);
+      const { data: other } = await clientB.from('goals').select('id').eq('id', goalA);
+      expect(other).toEqual([]);
+      const { data: anonRead } = await anon.from('goals').select('id').eq('id', goalA);
+      expect(anonRead ?? []).toEqual([]);
+    });
+
+    it('B cannot update A goal', async () => {
+      const { data } = await clientB.from('goals').update({ name: 'hack' }).eq('id', goalA).select();
+      expect(data).toEqual([]);
+    });
+
+    it('rejects non-positive target and negative initial amounts', async () => {
+      const bad1 = await clientA.from('goals').insert({ user_id: userA.id, name: 'x', target_amount: 0 });
+      expect(bad1.error).not.toBeNull();
+      const bad2 = await clientA
+        .from('goals')
+        .insert({ user_id: userA.id, name: 'x', target_amount: 10, initial_amount: -1 });
+      expect(bad2.error).not.toBeNull();
+    });
+  });
+
+  describe('goal_contributions', () => {
+    it('A can contribute to own goal', async () => {
+      const { error } = await clientA
+        .from('goal_contributions')
+        .insert({ user_id: userA.id, goal_id: goalA, amount: 50000 });
+      expect(error).toBeNull();
+    });
+
+    it('composite FK blocks B contributing to A goal', async () => {
+      const { error } = await clientB
+        .from('goal_contributions')
+        .insert({ user_id: userB.id, goal_id: goalA, amount: 1 });
+      expect(error).not.toBeNull();
+      expect(error?.message).toContain('goal_contributions_goal_fk');
+    });
+
+    it('B cannot read A contributions', async () => {
+      const { data } = await clientB.from('goal_contributions').select('id').eq('goal_id', goalA);
+      expect(data).toEqual([]);
+    });
+
+    it('rejects a non-positive amount', async () => {
+      const { error } = await clientA
+        .from('goal_contributions')
+        .insert({ user_id: userA.id, goal_id: goalA, amount: 0 });
+      expect(error).not.toBeNull();
+    });
+  });
+});

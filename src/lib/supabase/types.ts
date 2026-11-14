@@ -1,3 +1,4 @@
+
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
@@ -42,6 +43,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"budgets": {
+                  Row: {
+                    "category_id": string,"created_at": string,"currency_code": string,"deleted_at": string | null,"id": string,"limit_amount": number,"period_month": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "category_id": string,"created_at"?: string,"currency_code"?: string,"deleted_at"?: string | null,"id"?: string,"limit_amount": number,"period_month": string,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "category_id"?: string,"created_at"?: string,"currency_code"?: string,"deleted_at"?: string | null,"id"?: string,"limit_amount"?: number,"period_month"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "budgets_category_fk"
+      columns: ["category_id","user_id"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "budgets_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"categories": {
                   Row: {
                     "color": string | null,"created_at": string,"deleted_at": string | null,"icon": string | null,"id": string,"is_default": boolean,"name": string,"type": Database["public"]['Enums']["category_type"],"updated_at": string,"user_id": string
@@ -56,6 +83,52 @@ isOneToOne: false
                   Relationships: [
                     {
       foreignKeyName: "categories_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"goal_contributions": {
+                  Row: {
+                    "amount": number,"contribution_date": string,"created_at": string,"deleted_at": string | null,"goal_id": string,"id": string,"notes": string | null,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount": number,"contribution_date"?: string,"created_at"?: string,"deleted_at"?: string | null,"goal_id": string,"id"?: string,"notes"?: string | null,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "amount"?: number,"contribution_date"?: string,"created_at"?: string,"deleted_at"?: string | null,"goal_id"?: string,"id"?: string,"notes"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "goal_contributions_goal_fk"
+      columns: ["goal_id","user_id"]
+isOneToOne: false
+      referencedRelation: "goals"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "goal_contributions_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"goals": {
+                  Row: {
+                    "created_at": string,"currency_code": string,"deleted_at": string | null,"description": string | null,"id": string,"initial_amount": number,"monthly_commitment_amount": number,"name": string,"status": Database["public"]['Enums']["goal_status"],"target_amount": number,"target_date": string | null,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"currency_code"?: string,"deleted_at"?: string | null,"description"?: string | null,"id"?: string,"initial_amount"?: number,"monthly_commitment_amount"?: number,"name": string,"status"?: Database["public"]['Enums']["goal_status"],"target_amount": number,"target_date"?: string | null,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"currency_code"?: string,"deleted_at"?: string | null,"description"?: string | null,"id"?: string,"initial_amount"?: number,"monthly_commitment_amount"?: number,"name"?: string,"status"?: Database["public"]['Enums']["goal_status"],"target_amount"?: number,"target_date"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "goals_user_id_fkey"
       columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "profiles"
