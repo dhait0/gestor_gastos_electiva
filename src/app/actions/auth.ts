@@ -2,6 +2,7 @@
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { signupSchema, loginSchema, passwordResetRequestSchema, passwordResetSchema } from "@/schemas/auth";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 type ActionResult =
@@ -116,12 +117,19 @@ export async function requestPasswordResetAction(_prevState: ActionResult, formD
 
   const supabase = await createSupabaseServerClient();
 
+  // El enlace del correo debe volver a ESTA aplicación (antes apuntaba al host de Supabase)
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const protocol = requestHeaders.get("x-forwarded-proto") ?? (host?.startsWith("localhost") || host?.startsWith("127.") ? "http" : "https");
+  const origin = requestHeaders.get("origin") ?? `${protocol}://${host}`;
+
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/callback?next=/reset-password`,
+    redirectTo: `${origin}/auth/callback?next=/reset-password`,
   });
 
+  // Respuesta neutral (UC-03): nunca se confirma si el correo existe, ni siquiera ante un error del proveedor
   if (error) {
-    return { success: false, error: "No se pudo solicitar la recuperación" };
+    console.error("[requestPasswordResetAction] proveedor respondió con error:", error.status ?? "sin estado");
   }
 
   return { success: true, redirectTo: "/login" };
