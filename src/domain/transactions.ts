@@ -209,6 +209,45 @@ export function calculateAccountBalance(
 }
 
 /**
+ * Deuda actual de una tarjeta de crédito (B02-02).
+ *
+ *   deuda = opening_balance + salidas − entradas
+ *
+ * El saldo inicial de una tarjeta es la deuda existente al registrarla: las
+ * compras (salidas) la aumentan y los pagos (entradas) la reducen. Un valor
+ * negativo indica saldo a favor. Mismas precondiciones de moneda que
+ * `calculateAccountBalance`.
+ */
+export function calculateCreditCardDebt(
+  transactions: Transaction[],
+  accountId: string,
+  openingBalance: Money = 0
+): Decimal {
+  const movements = transactions
+    .filter((t) => t.account_id === accountId && !t.deleted_at)
+    .reduce((debt, t) => {
+      const amount = new Decimal(t.amount);
+      return t.direction === "OUTFLOW" ? debt.plus(amount) : debt.minus(amount);
+    }, new Decimal(0));
+
+  return movements.plus(toDecimal(openingBalance));
+}
+
+/**
+ * Valor actual de una cuenta según su tipo: saldo para cuentas de activo y
+ * deuda para `CREDIT_CARD`. Usar este despachador en vez de elegir la fórmula
+ * en cada llamador.
+ */
+export function calculateAccountCurrentValue(
+  transactions: Transaction[],
+  account: BalanceAccount
+): Decimal {
+  return account.type === "CREDIT_CARD"
+    ? calculateCreditCardDebt(transactions, account.id, account.opening_balance ?? 0)
+    : calculateAccountBalance(transactions, account.id, account.opening_balance ?? 0);
+}
+
+/**
  * Saldo líquido: suma el saldo actual de las cuentas líquidas y no archivadas.
  *
  * Las cuentas archivadas se excluyen (defensa en profundidad: el filtro de

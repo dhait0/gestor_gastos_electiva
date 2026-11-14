@@ -192,12 +192,16 @@ function AccountCard({ account, isArchived = false }: { account: Account; isArch
             <p className="text-2xl font-bold text-foreground tabular-nums">
               {formatCurrency(account.current_balance.toNumber(), account.currency_code)}
             </p>
-            <p className="text-xs text-muted-foreground">Saldo actual</p>
+            <p className="text-xs text-muted-foreground">
+              {account.type === "CREDIT_CARD" ? "Deuda actual" : "Saldo actual"}
+            </p>
           </div>
         </div>
         {account.opening_balance !== 0 && (
           <div className="mt-3 pt-3 border-t border-border flex items-center justify-between gap-4">
-            <p className="text-xs text-muted-foreground">Saldo inicial</p>
+            <p className="text-xs text-muted-foreground">
+              {account.type === "CREDIT_CARD" ? "Deuda inicial" : "Saldo inicial"}
+            </p>
             <p className="text-sm font-medium text-muted-foreground tabular-nums">
               {formatCurrency(account.opening_balance, account.currency_code)}
             </p>

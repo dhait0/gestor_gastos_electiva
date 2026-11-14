@@ -326,7 +326,7 @@ export default async function EditarCuentaPage({ params }: { params: Promise<{ i
   
   // Call the server action directly
   const { getAccountsAction } = await import("@/app/actions/accounts");
-  const { data: accounts } = await getAccountsAction();
+  const { data: accounts } = await getAccountsAction({ includeArchived: true });
   const account = accounts?.find((a) => a.id === id);
 
   if (!account) {
