@@ -19,3 +19,21 @@
 
 ## Procedimiento obligatorio de trazabilidad
 Antes de cada microtarea, localizar UC relacionado en `CASOS_DE_USO_Y_FLUJOS.md`; registrar código de caso, regla exacta y evidencia. Si un requisito no está en los UC, añadir especificación con ID nuevo y criterios aprobados en vez de inventarlo silenciosamente.
+
+## Actualización 2026-11-14 (cierre de fases F–P)
+La tabla anterior refleja la línea base de octubre. Estado actual por grupo (detalle por caso de uso en `06_MATRIZ_UC_50.md`; despliegue y recuperación en `07_RELEASE_Y_RECUPERACION.md`):
+
+| Grupo | Estado | Evidencia vigente |
+|---|---|---|
+| Autenticación, sesión, onboarding | Parcial | E2E de registro, login, logout y redirección; **falta recuperar contraseña (UC-03)** |
+| Cuentas, categorías y movimientos | Parcial | Saldo inicial y tarjetas como deuda con contratos; **sin UI de transferencias ni de editar/eliminar movimientos** |
+| Obligaciones y reserva | Completo | E2E de disponible (770.000) y déficit |
+| Presupuestos | Completo | `budgets` + RLS, 15 pruebas de dominio, E2E; sin duplicar mes anterior ni editar límite |
+| Metas | Completo | `goals`/`goal_contributions` + RLS, 10 pruebas, E2E |
+| Recurrencia | Completo (sin detección automática) | Índice único de idempotencia, 16 pruebas de fechas, E2E |
+| Suscripciones | Completo | 15 pruebas, E2E |
+| Deudas | Completo | Funciones atómicas verificadas por SQL, 13+ pruebas, E2E, estrategias |
+| Alertas | Completo | 9 pruebas de reglas, deduplicación en BD, E2E |
+| Plataforma y permisos | Completo, **ADR-008 por ratificar** | 29 casos RBAC ejecutados, E2E de `/admin` |
+| Insights, simulación y proyección | Completo; **fórmula del score por ratificar** | forecast, simulador, estrategias, score e insights con pruebas deterministas y E2E |
+| Calidad transversal | Verde | unit **229/229**, E2E **19/19**, lint 0 errores, build OK, auditoría responsive/a11y en 21 rutas; suite RLS completa en CI (`rls.yml`) |

@@ -93,7 +93,7 @@ function NewTransactionForm({ type }: { type: TransactionType }) {
       <input type="hidden" name="currency_code" value="COP" />
 
       <div className="flex items-center gap-4 mb-6">
-        <Link href="/dashboard" className="p-2 hover:bg-muted rounded-lg transition-colors">
+        <Link href="/dashboard" aria-label="Volver al dashboard" className="p-2 hover:bg-muted rounded-lg transition-colors">
           <ArrowLeft className="w-5 h-5 text-muted-foreground" />
         </Link>
         <div>
@@ -142,7 +142,7 @@ function NewTransactionForm({ type }: { type: TransactionType }) {
               disabled={isPending}
               aria-describedby={getFieldError("account_id") ? "account_id-error" : undefined}
             >
-              <SelectTrigger>
+              <SelectTrigger id="account_id">
                 <SelectValue placeholder="Selecciona una cuenta" />
               </SelectTrigger>
               <SelectContent>

@@ -1156,3 +1156,24 @@ Pruebas: lint 0 errores/5 warnings; typecheck PASÓ; `pnpm test` **178/178**; `p
 Suite RLS completa: **NO EJECUTADA en local** (el resto de bloques borra datos de desarrollo); la cubre `rls.yml`. Se ejecutó solo el bloque RBAC y se eliminaron los usuarios de prueba creados.
 **Acciones manuales:** (1) ratificar o ajustar el ADR-008; (2) tras desplegar la migración, crear el primer admin con `select private.bootstrap_first_admin('<uuid>')` desde el SQL editor (no hay UI a propósito); (3) no desplegar a producción sin aprobar el ADR.
 Siguiente microtarea sugerida: O01.
+
+---
+
+## Bloque O-P — Inteligencia financiera y cierre (2026-11-14)
+
+Rama: feature/lukiva-fase-o-p (apilada sobre feature/lukiva-fase-m-n, PR #43).
+
+| ID | Estado | Evidencia |
+|---|---|---|
+| O01 | VALIDADO | Contratos explícitos y deterministas en `src/domain/`: `forecast.ts` (UC-29), `score.ts` (UC-40), `purchase-simulator.ts` (UC-39), `debt-strategies.ts` (UC-35/36), `insights.ts`. Cada resultado declara su naturaleza (`isEstimate`, `isInternalIndicator`, `persisted: false`) |
+| O02 | VALIDADO | 51 pruebas de dominio: forecast (cierre de mes, baja confianza, obligaciones), score (componentes, ausencia de datos, bandas), simulador (tarjeta vs líquido, presupuesto, metas, no muta entradas), estrategias (orden con empates, plan de pago, determinismo, null si no se liquida), insights (umbrales y explicaciones) |
+| O03 | VALIDADO | `/analisis` (forecast como estimación, score explicado componente a componente, insights con "¿Cómo se calculó?"), `/simulador` (no persiste: el E2E comprueba que disponible y movimientos no cambian), `/deudas/estrategia`; 2 E2E |
+| P01 | VALIDADO | `e2e/responsive-a11y.spec.ts` audita 21 rutas a 390 px. **Encontró y se corrigió:** botón del menú móvil sin nombre accesible (en todas las páginas), menús de acciones de cuentas/categorías/obligaciones, enlaces "Volver", etiqueta del selector de cuenta, y un **desbordamiento horizontal en `/obligaciones`** (filtros). Seguridad: `pnpm audit` halló **2 críticos y 1 alto en `next@16.4.0`** (RCE sin autenticación); **actualizado a 16.4.1** |
+| P02 | VALIDADO | `06_MATRIZ_UC_50.md`: 38 ✅, 9 🟡, 3 ❌ con evidencia y brechas declaradas |
+| P03 | VALIDADO | `07_RELEASE_Y_RECUPERACION.md`: orden de merge, migraciones con rollback, copia previa, arranque del primer admin, humo posterior, recuperación y riesgos abiertos |
+
+Pruebas finales: lint 0 errores/5 warnings; typecheck PASÓ; `pnpm test` **229/229**; `pnpm build` PASÓ (exit 0, sin aviso de vulnerabilidad); `pnpm test:e2e` **19/19** sobre Next 16.4.1.
+**Decisión de producto pendiente:** fórmula y umbrales del Financial Score (UC-40), propuestos y explicados en `score.ts`.
+**Acción del propietario:** revisar el cambio de dependencia (`next` y `eslint-config-next` 16.4.0 → 16.4.1, parche de seguridad de la misma versión menor), ratificar ADR-008 y el score, y mergear la cadena #40→#44 en orden.
+Estado global de fases: A–P ejecutadas; ver matriz para las 12 brechas de casos de uso (UC-03, 25, 30 sin implementar; 9 parciales).
+Siguiente microtarea sugerida: cerrar brechas de UC (transferencias UI, editar/eliminar movimientos, recuperar contraseña) o ratificar decisiones pendientes.

@@ -29,6 +29,13 @@ export default async function DeudasPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground font-heading">Deudas</h1>
             <p className="mt-1 text-muted-foreground">Mira cuánto debes y cómo vas pagando</p>
           </div>
+          <div className="flex flex-wrap gap-2">
+          <Link
+            href="/deudas/estrategia"
+            className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-lg font-medium text-sm hover:bg-muted"
+          >
+            Estrategia de pago
+          </Link>
           <Link
             href="/deudas/nueva"
             className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm"
@@ -36,6 +43,7 @@ export default async function DeudasPage() {
             <Plus className="w-4 h-4" />
             Nueva deuda
           </Link>
+          </div>
         </header>
 
         {totals.count > 0 && (

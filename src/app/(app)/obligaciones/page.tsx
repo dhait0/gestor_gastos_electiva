@@ -163,11 +163,11 @@ function ObligationsList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4 mb-6">
-        <Link href="/dashboard" className="p-2 hover:bg-muted rounded-lg transition-colors">
-          <ArrowLeft className="w-5 h-5 text-muted-foreground" />
+      <div className="flex flex-wrap items-center gap-4 mb-6">
+        <Link href="/dashboard" aria-label="Volver al dashboard" className="p-2 hover:bg-muted rounded-lg transition-colors">
+          <ArrowLeft className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
         </Link>
-        <div className="flex-1">
+        <div className="min-w-0 flex-1 basis-40">
           <h1 className="text-2xl font-bold text-foreground font-heading">Obligaciones</h1>
           <p className="text-sm text-muted-foreground">Compromisos de pago pendientes y historial</p>
         </div>
@@ -202,12 +202,14 @@ function ObligationsList() {
         </Card>
       )}
 
-      <div className="flex items-center gap-2 border-b border-border pb-2">
+      <div className="flex flex-wrap items-center gap-2 border-b border-border pb-2">
         <span className="text-sm font-medium text-muted-foreground">Filtrar:</span>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {(["all", "PENDING", "PAID", "CANCELLED"] as ObligationsFilters[]).map((f) => (
             <button
               key={f}
+              type="button"
+              aria-pressed={filter === f}
               onClick={() => setFilter(f)}
               className={`px-3 py-1.5 text-sm rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                 filter === f
@@ -274,7 +276,7 @@ function ObligationsList() {
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Acciones de ${obligation.name}`}>
                         <MoreHorizontal className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>

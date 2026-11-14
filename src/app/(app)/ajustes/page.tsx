@@ -42,7 +42,7 @@ export default function AjustesPage() {
     <main className="p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-2xl">
         <div className="flex items-center gap-4 mb-8">
-          <Link href="/dashboard" className="p-2 hover:bg-muted rounded-lg transition-colors">
+          <Link href="/dashboard" aria-label="Volver al dashboard" className="p-2 hover:bg-muted rounded-lg transition-colors">
             <ArrowLeft className="w-5 h-5 text-muted-foreground" />
           </Link>
           <div>
