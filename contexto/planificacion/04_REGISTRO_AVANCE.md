@@ -1111,3 +1111,27 @@ Matriz RLS de las 3 tablas añadida en `supabase/tests/rls.test.ts` (A/B/anon, F
 Aprendizaje: con una categoría ajena salta primero el trigger BEFORE y no la FK compuesta; la prueba lo refleja.
 Brechas: copiar presupuestos del mes anterior (UC-25) no implementado. "Dinero disponible" no descuenta aún el compromiso mensual de las metas (decisión de producto pendiente, ver plan).
 Siguiente microtarea sugerida: I01.
+
+---
+
+## Bloque I-J-K-L — Recurrentes, suscripciones, deudas y alertas (2026-11-14)
+
+Rama: feature/lukiva-fase-i-l (apilada sobre feature/lukiva-fase-g-h, PR #41).
+
+| ID | Estado | Evidencia |
+|---|---|---|
+| I01 | VALIDADO | `20261114140000_recurring_transactions.sql`: FK compuestas a cuentas y categorías, CHECK de intervalo (CUSTOM exige N > 0; las demás lo prohíben), trigger de tipo de categoría, `start_date` como ancla, FK compuesta en `transactions.recurring_transaction_id` (columna que estaba huérfana) e **índice único (recurrencia, fecha) activo** que garantiza la idempotencia en BD. Probado por SQL con ROLLBACK |
+| I02 | VALIDADO | `src/domain/recurrence.ts`: ocurrencias calculadas desde el ancla (el día 31 no deriva a 28), bisiestos, tope de 366 por ejecución, reanudar sin back-fill; `registerDueOccurrencesAction` trata el conflicto 23505 como "ya registrada" y solo avanza lo realmente registrado. 16 pruebas |
+| I03 | VALIDADO | `/recurrentes`: registrar vencidos una sola vez, recarga sin duplicados, pausar/reanudar sin back-fill; registro automático interno al abrir (no ejecuta pagos externos) |
+| J01–J03 | VALIDADO | `20261114150000_subscriptions.sql` (no genera movimientos ni obligaciones por sí sola: evita el doble conteo del modelo §19); dominio de costo mensual/anual y próxima renovación (15 pruebas); `/suscripciones` con totales, marcar pagada, pausar |
+| K01 | VALIDADO | `20261114160000_debts.sql`: `debts` y `debt_payments` (CHECK capital + interés = abono). **El saldo solo se mueve por `record_debt_payment()` / `void_debt_payment()`** (SECURITY DEFINER con `auth.uid()` explícito, `search_path` vacío, ejecución solo para `authenticated`); el cliente no tiene política de INSERT/UPDATE sobre abonos. **Desviación §33:** `deleted_at` en debt_payments. Verificado por SQL como `authenticated`: 1000 → 750 → 0 (PAID) → anular → 250 (ACTIVE); otro usuario y anon rechazados |
+| K02–K03 | VALIDADO | `src/domain/debts.ts` (validación espejo de la BD, simulación de liquidación, totales por moneda; 13 pruebas); `/deudas` con abono, anulación y liquidación |
+| L01 | VALIDADO | `20261114170000_alerts.sql`: `unique (user_id, dedup_key)` **no parcial** (los NULL siguen siendo distintos) para que PostgREST pueda inferirlo en `upsert … ignoreDuplicates`; CHECK de consistencia `is_read`/`read_at`; solo alertas internas, nada se envía fuera de la app |
+| L02–L03 | VALIDADO | `src/domain/alerts.ts` (presupuesto cerca/superado, obligación próxima ≤3 días/vencida, disponible bajo/negativo, meta vencida/en riesgo; claves con período; 9 pruebas) + `/alertas` con evaluación al abrir, marcar leída y "marcar todas" |
+
+Tipos de Supabase regenerados.
+Pruebas: lint 0 errores/5 warnings; typecheck PASÓ; `pnpm test` **172/172**; `pnpm build` PASÓ (exit 0); `pnpm test:e2e` **13 tests**, todos pasan en ejecución normal.
+Nota de entorno: con la máquina bajo carga alta (promedio 30 por otros procesos) hubo timeouts aislados y distintos en ejecuciones completas; cada test pasa solo y la suite pasó completa en otras corridas. Los runners de CI no comparten ese problema.
+Matriz RLS de recurrentes, suscripciones, deudas (incluidas las RPC), abonos y alertas añadida a `supabase/tests/rls.test.ts`: **NO EJECUTADA en local** (la suite borra datos de desarrollo); la ejecuta `rls.yml`. Las restricciones y las funciones sí se verificaron por SQL con ROLLBACK.
+Brechas: la deuda de tarjeta (`debts.type = CREDIT_CARD`) y la cuenta `CREDIT_CARD` de `accounts` son entidades independientes; no hay conciliación entre ambas (decisión de producto pendiente). Las alertas no tienen badge de no leídas en la navegación. El "dinero disponible" aún no descuenta pagos mínimos de deudas ni el compromiso mensual de metas.
+Siguiente microtarea sugerida: M01 (matriz de permisos; requiere aprobación del propietario).

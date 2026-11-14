@@ -468,3 +468,107 @@ test.describe("Recurrentes (I03)", () => {
     await expect(page.getByRole("button", { name: /Registrar \d+ vencido/ })).toHaveCount(0);
   });
 });
+
+
+test.describe("Suscripciones (J03)", () => {
+  test("crear, ver costo, marcar pagada y pausar", async ({ page }) => {
+    const uniqueId = Date.now() + 9;
+    await registerUser(page, `test-sub-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Suscripción ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Sub", "1000000");
+
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+    await page.goto(`${BASE_URL}/suscripciones/nueva`);
+    await page.waitForLoadState("networkidle");
+    await page.fill('input[name="name"]', "Streaming E2E");
+    await page.fill('input[name="amount"]', "30000");
+    await page.fill('input[name="next_payment_date"]', todayStr);
+    await page.click('main form button[type="submit"]');
+    await page.waitForURL(`${BASE_URL}/suscripciones`, { timeout: 10000 });
+
+    await expect(page.getByText("Streaming E2E")).toBeVisible();
+    await expect(page.getByText("Se cobra hoy")).toBeVisible();
+    await expect(page.getByText("Costo anual estimado").locator("..")).toContainText(/360[.,]000/);
+
+    // Marcar pagada avanza el próximo cobro al mes siguiente
+    await page.getByRole("button", { name: "Marcar pagada" }).click();
+    await expect(page.getByText("Se cobra hoy")).toHaveCount(0);
+    await expect(page.getByText(/Próximo cobro en \d+ días/)).toBeVisible();
+
+    // Una suscripción pausada deja de sumar al costo
+    await page.getByRole("button", { name: "Pausar" }).click();
+    await expect(page.getByRole("button", { name: "Reactivar" })).toBeVisible();
+    await expect(page.getByText("Costo anual estimado")).toHaveCount(0);
+  });
+});
+
+test.describe("Deudas (K03)", () => {
+  test("abonar con interés, validar sobrepago, anular y liquidar", async ({ page }) => {
+    const uniqueId = Date.now() + 10;
+    await registerUser(page, `test-debt-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Deuda ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Deuda", "1000000");
+
+    await page.goto(`${BASE_URL}/deudas/nueva`);
+    await page.waitForLoadState("networkidle");
+    await page.fill('input[name="name"]', "Préstamo E2E");
+    await page.fill('input[name="original_amount"]', "1000000");
+    await page.fill('input[name="minimum_payment"]', "100000");
+    await page.click('main form button[type="submit"]');
+    await page.waitForURL(/\/deudas\/[0-9a-f-]{36}$/, { timeout: 10000 });
+    await expect(page.getByText(/Debes .*1[.,]000[.,]000/)).toBeVisible();
+
+    // Abono de 300.000 con 50.000 de interés: solo 250.000 reducen el capital
+    await page.fill('input[name="amount"]', "300000");
+    await page.fill('input[name="interest"]', "50000");
+    await page.click('main form button[type="submit"]');
+    await expect(page.getByText(/Debes .*750[.,]000/)).toBeVisible();
+
+    // Un abono a capital mayor al saldo se rechaza con un mensaje claro
+    await page.fill('input[name="amount"]', "800000");
+    await page.fill('input[name="interest"]', "0");
+    await page.click('main form button[type="submit"]');
+    await expect(page.getByText("supera el saldo pendiente")).toBeVisible();
+
+    // Anular el abono devuelve el capital al saldo
+    page.once("dialog", (d) => d.accept());
+    await page.getByRole("button", { name: "Anular abono" }).first().click();
+    await expect(page.getByText(/Debes .*1[.,]000[.,]000/)).toBeVisible();
+
+    // Liquidar
+    await page.fill('input[name="amount"]', "1000000");
+    await page.fill('input[name="interest"]', "0");
+    await page.click('main form button[type="submit"]');
+    await expect(page.getByText("Deuda liquidada")).toBeVisible();
+  });
+});
+
+test.describe("Alertas (L03)", () => {
+  test("presupuesto superado genera una alerta única que se puede marcar leída", async ({ page }) => {
+    const uniqueId = Date.now() + 11;
+    await registerUser(page, `test-alert-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Alerta ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Alerta", "1000000");
+
+    await createTransaction(page, "expense", "120000", "Gasto grande");
+
+    await page.goto(`${BASE_URL}/presupuestos/nuevo`);
+    await page.waitForLoadState("networkidle");
+    await page.selectOption('select[name="category_id"]', { index: 1 });
+    await page.fill('input[name="limit_amount"]', "100000");
+    await page.click('main form button[type="submit"]');
+    await page.waitForURL(/\/presupuestos(\?|$)/, { timeout: 10000 });
+
+    // Al abrir el centro de alertas se evalúan las reglas y aparece la alerta crítica
+    await page.goto(`${BASE_URL}/alertas`);
+    await expect(page.getByText(/Superaste tu presupuesto de/)).toBeVisible();
+    await expect(page.getByText("1 sin leer")).toBeVisible();
+
+    // Volver a abrir no duplica la alerta
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByText(/Superaste tu presupuesto de/)).toHaveCount(1);
+
+    await page.getByRole("button", { name: "Marcar leída" }).click();
+    await expect(page.getByText("Estás al día")).toBeVisible();
+  });
+});
