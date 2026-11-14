@@ -341,8 +341,9 @@ test.describe("Transacciones", () => {
     await createTransaction(page, "expense", "30000", "Transporte");
 
     await page.goto(`${BASE_URL}/transacciones`);
-    await expect(page.locator("text=Freelance")).toBeVisible();
-    await expect(page.locator("text=Transporte")).toBeVisible();
+    // Se acota a la fila: "Transporte" también es una opción del filtro de categorías
+    await expect(page.getByRole("link", { name: "Ver o editar Freelance" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ver o editar Transporte" })).toBeVisible();
   });
 });});
 
@@ -609,7 +610,7 @@ test.describe("Administración (N)", () => {
 
     for (const path of ["/admin", "/admin/usuarios", "/admin/auditoria"]) {
       await page.goto(`${BASE_URL}${path}`);
-      await expect(page.locator("text=This page could not be found")).toBeVisible();
+      await expect(page.getByRole("heading", { name: "No encontramos esa página" })).toBeVisible();
     }
     await page.goto(`${BASE_URL}/dashboard`);
     await expect(page.getByRole("link", { name: "Administración" })).toHaveCount(0);
@@ -631,7 +632,7 @@ test.describe("Administración (N)", () => {
     await expect(page.getByRole("combobox", { name: /Rol de/ })).toHaveCount(0);
 
     await page.goto(`${BASE_URL}/admin/auditoria`);
-    await expect(page.locator("text=This page could not be found")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "No encontramos esa página" })).toBeVisible();
   });
 
   test("el admin cambia un rol, ve métricas sin importes y el cambio queda auditado", async ({ page }) => {
@@ -958,5 +959,124 @@ test.describe("Detección de recurrencias (UC-30)", () => {
     await createTransaction(page, "expense", "10000", "Compra suelta");
     await page.goto(`${BASE_URL}/recurrentes`);
     await expect(page.getByRole("heading", { name: "Detectamos posibles recurrentes" })).toHaveCount(0);
+  });
+});
+
+
+test.describe("Estados vacío, error y carga (UC-41, UC-46, UC-47)", () => {
+  test("un usuario nuevo ve el mensaje guía en dashboard y movimientos", async ({ page }) => {
+    const uniqueId = Date.now() + 23;
+    await registerUser(page, `test-empty-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Vacío ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Vacía", "1000");
+
+    for (const path of ["/dashboard", "/transacciones"]) {
+      await page.goto(`${BASE_URL}${path}`);
+      await expect(page.getByText("Aún no tienes movimientos").first()).toBeVisible();
+      await expect(page.getByText("Registra tu primer ingreso o gasto para comenzar a entender tus finanzas.").first()).toBeVisible();
+    }
+    await page.goto(`${BASE_URL}/dashboard`);
+    await expect(page.getByRole("link", { name: "Registrar gasto" }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Registrar ingreso" }).first()).toBeVisible();
+  });
+
+  test("rutas y detalles inexistentes devuelven un 404 en español sin filtrar información", async ({ page }) => {
+    const uniqueId = Date.now() + 24;
+    await registerUser(page, `test-404-${uniqueId}@finwise.test`, "TestPass123!", `Usuario 404 ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta 404", "1000");
+    // Con sesión, una ruta inexistente muestra el 404 en español con salida al inicio
+    await page.goto(`${BASE_URL}/ruta-que-no-existe`);
+    await expect(page.getByRole("link", { name: "Ir al inicio" })).toBeVisible();
+    for (const path of ["/ruta-que-no-existe", "/metas/00000000-0000-4000-8000-000000000000", "/deudas/00000000-0000-4000-8000-000000000000", "/transacciones/00000000-0000-4000-8000-000000000000/editar"]) {
+      await page.goto(`${BASE_URL}${path}`);
+      await expect(page.getByRole("heading", { name: "No encontramos esa página" })).toBeVisible();
+    }
+  });
+});
+
+
+test.describe("Navegación principal en escritorio (UC-50)", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test("hay un menú lateral persistente, agrupado y con la sección activa marcada", async ({ page }) => {
+    const uniqueId = Date.now() + 25;
+    await registerUser(page, `test-nav-d-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Nav ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Nav", "1000");
+
+    const sidebar = page.getByRole("navigation", { name: "Navegación principal" });
+    await expect(sidebar).toBeVisible();
+    for (const group of ["Principal", "Planificación", "Inteligencia", "Cuenta"]) {
+      await expect(sidebar.getByText(group, { exact: true })).toBeVisible();
+    }
+    // La barra inferior de móvil no se muestra en escritorio
+    await expect(page.getByRole("navigation", { name: "Accesos rápidos" })).toBeHidden();
+
+    await sidebar.getByRole("link", { name: "Metas" }).click();
+    await page.waitForURL(`${BASE_URL}/metas`);
+    await expect(sidebar.getByRole("link", { name: "Metas" })).toHaveAttribute("aria-current", "page");
+
+    // Una subruta mantiene resaltada su sección
+    await page.goto(`${BASE_URL}/metas/nueva`);
+    await expect(sidebar.getByRole("link", { name: "Metas" })).toHaveAttribute("aria-current", "page");
+
+    // Solo hay un h1 visible (la marca no lo es)
+    await expect(page.locator("h1:visible")).toHaveCount(1);
+  });
+});
+
+test.describe("Navegación principal en móvil (UC-50)", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("barra inferior con acceso rápido y menú completo en 'Más'", async ({ page }) => {
+    const uniqueId = Date.now() + 26;
+    await registerUser(page, `test-nav-m-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Nav M ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Nav M", "1000");
+
+    const quick = page.getByRole("navigation", { name: "Accesos rápidos" });
+    await expect(quick).toBeVisible();
+    await expect(page.locator("aside")).toBeHidden();
+
+    // "Crear" ya no está deshabilitado: lleva a registrar un gasto
+    await quick.getByRole("link", { name: "Crear" }).click();
+    await page.waitForURL(/\/transacciones\/nuevo\?type=expense/);
+
+    // "Más" abre el menú completo agrupado y navega sin recargar
+    await quick.getByRole("button", { name: "Más" }).click();
+    const menu = page.getByRole("dialog");
+    await expect(menu.getByText("Planificación", { exact: true })).toBeVisible();
+    await menu.getByRole("link", { name: "Deudas" }).click();
+    await page.waitForURL(`${BASE_URL}/deudas`);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+});
+
+
+test.describe("Los formularios conservan lo escrito si falla (UC-46)", () => {
+  test("un login fallido conserva el correo y un presupuesto duplicado conserva el límite", async ({ page }) => {
+    const uniqueId = Date.now() + 27;
+    const email = `test-keep-${uniqueId}@finwise.test`;
+    await registerUser(page, email, "TestPass123!", `Usuario Conserva ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Conserva", "1000");
+
+    // Presupuesto duplicado: el error aparece y el límite escrito sigue en el campo
+    for (const limit of ["100000", "77777"]) {
+      await page.goto(`${BASE_URL}/presupuestos/nuevo`);
+      await page.waitForLoadState("networkidle");
+      await page.selectOption('select[name="category_id"]', { index: 1 });
+      await page.fill('input[name="limit_amount"]', limit);
+      await page.click('main form button[type="submit"]');
+      if (limit === "100000") await page.waitForURL(/\/presupuestos(\?|$)/, { timeout: 10000 });
+    }
+    await expect(page.getByText("Ya existe un presupuesto")).toBeVisible();
+    await expect(page.locator('input[name="limit_amount"]')).toHaveValue("77777");
+    await expect(page.locator('select[name="category_id"]')).not.toHaveValue("");
+
+    // Login fallido: el correo se conserva
+    await page.context().clearCookies();
+    await page.goto(`${BASE_URL}/login`);
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', "contraseña-equivocada");
+    await page.click('button[type="submit"]');
+    await expect(page.locator('[role="alert"]').first()).toBeVisible();
+    await expect(page.locator('input[name="email"]')).toHaveValue(email);
   });
 });

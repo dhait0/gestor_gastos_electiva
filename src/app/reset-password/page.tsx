@@ -1,5 +1,6 @@
 "use client";
 
+import { preventFormReset } from "@/lib/keep-form-on-error";
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
@@ -45,7 +46,7 @@ export default function ResetPasswordPage() {
           <h1 className="text-3xl font-bold text-foreground font-heading tracking-tight">Nueva contraseña</h1>
           <p className="mt-2 text-muted-foreground">Elige una contraseña de al menos 8 caracteres</p>
         </div>
-        <form action={formAction} className="bg-card border border-border rounded-2xl p-6 sm:p-8 shadow-finn-soft space-y-6" noValidate>
+        <form action={formAction} onReset={preventFormReset} className="bg-card border border-border rounded-2xl p-6 sm:p-8 shadow-finn-soft space-y-6" noValidate>
           {state.error && (
             <div className="rounded-lg bg-danger-bg border border-danger/30 p-4 text-sm text-danger" role="alert">{state.error}</div>
           )}

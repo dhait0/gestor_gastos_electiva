@@ -1,5 +1,6 @@
 "use client";
 
+import { preventFormReset } from "@/lib/keep-form-on-error";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -87,7 +88,7 @@ function NewTransactionForm({ type }: { type: TransactionType }) {
   const transactionType = isIncome ? "INCOME" : "EXPENSE";
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} onReset={preventFormReset} className="space-y-6">
       <input type="hidden" name="type" value={transactionType} />
       <input type="hidden" name="direction" value={direction} />
       <input type="hidden" name="currency_code" value="COP" />

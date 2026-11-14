@@ -37,3 +37,6 @@ La tabla anterior refleja la línea base de octubre. Estado actual por grupo (de
 | Plataforma y permisos | Completo, **ADR-008 por ratificar** | 29 casos RBAC ejecutados, E2E de `/admin` |
 | Insights, simulación y proyección | Completo; **fórmula del score por ratificar** | forecast, simulador, estrategias, score e insights con pruebas deterministas y E2E |
 | Calidad transversal | Verde | unit **229/229**, E2E **19/19**, lint 0 errores, build OK, auditoría responsive/a11y en 21 rutas; suite RLS completa en CI (`rls.yml`) |
+
+### Cierre de brechas de casos de uso (2026-11-14)
+Los grupos marcados como "Parcial" arriba pasaron a **Completo**: autenticación (recuperar contraseña, UC-03), cuentas y movimientos (transferir, editar, eliminar y filtrar, UC-11/12/13/21), presupuestos (editar y copiar, UC-24/25), recurrencia (detección con confirmación, UC-30) y calidad transversal (estados de carga/error/vacío y navegación, UC-41/46/47/50). Estado por caso en `06_MATRIZ_UC_50.md`: 50 de 50.

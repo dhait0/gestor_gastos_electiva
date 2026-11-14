@@ -1180,3 +1180,27 @@ Siguiente microtarea sugerida: cerrar brechas de UC (transferencias UI, editar/e
 
 **Evidencia de CI remoto (2026-11-14).** Se abrió un PR temporal hacia `staging` con la cadena completa (#40→#44) solo para ejecutar los workflows, y se cerró sin mergear (#45): `CI Pipeline` PASÓ (lint, typecheck, test, build) · `RLS Integration Tests` PASÓ (**suite completa sobre base limpia, incluidos los bloques nuevos y el RBAC**) · `Playwright E2E` PASÓ (19 tests, incluidos los de `/admin`). El E2E falló la primera vez por infraestructura (`error from registry: Rate exceeded` al ejecutar `supabase start` en paralelo con el job RLS) y pasó al relanzar el job. Si se repite, escalonar los jobs o reintentar el arranque de Supabase.
 Esto cierra los pendientes "pendiente de ejecución en CI remoto" de los bloques anteriores. Sigue pendiente el cotejo del esquema de producción (sin credenciales).
+
+---
+
+## Cierre de brechas de casos de uso (2026-11-14)
+
+Rama: feature/lukiva-cierre-brechas-uc (apilada sobre feature/lukiva-fase-o-p, PR #44). Cierra los 12 casos que la matriz marcaba como parciales o sin implementar. Resultado: **UC-01 a UC-50 completos** (`06_MATRIZ_UC_50.md`).
+
+| UC | Qué se hizo | Evidencia |
+|---|---|---|
+| 03 | `/forgot-password` y `/reset-password`, respuesta neutral, **corregido el `redirectTo` que apuntaba al host de Supabase** en lugar de la app; `/terminos` y `/privacidad` (enlazadas y en 404) | E2E con el correo real del Mailpit local |
+| 11, 12 | `/transacciones/[id]/editar`; `transaction-edit.ts`. **Se endureció el servidor:** antes se podía editar una sola pata de una transferencia o cambiar tipo/moneda, y eliminar una pata dejaba el saldo descuadrado | 8 pruebas + E2E |
+| 13 | `/transacciones/transferir` (solo misma moneda) | E2E: neutral, no editable, se elimina completa |
+| 21 | Filtros por URL y paginación; `transaction-filters.ts` descarta valores inválidos. **Se corrigió un `<tbody>` anidado: era la causa del aviso de hidratación (B0.1-c)** y se quitó la hora "00:00" inventada | 10 pruebas + E2E |
+| 24, 25 | Editar límite y copiar mes anterior con vista previa; `planBudgetCopy` evita duplicados | 5 pruebas + E2E |
+| 30 | `recurrence-detection.ts`: criterios del UC, solo patrones activos, fecha propuesta futura (activarla no genera atrasados), nunca crea sin confirmar | 17 pruebas + E2E |
+| 41 | Texto exacto del UC con acciones en dashboard y movimientos | E2E |
+| 46 | `error.tsx`, `global-error.tsx`, 404 en español, y **los formularios dejan de perder lo escrito al fallar** (React 19 los vaciaba): `preventFormReset` en 24 formularios | Prueba unitaria que reproduce el defecto + E2E |
+| 47 | `loading.tsx` accesible | Prueba de componente |
+| 50 | Menú lateral persistente y agrupado en escritorio; barra inferior móvil con "Crear" activo y "Más"; navegación sin recargar; la marca ya no es `h1` | E2E en ambos tamaños |
+| 07 | Aviso al editar el saldo inicial | — |
+
+**Decisión técnica a señalar:** la primera versión del arreglo de formularios usaba `onSubmit`; provocó un fallo intermitente real (un envío antes de terminar la hidratación se perdía). Se descartó y se cambió por cancelar el evento `reset` conservando `action`, que mantiene la mejora progresiva.
+Pruebas: lint 0 errores/5 warnings; typecheck PASÓ; `pnpm test` **280/280**; `pnpm build` PASÓ; `pnpm test:e2e` **34/34** (con `--workers=2`; con más workers en esta máquina cargada hubo timeouts aislados, y los tests fallidos pasan al repetirlos).
+**Acciones manuales:** añadir la URL de producción a *Redirect URLs* de Supabase Auth y configurar SMTP propio antes de anunciar la recuperación de contraseña (ver `07_RELEASE_Y_RECUPERACION.md`); revisión jurídica de términos y privacidad.

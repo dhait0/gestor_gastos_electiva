@@ -1,5 +1,6 @@
 "use client";
 
+import { preventFormReset } from "@/lib/keep-form-on-error";
 import { useActionState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -26,7 +27,7 @@ export function EditBudgetForm({ id, limit, month }: { id: string; limit: string
   const generalError = "error" in state && typeof state.error === "string" ? state.error : undefined;
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} onReset={preventFormReset} className="space-y-6">
       <input type="hidden" name="id" value={id} />
       <div>
         <Label htmlFor="limit_amount">Límite *</Label>

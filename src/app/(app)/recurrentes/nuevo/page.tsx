@@ -1,5 +1,6 @@
 "use client";
 
+import { preventFormReset } from "@/lib/keep-form-on-error";
 import { Suspense, useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -63,7 +64,7 @@ function NuevoRecurrenteForm() {
 
   return (
     <main className="p-4 sm:p-6 lg:p-8">
-      <form action={formAction} className="mx-auto max-w-2xl space-y-6">
+      <form action={formAction} onReset={preventFormReset} className="mx-auto max-w-2xl space-y-6">
         <h1 className="text-2xl font-bold text-foreground font-heading">Nuevo movimiento recurrente</h1>
 
         <div>

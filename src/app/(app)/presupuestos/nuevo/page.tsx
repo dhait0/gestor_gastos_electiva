@@ -1,5 +1,6 @@
 "use client";
 
+import { preventFormReset } from "@/lib/keep-form-on-error";
 import { Suspense, useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -58,7 +59,7 @@ function NewBudgetForm() {
     "flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} onReset={preventFormReset} className="space-y-6">
       <h1 className="text-2xl font-bold text-foreground font-heading">Nuevo presupuesto</h1>
 
       <div>

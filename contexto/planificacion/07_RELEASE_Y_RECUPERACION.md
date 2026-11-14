@@ -11,7 +11,8 @@ Los PR están apilados; se mergean **en orden** y, tras cada uno, se reapunta la
 | 2 | #41 | G: presupuestos · H: metas |
 | 3 | #42 | I: recurrentes · J: suscripciones · K: deudas · L: alertas |
 | 4 | #43 | M-N: RBAC y consola `/admin` (**ADR-008 por ratificar**) |
-| 5 | este PR | O: inteligencia financiera · P: cierre, parche de seguridad de Next.js |
+| 5 | #44 | O: inteligencia financiera · P: cierre, parche de seguridad de Next.js |
+| 6 | cierre de brechas | Los 12 casos de uso pendientes (UC-03, 11, 12, 13, 21, 24, 25, 30, 41, 46, 47, 50) |
 
 ## 2. Migraciones nuevas (aditivas, en este orden)
 | Migración | Qué hace | Rollback |
@@ -36,13 +37,16 @@ Ninguna toca datos existentes ni las políticas RLS de las 5 tablas originales. 
 5. **Crear el primer administrador** (no hay UI a propósito), con un operador con acceso al proyecto, en el SQL editor:
    `select private.bootstrap_first_admin('<uuid del usuario>');`
    Solo funciona mientras no exista ningún admin y queda registrado en `admin_audit_logs` (`role.bootstrap`).
-6. **Ratificar ADR-008** antes de dar acceso a más administradores o a soporte.
+6. **Recuperar contraseña (UC-03): configurar Supabase Auth.** En el panel (Authentication → URL Configuration) añadir a *Redirect URLs* la URL de producción `https://<tu-dominio>/auth/callback` y comprobar que *Site URL* sea la de la app; sin eso el enlace del correo no vuelve a la aplicación. Configurar además un proveedor SMTP propio para producción (el de pruebas de Supabase tiene límites muy bajos). Probar con una cuenta real antes de anunciarlo.
+7. **Ratificar ADR-008** antes de dar acceso a más administradores o a soporte.
 
 ## 4. Variables de entorno
 Sin cambios: `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. **No** se usa la clave `service_role` en la aplicación. Los E2E de administración usan `E2E_SUPABASE_URL` y `E2E_SERVICE_ROLE_KEY` solo en CI contra el Supabase **local** del runner; nunca apuntarlas a producción.
 
 ## 5. Validación posterior al despliegue (humo)
 - [ ] `/login` y registro responden; un usuario nuevo recibe categorías por defecto.
+- [ ] "¿Olvidaste tu contraseña?" envía un correo cuyo enlace vuelve a la app y permite elegir otra contraseña.
+- [ ] Transferir entre dos cuentas deja el saldo líquido total igual; eliminar la transferencia borra ambas partes.
 - [ ] Dashboard: disponible = líquido − obligaciones − reserva (comparar con una cuenta real).
 - [ ] `/presupuestos`, `/metas`, `/recurrentes`, `/suscripciones`, `/deudas`, `/alertas`, `/analisis` cargan sin error.
 - [ ] Un usuario sin rol recibe 404 en `/admin`; el admin recién creado entra y ve métricas sin importes.
@@ -63,6 +67,6 @@ Sin cambios: `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 2. **Dependencias transitivas altas:** 7 advisories altos (`undici`, `body-parser`, `systeminformation`, `zod`) vienen de la CLI `shadcn`, declarada como dependencia de **producción**. No se tocó: moverla a `devDependencies` requiere comprobar que ningún import en tiempo de build la necesite.
 3. **Protección de ramas** `main`/`staging` sin activar en GitHub (acción del propietario).
 4. **Cotejo del esquema remoto** y de las variables de Vercel: pendiente de comprobación remota.
-5. **Brechas de producto** listadas en `06_MATRIZ_UC_50.md` (recuperar contraseña, transferencias, editar/eliminar movimientos, editar presupuesto, duplicar presupuestos, detección de recurrencias, navegación persistente en escritorio).
-6. **Advertencia de hidratación** en el navegador al visitar `/transacciones`, sin causa identificada; no afecta a las pruebas.
+5. **Brechas de producto:** cerradas (ver `06_MATRIZ_UC_50.md`, 50/50). Quedan mejoras opcionales listadas allí en "Límites conocidos".
+6. ~~Advertencia de hidratación en `/transacciones`~~: **resuelta** (era un `<tbody>` anidado en la tabla).
 7. **Suite RLS completa** no se ejecuta en local (borra datos de desarrollo); se ejecutó el bloque RBAC contra el Supabase local y el resto lo cubre `rls.yml`.

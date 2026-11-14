@@ -1,5 +1,6 @@
 "use client";
 
+import { preventFormReset } from "@/lib/keep-form-on-error";
 import { useActionState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -83,7 +84,7 @@ export function EditTransactionForm({
   const sameCurrency = accounts.filter((a) => !a.currency_code || a.currency_code === tx.currency_code);
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} onReset={preventFormReset} className="space-y-6">
       <input type="hidden" name="id" value={tx.id} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>

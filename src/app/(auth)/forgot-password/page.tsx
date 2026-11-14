@@ -1,5 +1,6 @@
 "use client";
 
+import { preventFormReset } from "@/lib/keep-form-on-error";
 import { useActionState } from "react";
 import Link from "next/link";
 import { Mail } from "lucide-react";
@@ -28,7 +29,7 @@ export default function ForgotPasswordPage() {
               </Link>
             </div>
           ) : (
-            <form action={formAction} className="space-y-6" noValidate>
+            <form action={formAction} onReset={preventFormReset} className="space-y-6" noValidate>
               {state.error && (
                 <div className="rounded-lg bg-danger-bg border border-danger/30 p-4 text-sm text-danger" role="alert">
                   {state.error}

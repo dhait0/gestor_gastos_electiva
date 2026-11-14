@@ -1,5 +1,6 @@
 "use client";
 
+import { preventFormReset } from "@/lib/keep-form-on-error";
 import { useState, useEffect } from "react";
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
@@ -52,7 +53,7 @@ function Step1({ initialData, onNext }: { initialData: OnboardingFormData; onNex
   }, [state.success, initialData, onNext]);
 
   return (
-    <form action={formAction} data-step="1" className="space-y-6" noValidate>
+    <form action={formAction} onReset={preventFormReset} data-step="1" className="space-y-6" noValidate>
       {state.error && (
         <div className="rounded-lg bg-danger-bg border border-danger/30 p-4 text-sm text-danger flex items-center gap-3" role="alert">
           <p>{state.error}</p>
@@ -173,7 +174,7 @@ function Step2({ initialData, onNext, onBack }: { initialData: OnboardingFormDat
   }, [state.success, initialData, onNext]);
 
   return (
-    <form action={formAction} data-step="2" className="space-y-6" noValidate>
+    <form action={formAction} onReset={preventFormReset} data-step="2" className="space-y-6" noValidate>
       {state.error && (
         <div className="rounded-lg bg-danger-bg border border-danger/30 p-4 text-sm text-danger flex items-center gap-3" role="alert">
           <p>{state.error}</p>
@@ -269,7 +270,7 @@ function Step3({ initialData, onComplete }: { initialData: OnboardingFormData; o
   }, [state.success, onComplete]);
 
   return (
-    <form action={formAction} data-step="3" className="space-y-6" noValidate>
+    <form action={formAction} onReset={preventFormReset} data-step="3" className="space-y-6" noValidate>
       {state.error && (
         <div className="rounded-lg bg-danger-bg border border-danger/30 p-4 text-sm text-danger flex items-center gap-3" role="alert">
           <p>{state.error}</p>

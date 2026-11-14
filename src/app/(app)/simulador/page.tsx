@@ -1,5 +1,6 @@
 "use client";
 
+import { preventFormReset } from "@/lib/keep-form-on-error";
 import { useActionState, useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -49,7 +50,7 @@ export default function SimuladorPage() {
           <p className="mt-1 text-muted-foreground">Mira cómo cambiaría tu dinero antes de gastar. No se guarda nada.</p>
         </header>
 
-        <form action={formAction} className="space-y-4 rounded-xl border border-border bg-card p-5">
+        <form action={formAction} onReset={preventFormReset} className="space-y-4 rounded-xl border border-border bg-card p-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="amount">Monto de la compra *</Label>

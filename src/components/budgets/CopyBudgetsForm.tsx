@@ -1,5 +1,6 @@
 "use client";
 
+import { preventFormReset } from "@/lib/keep-form-on-error";
 import { useActionState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -24,7 +25,7 @@ export function CopyBudgetsForm({ month, candidates }: { month: string; candidat
   const generalError = state.error;
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} onReset={preventFormReset} className="space-y-4">
       <input type="hidden" name="month" value={month} />
       <fieldset className="space-y-2">
         <legend className="sr-only">Presupuestos a copiar</legend>

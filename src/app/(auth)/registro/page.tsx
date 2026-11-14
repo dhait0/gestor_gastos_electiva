@@ -1,5 +1,6 @@
 "use client";
 
+import { preventFormReset } from "@/lib/keep-form-on-error";
 import { useState } from "react";
 import { useActionState } from "react";
 import { signupAction } from "@/app/actions/auth";
@@ -14,7 +15,7 @@ function SignupForm() {
   });
 
   return (
-    <form action={formAction} className="space-y-6" noValidate>
+    <form action={formAction} onReset={preventFormReset} className="space-y-6" noValidate>
       {state.error && (
         <div
           className="rounded-lg bg-danger-bg border border-danger/30 p-4 text-sm text-danger flex items-center gap-3"

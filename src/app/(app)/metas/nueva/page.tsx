@@ -1,5 +1,6 @@
 "use client";
 
+import { preventFormReset } from "@/lib/keep-form-on-error";
 import { useActionState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -28,7 +29,7 @@ export default function NuevaMetaPage() {
 
   return (
     <main className="p-4 sm:p-6 lg:p-8">
-      <form action={formAction} className="mx-auto max-w-2xl space-y-6">
+      <form action={formAction} onReset={preventFormReset} className="mx-auto max-w-2xl space-y-6">
         <h1 className="text-2xl font-bold text-foreground font-heading">Nueva meta</h1>
 
         <div>
