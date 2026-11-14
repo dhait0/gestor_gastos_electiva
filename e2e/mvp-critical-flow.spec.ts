@@ -420,3 +420,51 @@ test.describe("Metas (H03)", () => {
     await expect(page.locator("main").first()).toContainText(/900[.,]000/);
   });
 });
+
+
+test.describe("Recurrentes (I03)", () => {
+  test("registrar vencidos una sola vez (idempotente) y reanudar sin back-fill", async ({ page }) => {
+    const uniqueId = Date.now() + 8;
+    await registerUser(page, `test-rec-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Recurrente ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Recurrente", "1000000");
+
+    // Primer día del mes de hace dos meses: siempre hay exactamente 3 ocurrencias vencidas (m-2, m-1, m)
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+    const startStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
+
+    await page.goto(`${BASE_URL}/recurrentes/nuevo`);
+    await page.waitForLoadState("networkidle");
+    await page.fill('input[name="name"]', "Arriendo E2E");
+    await page.fill('input[name="amount"]', "1000");
+    await page.selectOption('select[name="account_id"]', { index: 1 });
+    await page.selectOption('select[name="category_id"]', { index: 1 });
+    await page.fill('input[name="start_date"]', startStr);
+    await page.click('main form button[type="submit"]');
+    await page.waitForURL(`${BASE_URL}/recurrentes`, { timeout: 10000 });
+
+    await expect(page.getByRole("button", { name: "Registrar 3 vencidos" })).toBeVisible();
+    await page.getByRole("button", { name: "Registrar 3 vencidos" }).click();
+    // La próxima ocurrencia pasa al primer día del mes siguiente cuando terminó el registro
+    const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const nextStr = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-01`;
+    await expect(page.getByText(`Próxima: ${nextStr}`)).toBeVisible();
+    await expect(page.getByRole("button", { name: /Registrar \d+ vencido/ })).toHaveCount(0);
+
+    // Recargar no genera duplicados
+    await page.reload();
+    await expect(page.getByRole("button", { name: /Registrar \d+ vencido/ })).toHaveCount(0);
+
+    // Los 3 movimientos existen en el libro
+    await page.goto(`${BASE_URL}/transacciones`);
+    await expect(page.getByText("Arriendo E2E")).toHaveCount(3);
+
+    // Pausar y reanudar: no hay back-fill
+    await page.goto(`${BASE_URL}/recurrentes`);
+    await page.getByRole("button", { name: "Pausar" }).click();
+    await expect(page.getByRole("button", { name: "Reanudar" })).toBeVisible();
+    await page.getByRole("button", { name: "Reanudar" }).click();
+    await expect(page.getByRole("button", { name: "Pausar" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Registrar \d+ vencido/ })).toHaveCount(0);
+  });
+});

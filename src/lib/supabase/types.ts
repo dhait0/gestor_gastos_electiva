@@ -169,6 +169,38 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"recurring_transactions": {
+                  Row: {
+                    "account_id": string,"amount": number,"category_id": string,"created_at": string,"currency_code": string,"custom_interval_days": number | null,"deleted_at": string | null,"frequency": Database["public"]['Enums']["frequency"],"id": string,"is_automatic": boolean,"name": string,"next_execution_date": string,"start_date": string,"status": Database["public"]['Enums']["recurring_status"],"type": Database["public"]['Enums']["category_type"],"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"amount": number,"category_id": string,"created_at"?: string,"currency_code"?: string,"custom_interval_days"?: number | null,"deleted_at"?: string | null,"frequency": Database["public"]['Enums']["frequency"],"id"?: string,"is_automatic"?: boolean,"name": string,"next_execution_date": string,"start_date": string,"status"?: Database["public"]['Enums']["recurring_status"],"type": Database["public"]['Enums']["category_type"],"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "account_id"?: string,"amount"?: number,"category_id"?: string,"created_at"?: string,"currency_code"?: string,"custom_interval_days"?: number | null,"deleted_at"?: string | null,"frequency"?: Database["public"]['Enums']["frequency"],"id"?: string,"is_automatic"?: boolean,"name"?: string,"next_execution_date"?: string,"start_date"?: string,"status"?: Database["public"]['Enums']["recurring_status"],"type"?: Database["public"]['Enums']["category_type"],"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "recurring_account_fk"
+      columns: ["account_id","user_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "recurring_category_fk"
+      columns: ["category_id","user_id"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "recurring_transactions_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"transactions": {
                   Row: {
                     "account_id": string,"amount": number,"category_id": string | null,"created_at": string,"currency_code": string,"deleted_at": string | null,"description": string,"direction": Database["public"]['Enums']["transaction_direction"],"id": string,"notes": string | null,"recurring_transaction_id": string | null,"transaction_date": string,"transfer_group_id": string | null,"type": Database["public"]['Enums']["transaction_type"],"updated_at": string,"user_id": string
@@ -192,6 +224,12 @@ isOneToOne: false
       columns: ["category_id","user_id"]
 isOneToOne: false
       referencedRelation: "categories"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "transactions_recurring_fk"
+      columns: ["recurring_transaction_id","user_id"]
+isOneToOne: false
+      referencedRelation: "recurring_transactions"
       referencedColumns: ["id","user_id"]
     },{
       foreignKeyName: "transactions_user_id_fkey"

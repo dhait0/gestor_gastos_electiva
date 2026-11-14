@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Home, List, Plus, LayoutDashboard, CreditCard, TrendingUp, Settings, LogOut, User, PiggyBank, Target } from "lucide-react";
+import { Home, List, Plus, LayoutDashboard, CreditCard, TrendingUp, Settings, LogOut, User, PiggyBank, Target, Repeat } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -26,6 +26,7 @@ const desktopNav = [
   { href: "/obligaciones", label: "Obligaciones", icon: TrendingUp },
   { href: "/presupuestos", label: "Presupuestos", icon: PiggyBank },
   { href: "/metas", label: "Metas", icon: Target },
+  { href: "/recurrentes", label: "Recurrentes", icon: Repeat },
   { href: "/categorias", label: "Categorías", icon: List },
   { href: "/ajustes", label: "Ajustes", icon: Settings },
 ];

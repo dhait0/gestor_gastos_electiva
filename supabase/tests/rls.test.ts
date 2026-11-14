@@ -803,3 +803,145 @@ describe('budgets, goals and goal_contributions', () => {
     });
   });
 });
+
+
+describe('recurring_transactions', () => {
+  const stamp = Date.now();
+  let accountA: string;
+  let expenseCatA: string;
+  let incomeCatA: string;
+  let recurringA: string;
+
+  beforeAll(async () => {
+    const { data: acc } = await service
+      .from('accounts')
+      .insert({ user_id: userA.id, name: `Cuenta rec ${stamp}`, type: 'CHECKING', opening_balance: 0 })
+      .select('id')
+      .single();
+    const { data: exp } = await service
+      .from('categories')
+      .insert({ user_id: userA.id, name: `Gasto rec ${stamp}`, type: 'EXPENSE' })
+      .select('id')
+      .single();
+    const { data: inc } = await service
+      .from('categories')
+      .insert({ user_id: userA.id, name: `Ingreso rec ${stamp}`, type: 'INCOME' })
+      .select('id')
+      .single();
+    accountA = acc!.id;
+    expenseCatA = exp!.id;
+    incomeCatA = inc!.id;
+
+    const { data, error } = await clientA
+      .from('recurring_transactions')
+      .insert({
+        user_id: userA.id,
+        name: 'Arriendo',
+        type: 'EXPENSE',
+        amount: 1000,
+        account_id: accountA,
+        category_id: expenseCatA,
+        frequency: 'MONTHLY',
+        start_date: '2026-11-01',
+        next_execution_date: '2026-11-01',
+      })
+      .select('id')
+      .single();
+    expect(error).toBeNull();
+    recurringA = data!.id;
+  });
+
+  const base = () => ({
+    user_id: userA.id,
+    name: 'x',
+    type: 'EXPENSE' as const,
+    amount: 1,
+    account_id: accountA,
+    category_id: expenseCatA,
+    frequency: 'MONTHLY' as const,
+    start_date: '2026-11-01',
+    next_execution_date: '2026-11-01',
+  });
+
+  it('B cannot read or update A recurrence; anon cannot read', async () => {
+    const { data: read } = await clientB.from('recurring_transactions').select('id').eq('id', recurringA);
+    expect(read).toEqual([]);
+    const { data: upd } = await clientB.from('recurring_transactions').update({ name: 'hack' }).eq('id', recurringA).select();
+    expect(upd).toEqual([]);
+    const { data: anonRead } = await anon.from('recurring_transactions').select('id').eq('id', recurringA);
+    expect(anonRead ?? []).toEqual([]);
+  });
+
+  it('B cannot create a recurrence on A account', async () => {
+    const { error } = await clientB.from('recurring_transactions').insert({ ...base(), user_id: userB.id });
+    expect(error).not.toBeNull();
+  });
+
+  it('rejects a category of a different type', async () => {
+    const { error } = await clientA.from('recurring_transactions').insert({ ...base(), category_id: incomeCatA });
+    expect(error).not.toBeNull();
+    expect(error?.message).toContain('mismo tipo');
+  });
+
+  it('CUSTOM requires a positive interval and other frequencies forbid it', async () => {
+    const noInterval = await clientA.from('recurring_transactions').insert({ ...base(), frequency: 'CUSTOM' });
+    expect(noInterval.error).not.toBeNull();
+    const zero = await clientA.from('recurring_transactions').insert({ ...base(), frequency: 'CUSTOM', custom_interval_days: 0 });
+    expect(zero.error).not.toBeNull();
+    const extra = await clientA.from('recurring_transactions').insert({ ...base(), custom_interval_days: 5 });
+    expect(extra.error).not.toBeNull();
+    const ok = await clientA.from('recurring_transactions').insert({ ...base(), frequency: 'CUSTOM', custom_interval_days: 10 });
+    expect(ok.error).toBeNull();
+  });
+
+  it('rejects a non-positive amount and next date before start date', async () => {
+    const zero = await clientA.from('recurring_transactions').insert({ ...base(), amount: 0 });
+    expect(zero.error).not.toBeNull();
+    const early = await clientA.from('recurring_transactions').insert({ ...base(), next_execution_date: '2026-10-01' });
+    expect(early.error).not.toBeNull();
+  });
+
+  it('the same occurrence cannot be registered twice (idempotency in the database)', async () => {
+    const occurrence = {
+      user_id: userA.id,
+      account_id: accountA,
+      category_id: expenseCatA,
+      type: 'EXPENSE' as const,
+      direction: 'OUTFLOW' as const,
+      amount: 1000,
+      description: 'Arriendo',
+      transaction_date: '2026-11-01',
+      recurring_transaction_id: recurringA,
+    };
+    const first = await clientA.from('transactions').insert(occurrence);
+    expect(first.error).toBeNull();
+    const second = await clientA.from('transactions').insert(occurrence);
+    expect(second.error?.code).toBe('23505');
+  });
+
+  it('B cannot link a transaction to A recurrence', async () => {
+    const { data: accB } = await service
+      .from('accounts')
+      .insert({ user_id: userB.id, name: `Cuenta B ${stamp}`, type: 'CHECKING', opening_balance: 0 })
+      .select('id')
+      .single();
+    const { data: catB } = await service
+      .from('categories')
+      .insert({ user_id: userB.id, name: `Gasto B ${stamp}`, type: 'EXPENSE' })
+      .select('id')
+      .single();
+    const { error } = await clientB.from('transactions').insert({
+      user_id: userB.id,
+      account_id: accB!.id,
+      category_id: catB!.id,
+      type: 'EXPENSE',
+      direction: 'OUTFLOW',
+      amount: 1,
+      description: 'x',
+      transaction_date: '2026-11-02',
+      recurring_transaction_id: recurringA,
+    });
+    expect(error).not.toBeNull();
+    expect(error?.message).toContain('transactions_recurring_fk');
+  });
+});
