@@ -1080,3 +1080,27 @@ test.describe("Los formularios conservan lo escrito si falla (UC-46)", () => {
     await expect(page.locator('input[name="email"]')).toHaveValue(email);
   });
 });
+
+
+test.describe("Archivar desde las listas de categorías y cuentas", () => {
+  test("los menús de acciones funcionan (antes pasaban un manejador de servidor a un componente de cliente)", async ({ page }) => {
+    const uniqueId = Date.now() + 28;
+    await registerUser(page, `test-archive-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Archivo ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Archivable", "1000");
+
+    // Categorías: hay 9 por defecto y cada una trae su menú
+    await page.goto(`${BASE_URL}/categorias`);
+    await expect(page.getByText("Salario", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Acciones de Salario" }).click();
+    await page.getByRole("menuitem", { name: "Archivar" }).click();
+    await expect(page.getByText("Salario", { exact: true })).toHaveCount(0);
+
+    // Cuentas: archivar la deja en la sección "Archivadas" (antes nunca se veía)
+    await page.goto(`${BASE_URL}/cuentas`);
+    await expect(page.getByText("Cuenta Archivable")).toBeVisible();
+    await page.getByRole("button", { name: "Acciones de Cuenta Archivable" }).click();
+    await page.getByRole("menuitem", { name: "Archivar" }).click();
+    await expect(page.getByRole("heading", { name: /Archivadas \(1\)/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Activas/ })).toHaveCount(0);
+  });
+});
