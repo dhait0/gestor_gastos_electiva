@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Home, List, Plus, LayoutDashboard, CreditCard, TrendingUp, Settings, LogOut, User, PiggyBank, Target, Repeat, CalendarClock, Landmark, Bell, Shield } from "lucide-react";
+import { Home, List, Plus, LayoutDashboard, CreditCard, TrendingUp, Settings, LogOut, User, PiggyBank, Target, Repeat, CalendarClock, Landmark, Bell, Shield, LineChart, Calculator } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -32,6 +32,8 @@ const desktopNav = [
   { href: "/suscripciones", label: "Suscripciones", icon: CalendarClock },
   { href: "/deudas", label: "Deudas", icon: Landmark },
   { href: "/alertas", label: "Alertas", icon: Bell },
+  { href: "/analisis", label: "Análisis", icon: LineChart },
+  { href: "/simulador", label: "Simulador", icon: Calculator },
   { href: "/categorias", label: "Categorías", icon: List },
   { href: "/ajustes", label: "Ajustes", icon: Settings },
 ];
@@ -76,7 +78,7 @@ function DesktopSidebar({ pathname, showAdmin }: { pathname: string; showAdmin: 
     <>
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="lg:hidden">
+          <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Abrir menú de navegación">
             <LayoutDashboard className="w-5 h-5" />
           </Button>
         </SheetTrigger>

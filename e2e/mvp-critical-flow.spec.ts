@@ -664,3 +664,70 @@ test.describe("Administración (N)", () => {
     await expect(page.getByText(/user → support/).first()).toBeVisible();
   });
 });
+
+
+test.describe("Inteligencia financiera (O03)", () => {
+  test("análisis: forecast como estimación y score explicado; el simulador no persiste nada", async ({ page }) => {
+    const uniqueId = Date.now() + 15;
+    await registerUser(page, `test-ai-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Análisis ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Análisis", "1000000");
+    await createTransaction(page, "income", "300000", "Ingreso análisis");
+    await createTransaction(page, "expense", "50000", "Gasto análisis");
+
+    await page.goto(`${BASE_URL}/analisis`);
+    await expect(page.getByRole("heading", { name: "Cómo cerrarías el mes" })).toBeVisible();
+    await expect(page.getByText("Es una estimación, no una certeza")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Tu Financial Score Lukiva" })).toBeVisible();
+    await expect(page.getByText("No es un score bancario ni crediticio oficial")).toBeVisible();
+    // Cada componente del score explica cómo se calculó
+    await expect(page.getByText("Dinero disponible", { exact: true })).toBeVisible();
+    await expect(page.getByText(/de tus ingresos del mes/)).toBeVisible();
+
+    // Simulador: una compra enorme con la cuenta corriente avisa y no guarda nada
+    await page.goto(`${BASE_URL}/simulador`);
+    await page.waitForLoadState("networkidle");
+    await page.fill('input[name="amount"]', "5000000");
+    await page.selectOption('select[name="account_id"]', { index: 1 });
+    await page.click('main form button[type="submit"]');
+    await expect(page.getByRole("heading", { name: "Antes y después" })).toBeVisible();
+    await expect(page.getByText("no se registró ningún movimiento")).toBeVisible();
+    await expect(page.getByText(/quedaría en negativo/)).toBeVisible();
+
+    // Nada cambió: el disponible real sigue siendo 1.000.000 + 300.000 − 50.000 − 100.000 (reserva)
+    await page.goto(`${BASE_URL}/dashboard`);
+    await expect(page.locator("main").first()).toContainText(/1[.,]150[.,]000/);
+    await page.goto(`${BASE_URL}/transacciones`);
+    await expect(page.getByText("Gasto análisis")).toBeVisible();
+    await expect(page.getByText("5.000.000")).toHaveCount(0);
+  });
+
+  test("estrategia de deudas: snowball por menor saldo, avalanche por mayor tasa", async ({ page }) => {
+    const uniqueId = Date.now() + 16;
+    await registerUser(page, `test-strategy-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Estrategia ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Estrategia", "1000");
+
+    const addDebt = async (name: string, amount: string, rate: string, minimum: string) => {
+      await page.goto(`${BASE_URL}/deudas/nueva`);
+      await page.waitForLoadState("networkidle");
+      await page.fill('input[name="name"]', name);
+      await page.fill('input[name="original_amount"]', amount);
+      await page.fill('input[name="interest_rate_percent"]', rate);
+      await page.fill('input[name="minimum_payment"]', minimum);
+      await page.click('main form button[type="submit"]');
+      await page.waitForURL(/\/deudas\/[0-9a-f-]{36}$/, { timeout: 10000 });
+    };
+    await addDebt("Tarjeta cara", "5000", "36", "200");
+    await addDebt("Deuda pequeña", "800", "0", "50");
+
+    await page.goto(`${BASE_URL}/deudas/estrategia?strategy=SNOWBALL&budget=1000`);
+    await expect(page.getByRole("list").filter({ hasText: "1. " }).first()).toContainText("1. Deuda pequeña");
+    await expect(page.getByText(/Terminarías en/)).toBeVisible();
+
+    await page.goto(`${BASE_URL}/deudas/estrategia?strategy=AVALANCHE&budget=1000`);
+    await expect(page.getByRole("list").filter({ hasText: "1. " }).first()).toContainText("1. Tarjeta cara");
+
+    // Un presupuesto menor a los mínimos se explica en lugar de inventar un plan
+    await page.goto(`${BASE_URL}/deudas/estrategia?strategy=SNOWBALL&budget=100`);
+    await expect(page.getByText(/no alcanzas a cubrir los pagos mínimos/)).toBeVisible();
+  });
+});
