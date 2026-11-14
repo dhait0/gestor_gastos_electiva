@@ -341,8 +341,9 @@ test.describe("Transacciones", () => {
     await createTransaction(page, "expense", "30000", "Transporte");
 
     await page.goto(`${BASE_URL}/transacciones`);
-    await expect(page.locator("text=Freelance")).toBeVisible();
-    await expect(page.locator("text=Transporte")).toBeVisible();
+    // Se acota a la fila: "Transporte" también es una opción del filtro de categorías
+    await expect(page.getByRole("link", { name: "Ver o editar Freelance" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ver o editar Transporte" })).toBeVisible();
   });
 });});
 
@@ -609,7 +610,7 @@ test.describe("Administración (N)", () => {
 
     for (const path of ["/admin", "/admin/usuarios", "/admin/auditoria"]) {
       await page.goto(`${BASE_URL}${path}`);
-      await expect(page.locator("text=This page could not be found")).toBeVisible();
+      await expect(page.getByRole("heading", { name: "No encontramos esa página" })).toBeVisible();
     }
     await page.goto(`${BASE_URL}/dashboard`);
     await expect(page.getByRole("link", { name: "Administración" })).toHaveCount(0);
@@ -631,7 +632,7 @@ test.describe("Administración (N)", () => {
     await expect(page.getByRole("combobox", { name: /Rol de/ })).toHaveCount(0);
 
     await page.goto(`${BASE_URL}/admin/auditoria`);
-    await expect(page.locator("text=This page could not be found")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "No encontramos esa página" })).toBeVisible();
   });
 
   test("el admin cambia un rol, ve métricas sin importes y el cambio queda auditado", async ({ page }) => {
@@ -729,5 +730,377 @@ test.describe("Inteligencia financiera (O03)", () => {
     // Un presupuesto menor a los mínimos se explica en lugar de inventar un plan
     await page.goto(`${BASE_URL}/deudas/estrategia?strategy=SNOWBALL&budget=100`);
     await expect(page.getByText(/no alcanzas a cubrir los pagos mínimos/)).toBeVisible();
+  });
+});
+
+
+test.describe("Movimientos: transferir, editar, eliminar y filtrar (UC-11, 12, 13, 21)", () => {
+  test.skip(!SERVICE_URL || !SERVICE_KEY, "Requiere E2E_SUPABASE_URL y E2E_SERVICE_ROLE_KEY para crear la segunda cuenta");
+
+  async function addAccount(email: string, name: string, type = "SAVINGS") {
+    const userId = await findUserId(email);
+    const { error } = await serviceClient().from("accounts").insert({ user_id: userId, name, type, opening_balance: 0 });
+    if (error) throw error;
+  }
+
+  test("una transferencia es neutral, no se edita y se elimina completa", async ({ page }) => {
+    const uniqueId = Date.now() + 17;
+    const email = `test-transfer-${uniqueId}@finwise.test`;
+    await registerUser(page, email, "TestPass123!", `Usuario Transfer ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Principal", "1000000");
+    await addAccount(email, "Ahorros E2E");
+
+    await page.goto(`${BASE_URL}/transacciones/transferir`);
+    await page.waitForLoadState("networkidle");
+    await page.selectOption('select[name="from_account_id"]', { label: "Cuenta Principal (COP)" });
+    await page.selectOption('select[name="to_account_id"]', { label: "Ahorros E2E" });
+    await page.fill('input[name="amount"]', "200000");
+    await page.click('main form button[type="submit"]');
+    await page.waitForURL(/\/transacciones(\?|$)/, { timeout: 10000 });
+    // Cada transferencia genera dos movimientos: salida y entrada
+    await expect(page.getByRole("link", { name: /Ver o editar Transferencia/ })).toHaveCount(2);
+
+    // Neutral: el saldo líquido total no cambia (1.000.000 − reserva 100.000)
+    await page.goto(`${BASE_URL}/dashboard`);
+    await expect(page.locator("main").first()).toContainText(/900[.,]000/);
+
+    // No se puede editar: solo informa y ofrece eliminar
+    await page.goto(`${BASE_URL}/transacciones`);
+    await page.getByRole("link", { name: /Ver o editar Transferencia/ }).first().click();
+    await expect(page.getByText(/no se editan/)).toBeVisible();
+
+    // Eliminar borra ambas patas
+    page.once("dialog", (d) => d.accept());
+    await page.getByRole("button", { name: "Eliminar transferencia" }).click();
+    await page.waitForURL(/\/transacciones(\?|$)/, { timeout: 10000 });
+    await expect(page.getByRole("link", { name: /Ver o editar Transferencia/ })).toHaveCount(0);
+  });
+
+  test("las cuentas de otra moneda no se ofrecen como destino", async ({ page }) => {
+    const uniqueId = Date.now() + 18;
+    const email = `test-transfer-fx-${uniqueId}@finwise.test`;
+    await registerUser(page, email, "TestPass123!", `Usuario FX ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta COP", "1000");
+    const userId = await findUserId(email);
+    await serviceClient().from("accounts").insert({ user_id: userId, name: "Cuenta USD", type: "SAVINGS", currency_code: "USD", opening_balance: 0 });
+
+    await page.goto(`${BASE_URL}/transacciones/transferir`);
+    await page.waitForLoadState("networkidle");
+    await page.selectOption('select[name="from_account_id"]', { label: "Cuenta COP (COP)" });
+    await expect(page.locator('select[name="to_account_id"] option', { hasText: "Cuenta USD" })).toHaveCount(0);
+  });
+
+  test("editar y eliminar un gasto actualiza el disponible; los filtros acotan la lista sin errores de hidratación", async ({ page }) => {
+    const hydrationErrors: string[] = [];
+    page.on("console", (m) => {
+      if (m.type() === "error" && /Hydration|hydrat/i.test(m.text())) hydrationErrors.push(m.text().slice(0, 120));
+    });
+
+    const uniqueId = Date.now() + 19;
+    await registerUser(page, `test-edit-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Edición ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Edición", "1000000");
+    await createTransaction(page, "expense", "30000", "Pizza viernes");
+    await createTransaction(page, "income", "50000", "Venta usada");
+
+    // Filtros
+    await page.goto(`${BASE_URL}/transacciones?q=pizza`);
+    await expect(page.getByText("Pizza viernes")).toBeVisible();
+    await expect(page.getByText("Venta usada")).toHaveCount(0);
+    await page.goto(`${BASE_URL}/transacciones?type=INCOME`);
+    await expect(page.getByText("Venta usada")).toBeVisible();
+    await expect(page.getByText("Pizza viernes")).toHaveCount(0);
+    await page.goto(`${BASE_URL}/transacciones?q=inexistente`);
+    await expect(page.getByText("Ningún movimiento coincide")).toBeVisible();
+    await page.getByRole("link", { name: /Limpiar filtros/ }).click();
+    await expect(page.getByText("Pizza viernes")).toBeVisible();
+    // Parámetros inválidos no rompen la página
+    await page.goto(`${BASE_URL}/transacciones?type=HACK&from=basura&page=-3&account=%27%20or%201%3D1`);
+    await expect(page.getByRole("heading", { name: "Movimientos" })).toBeVisible();
+
+    // Editar: 30.000 → 45.000 y nueva descripción
+    await page.goto(`${BASE_URL}/transacciones`);
+    await page.getByRole("link", { name: "Ver o editar Pizza viernes" }).click();
+    await page.fill('input[name="amount"]', "45000");
+    await page.fill('input[name="description"]', "Pizza y bebidas");
+    await page.click('main form button[type="submit"]');
+    await page.waitForURL(/\/transacciones(\?|$)/, { timeout: 10000 });
+    await expect(page.getByText("Pizza y bebidas")).toBeVisible();
+
+    // 1.000.000 + 50.000 − 45.000 − 100.000 (reserva) = 905.000
+    await page.goto(`${BASE_URL}/dashboard`);
+    await expect(page.locator("main").first()).toContainText(/905[.,]000/);
+
+    // Eliminar devuelve el disponible: 950.000 − 100.000 = 950.000
+    await page.goto(`${BASE_URL}/transacciones`);
+    await page.getByRole("link", { name: "Ver o editar Pizza y bebidas" }).click();
+    page.once("dialog", (d) => d.accept());
+    await page.getByRole("button", { name: "Eliminar movimiento" }).click();
+    await page.waitForURL(/\/transacciones(\?|$)/, { timeout: 10000 });
+    await expect(page.getByText("Pizza y bebidas")).toHaveCount(0);
+    await page.goto(`${BASE_URL}/dashboard`);
+    await expect(page.locator("main").first()).toContainText(/950[.,]000/);
+
+    expect(hydrationErrors, hydrationErrors.join("\n")).toEqual([]);
+  });
+});
+
+
+test.describe("Presupuestos: editar y copiar mes anterior (UC-24, UC-25)", () => {
+  test("copiar solo lo seleccionado sin duplicar y editar el límite", async ({ page }) => {
+    const uniqueId = Date.now() + 20;
+    await registerUser(page, `test-bcopy-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Copia ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Copia", "1000000");
+
+    const now = new Date();
+    const ym = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const current = ym(now);
+    const previous = ym(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+
+    // Dos presupuestos en el mes anterior, de categorías distintas
+    for (const [index, limit] of [[1, "100000"], [2, "200000"]] as const) {
+      await page.goto(`${BASE_URL}/presupuestos/nuevo?month=${previous}`);
+      await page.waitForLoadState("networkidle");
+      await page.selectOption('select[name="category_id"]', { index });
+      await page.fill('input[name="limit_amount"]', limit);
+      await page.click('main form button[type="submit"]');
+      await page.waitForURL(/\/presupuestos(\?|$)/, { timeout: 10000 });
+    }
+
+    // Copiar al mes actual solo el primero
+    await page.goto(`${BASE_URL}/presupuestos?month=${current}`);
+    await expect(page.getByText("Sin presupuestos en este mes")).toBeVisible();
+    await page.getByRole("link", { name: "Copiar mes anterior" }).click();
+    const boxes = page.getByRole("checkbox");
+    await expect(boxes).toHaveCount(2);
+    await boxes.nth(1).uncheck();
+    await page.click('main form button[type="submit"]');
+    await page.waitForURL(new RegExp(`/presupuestos\\?month=${current}`), { timeout: 10000 });
+    await expect(page.getByRole("progressbar")).toHaveCount(1);
+
+    // Copiar de nuevo: la categoría ya copiada queda deshabilitada y no se duplica
+    await page.getByRole("link", { name: "Copiar mes anterior" }).click();
+    await expect(page.getByText("ya existe en este mes")).toBeVisible();
+    await expect(page.getByRole("checkbox").first()).toBeDisabled();
+
+    // Editar el límite
+    await page.goto(`${BASE_URL}/presupuestos?month=${current}`);
+    await page.getByRole("link", { name: /Editar presupuesto de/ }).click();
+    await page.fill('input[name="limit_amount"]', "250000");
+    await page.click('main form button[type="submit"]');
+    await page.waitForURL(new RegExp(`/presupuestos\\?month=${current}`), { timeout: 10000 });
+    await expect(page.getByText(/de .*250[.,]000/)).toBeVisible();
+
+    // Un límite inválido se rechaza con mensaje
+    await page.getByRole("link", { name: /Editar presupuesto de/ }).click();
+    await page.fill('input[name="limit_amount"]', "-5");
+    await page.evaluate(() => document.querySelector("main form")?.setAttribute("novalidate", ""));
+    await page.click('main form button[type="submit"]');
+    await expect(page.getByText(/mayor a 0/)).toBeVisible();
+  });
+});
+
+
+test.describe("Detección de recurrencias (UC-30)", () => {
+  test.skip(!SERVICE_URL || !SERVICE_KEY, "Requiere E2E_SUPABASE_URL y E2E_SERVICE_ROLE_KEY para sembrar el historial");
+
+  test("sugiere un patrón mensual, se confirma con el formulario y no se vuelve a sugerir", async ({ page }) => {
+    const uniqueId = Date.now() + 21;
+    const email = `test-detect-${uniqueId}@finwise.test`;
+    await registerUser(page, email, "TestPass123!", `Usuario Detección ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Detección", "1000000");
+
+    // Historial: 3 gastos "Netflix" los días 1 de los 3 meses anteriores, sembrados con la clave service
+    const service = serviceClient();
+    const userId = await findUserId(email);
+    const { data: account } = await service.from("accounts").select("id").eq("user_id", userId).single();
+    const { data: category } = await service.from("categories").select("id").eq("user_id", userId).eq("type", "EXPENSE").limit(1).single();
+    const now = new Date();
+    const rows = [3, 2, 1].map((back) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - back, 1);
+      return {
+        user_id: userId,
+        account_id: account!.id,
+        category_id: category!.id,
+        type: "EXPENSE",
+        direction: "OUTFLOW",
+        amount: 30000,
+        description: `Netflix ${d.getMonth() + 1}`,
+        transaction_date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`,
+      };
+    });
+    const { error } = await service.from("transactions").insert(rows);
+    expect(error).toBeNull();
+
+    await page.goto(`${BASE_URL}/recurrentes`);
+    await expect(page.getByRole("heading", { name: "Detectamos posibles recurrentes" })).toBeVisible();
+    await expect(page.getByText("No activamos nada hasta que lo confirmes")).toBeVisible();
+    await expect(page.getByText(/Mensual · 3 repeticiones/)).toBeVisible();
+    // Nada se creó por sí solo
+    await expect(page.getByText("Aún no tienes movimientos recurrentes")).toBeVisible();
+
+    await page.getByRole("link", { name: /Crear recurrente para Netflix/ }).click();
+    await expect(page.locator('input[name="name"]')).toHaveValue(/Netflix/);
+    await expect(page.locator('input[name="amount"]')).toHaveValue("30000");
+    await expect(page.locator('select[name="frequency"]')).toHaveValue("MONTHLY");
+    await expect(page.locator('select[name="category_id"]')).toHaveValue(category!.id);
+    await expect(page.locator('select[name="account_id"]')).toHaveValue(account!.id);
+    await page.click('main form button[type="submit"]');
+    await page.waitForURL(`${BASE_URL}/recurrentes`, { timeout: 10000 });
+
+    // Ya existe: no se vuelve a sugerir, y la próxima fecha es futura (no registra atrasados)
+    await expect(page.getByRole("heading", { name: "Detectamos posibles recurrentes" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Registrar \d+ vencido/ })).toHaveCount(0);
+  });
+
+  test("sin historial suficiente no se sugiere nada", async ({ page }) => {
+    const uniqueId = Date.now() + 22;
+    await registerUser(page, `test-nodetect-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Sin Patrón ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Sin Patrón", "1000");
+    await createTransaction(page, "expense", "10000", "Compra suelta");
+    await page.goto(`${BASE_URL}/recurrentes`);
+    await expect(page.getByRole("heading", { name: "Detectamos posibles recurrentes" })).toHaveCount(0);
+  });
+});
+
+
+test.describe("Estados vacío, error y carga (UC-41, UC-46, UC-47)", () => {
+  test("un usuario nuevo ve el mensaje guía en dashboard y movimientos", async ({ page }) => {
+    const uniqueId = Date.now() + 23;
+    await registerUser(page, `test-empty-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Vacío ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Vacía", "1000");
+
+    for (const path of ["/dashboard", "/transacciones"]) {
+      await page.goto(`${BASE_URL}${path}`);
+      await expect(page.getByText("Aún no tienes movimientos").first()).toBeVisible();
+      await expect(page.getByText("Registra tu primer ingreso o gasto para comenzar a entender tus finanzas.").first()).toBeVisible();
+    }
+    await page.goto(`${BASE_URL}/dashboard`);
+    await expect(page.getByRole("link", { name: "Registrar gasto" }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Registrar ingreso" }).first()).toBeVisible();
+  });
+
+  test("rutas y detalles inexistentes devuelven un 404 en español sin filtrar información", async ({ page }) => {
+    const uniqueId = Date.now() + 24;
+    await registerUser(page, `test-404-${uniqueId}@finwise.test`, "TestPass123!", `Usuario 404 ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta 404", "1000");
+    // Con sesión, una ruta inexistente muestra el 404 en español con salida al inicio
+    await page.goto(`${BASE_URL}/ruta-que-no-existe`);
+    await expect(page.getByRole("link", { name: "Ir al inicio" })).toBeVisible();
+    for (const path of ["/ruta-que-no-existe", "/metas/00000000-0000-4000-8000-000000000000", "/deudas/00000000-0000-4000-8000-000000000000", "/transacciones/00000000-0000-4000-8000-000000000000/editar"]) {
+      await page.goto(`${BASE_URL}${path}`);
+      await expect(page.getByRole("heading", { name: "No encontramos esa página" })).toBeVisible();
+    }
+  });
+});
+
+
+test.describe("Navegación principal en escritorio (UC-50)", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test("hay un menú lateral persistente, agrupado y con la sección activa marcada", async ({ page }) => {
+    const uniqueId = Date.now() + 25;
+    await registerUser(page, `test-nav-d-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Nav ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Nav", "1000");
+
+    const sidebar = page.getByRole("navigation", { name: "Navegación principal" });
+    await expect(sidebar).toBeVisible();
+    for (const group of ["Principal", "Planificación", "Inteligencia", "Cuenta"]) {
+      await expect(sidebar.getByText(group, { exact: true })).toBeVisible();
+    }
+    // La barra inferior de móvil no se muestra en escritorio
+    await expect(page.getByRole("navigation", { name: "Accesos rápidos" })).toBeHidden();
+
+    await sidebar.getByRole("link", { name: "Metas" }).click();
+    await page.waitForURL(`${BASE_URL}/metas`);
+    await expect(sidebar.getByRole("link", { name: "Metas" })).toHaveAttribute("aria-current", "page");
+
+    // Una subruta mantiene resaltada su sección
+    await page.goto(`${BASE_URL}/metas/nueva`);
+    await expect(sidebar.getByRole("link", { name: "Metas" })).toHaveAttribute("aria-current", "page");
+
+    // Solo hay un h1 visible (la marca no lo es)
+    await expect(page.locator("h1:visible")).toHaveCount(1);
+  });
+});
+
+test.describe("Navegación principal en móvil (UC-50)", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("barra inferior con acceso rápido y menú completo en 'Más'", async ({ page }) => {
+    const uniqueId = Date.now() + 26;
+    await registerUser(page, `test-nav-m-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Nav M ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Nav M", "1000");
+
+    const quick = page.getByRole("navigation", { name: "Accesos rápidos" });
+    await expect(quick).toBeVisible();
+    await expect(page.locator("aside")).toBeHidden();
+
+    // "Crear" ya no está deshabilitado: lleva a registrar un gasto
+    await quick.getByRole("link", { name: "Crear" }).click();
+    await page.waitForURL(/\/transacciones\/nuevo\?type=expense/);
+
+    // "Más" abre el menú completo agrupado y navega sin recargar
+    await quick.getByRole("button", { name: "Más" }).click();
+    const menu = page.getByRole("dialog");
+    await expect(menu.getByText("Planificación", { exact: true })).toBeVisible();
+    await menu.getByRole("link", { name: "Deudas" }).click();
+    await page.waitForURL(`${BASE_URL}/deudas`);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+});
+
+
+test.describe("Los formularios conservan lo escrito si falla (UC-46)", () => {
+  test("un login fallido conserva el correo y un presupuesto duplicado conserva el límite", async ({ page }) => {
+    const uniqueId = Date.now() + 27;
+    const email = `test-keep-${uniqueId}@finwise.test`;
+    await registerUser(page, email, "TestPass123!", `Usuario Conserva ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Conserva", "1000");
+
+    // Presupuesto duplicado: el error aparece y el límite escrito sigue en el campo
+    for (const limit of ["100000", "77777"]) {
+      await page.goto(`${BASE_URL}/presupuestos/nuevo`);
+      await page.waitForLoadState("networkidle");
+      await page.selectOption('select[name="category_id"]', { index: 1 });
+      await page.fill('input[name="limit_amount"]', limit);
+      await page.click('main form button[type="submit"]');
+      if (limit === "100000") await page.waitForURL(/\/presupuestos(\?|$)/, { timeout: 10000 });
+    }
+    await expect(page.getByText("Ya existe un presupuesto")).toBeVisible();
+    await expect(page.locator('input[name="limit_amount"]')).toHaveValue("77777");
+    await expect(page.locator('select[name="category_id"]')).not.toHaveValue("");
+
+    // Login fallido: el correo se conserva
+    await page.context().clearCookies();
+    await page.goto(`${BASE_URL}/login`);
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', "contraseña-equivocada");
+    await page.click('button[type="submit"]');
+    await expect(page.locator('[role="alert"]').first()).toBeVisible();
+    await expect(page.locator('input[name="email"]')).toHaveValue(email);
+  });
+});
+
+
+test.describe("Archivar desde las listas de categorías y cuentas", () => {
+  test("los menús de acciones funcionan (antes pasaban un manejador de servidor a un componente de cliente)", async ({ page }) => {
+    const uniqueId = Date.now() + 28;
+    await registerUser(page, `test-archive-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Archivo ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Archivable", "1000");
+
+    // Categorías: hay 9 por defecto y cada una trae su menú
+    await page.goto(`${BASE_URL}/categorias`);
+    await expect(page.getByText("Salario", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Acciones de Salario" }).click();
+    await page.getByRole("menuitem", { name: "Archivar" }).click();
+    await expect(page.getByText("Salario", { exact: true })).toHaveCount(0);
+
+    // Cuentas: archivar la deja en la sección "Archivadas" (antes nunca se veía)
+    await page.goto(`${BASE_URL}/cuentas`);
+    await expect(page.getByText("Cuenta Archivable")).toBeVisible();
+    await page.getByRole("button", { name: "Acciones de Cuenta Archivable" }).click();
+    await page.getByRole("menuitem", { name: "Archivar" }).click();
+    await expect(page.getByRole("heading", { name: /Archivadas \(1\)/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Activas/ })).toHaveCount(0);
   });
 });

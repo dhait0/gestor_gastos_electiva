@@ -1,11 +1,11 @@
 import { cn } from "@/lib/utils";
-import { Plus, Wallet, CreditCard, MoreHorizontal, Edit, Archive, RotateCcw, AlertCircle } from "lucide-react";
+import { Plus, Wallet, CreditCard, MoreHorizontal, Edit, RotateCcw, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { getCategoriesAction } from "@/app/actions/categories";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { archiveCategoryAction } from "@/app/actions/categories";
+import { ArchiveMenuItem } from "@/components/shared/ArchiveMenuItem";
 
 interface Category {
   id: string;
@@ -44,10 +44,10 @@ export default async function CategoriasPage() {
               </div>
               <h3 className="text-lg font-medium text-foreground">Error al cargar las categorías</h3>
               <p className="mt-1 text-sm text-muted-foreground max-w-xs mx-auto">{error}</p>
-              <Button onClick={() => window.location.reload()} className="mt-4 gap-2">
-                <RotateCcw className="w-4 h-4" />
+              <Link href="/categorias" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+                <RotateCcw className="w-4 h-4" aria-hidden="true" />
                 Reintentar
-              </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
@@ -165,13 +165,7 @@ function CategoryCard({ category }: { category: Category }) {
                   Editar
                 </DropdownMenuItem>
               </Link>
-              <DropdownMenuItem
-                className="flex items-center gap-2 px-2 py-1.5 text-destructive focus:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2"
-                onClick={() => archiveCategory(category.id)}
-              >
-                <Archive className="w-4 h-4" />
-                Archivar
-              </DropdownMenuItem>
+              <ArchiveMenuItem id={category.id} kind="category" />
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -189,13 +183,4 @@ function CategoryCard({ category }: { category: Category }) {
       </CardContent>
     </Card>
   );
-}
-
-async function archiveCategory(categoryId: string) {
-  const result = await archiveCategoryAction(categoryId);
-  if (result.error) {
-    console.error("Error archiving category:", result.error);
-  } else {
-    window.location.reload();
-  }
 }

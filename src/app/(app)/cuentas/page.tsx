@@ -1,11 +1,11 @@
 import { cn } from "@/lib/utils";
-import { Plus, CreditCard, Wallet, Landmark, PiggyBank, Smartphone, MoreHorizontal, Edit, Archive, RotateCcw, AlertCircle } from "lucide-react";
+import { Plus, CreditCard, Wallet, Landmark, PiggyBank, Smartphone, MoreHorizontal, Edit, RotateCcw, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { getAccountsWithBalancesAction } from "@/app/actions/accounts";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { archiveAccountAction } from "@/app/actions/accounts";
+import { ArchiveMenuItem } from "@/components/shared/ArchiveMenuItem";
 import type { Decimal } from "decimal.js";
 
 interface Account {
@@ -59,10 +59,10 @@ export default async function CuentasPage() {
               </div>
               <h3 className="text-lg font-medium text-foreground">Error al cargar las cuentas</h3>
               <p className="mt-1 text-sm text-muted-foreground max-w-xs mx-auto">{result.error}</p>
-              <Button onClick={() => window.location.reload()} className="mt-4 gap-2">
-                <RotateCcw className="w-4 h-4" />
+              <Link href="/cuentas" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+                <RotateCcw className="w-4 h-4" aria-hidden="true" />
                 Reintentar
-              </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
@@ -130,7 +130,7 @@ export default async function CuentasPage() {
                 <h2 id="archived-accounts-heading" className="text-lg font-semibold text-muted-foreground">
                   Archivadas ({archivedAccounts.length})
                 </h2>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols=3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {archivedAccounts.map((account) => (
                     <AccountCard key={account.id} account={account} isArchived />
                   ))}
@@ -173,15 +173,7 @@ function AccountCard({ account, isArchived = false }: { account: Account; isArch
                   Editar
                 </DropdownMenuItem>
               </Link>
-              {isArchived ? null : (
-                <DropdownMenuItem
-                  className="flex items-center gap-2 px-2 py-1.5 text-destructive focus:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2"
-                  onClick={() => archiveAccount(account.id)}
-                >
-                  <Archive className="w-4 h-4" />
-                  Archivar
-                </DropdownMenuItem>
-              )}
+              {isArchived ? null : <ArchiveMenuItem id={account.id} kind="account" />}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -218,15 +210,6 @@ function AccountCard({ account, isArchived = false }: { account: Account; isArch
       </CardContent>
     </Card>
   );
-}
-
-async function archiveAccount(accountId: string) {
-  const result = await archiveAccountAction(accountId);
-  if (result.error) {
-    console.error("Error archiving account:", result.error);
-  } else {
-    window.location.reload();
-  }
 }
 
 function formatCurrency(amount: number, currency: string) {

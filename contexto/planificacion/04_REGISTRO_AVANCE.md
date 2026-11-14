@@ -1180,3 +1180,37 @@ Siguiente microtarea sugerida: cerrar brechas de UC (transferencias UI, editar/e
 
 **Evidencia de CI remoto (2026-11-14).** Se abrió un PR temporal hacia `staging` con la cadena completa (#40→#44) solo para ejecutar los workflows, y se cerró sin mergear (#45): `CI Pipeline` PASÓ (lint, typecheck, test, build) · `RLS Integration Tests` PASÓ (**suite completa sobre base limpia, incluidos los bloques nuevos y el RBAC**) · `Playwright E2E` PASÓ (19 tests, incluidos los de `/admin`). El E2E falló la primera vez por infraestructura (`error from registry: Rate exceeded` al ejecutar `supabase start` en paralelo con el job RLS) y pasó al relanzar el job. Si se repite, escalonar los jobs o reintentar el arranque de Supabase.
 Esto cierra los pendientes "pendiente de ejecución en CI remoto" de los bloques anteriores. Sigue pendiente el cotejo del esquema de producción (sin credenciales).
+
+---
+
+## Cierre de brechas de casos de uso (2026-11-14)
+
+Rama: feature/lukiva-cierre-brechas-uc (apilada sobre feature/lukiva-fase-o-p, PR #44). Cierra los 12 casos que la matriz marcaba como parciales o sin implementar. Resultado: **UC-01 a UC-50 completos** (`06_MATRIZ_UC_50.md`).
+
+| UC | Qué se hizo | Evidencia |
+|---|---|---|
+| 03 | `/forgot-password` y `/reset-password`, respuesta neutral, **corregido el `redirectTo` que apuntaba al host de Supabase** en lugar de la app; `/terminos` y `/privacidad` (enlazadas y en 404) | E2E con el correo real del Mailpit local |
+| 11, 12 | `/transacciones/[id]/editar`; `transaction-edit.ts`. **Se endureció el servidor:** antes se podía editar una sola pata de una transferencia o cambiar tipo/moneda, y eliminar una pata dejaba el saldo descuadrado | 8 pruebas + E2E |
+| 13 | `/transacciones/transferir` (solo misma moneda) | E2E: neutral, no editable, se elimina completa |
+| 21 | Filtros por URL y paginación; `transaction-filters.ts` descarta valores inválidos. **Se corrigió un `<tbody>` anidado: era la causa del aviso de hidratación (B0.1-c)** y se quitó la hora "00:00" inventada | 10 pruebas + E2E |
+| 24, 25 | Editar límite y copiar mes anterior con vista previa; `planBudgetCopy` evita duplicados | 5 pruebas + E2E |
+| 30 | `recurrence-detection.ts`: criterios del UC, solo patrones activos, fecha propuesta futura (activarla no genera atrasados), nunca crea sin confirmar | 17 pruebas + E2E |
+| 41 | Texto exacto del UC con acciones en dashboard y movimientos | E2E |
+| 46 | `error.tsx`, `global-error.tsx`, 404 en español, y **los formularios dejan de perder lo escrito al fallar** (React 19 los vaciaba): `preventFormReset` en 24 formularios | Prueba unitaria que reproduce el defecto + E2E |
+| 47 | `loading.tsx` accesible | Prueba de componente |
+| 50 | Menú lateral persistente y agrupado en escritorio; barra inferior móvil con "Crear" activo y "Más"; navegación sin recargar; la marca ya no es `h1` | E2E en ambos tamaños |
+| 07 | Aviso al editar el saldo inicial | — |
+
+**Decisión técnica a señalar:** la primera versión del arreglo de formularios usaba `onSubmit`; provocó un fallo intermitente real (un envío antes de terminar la hidratación se perdía). Se descartó y se cambió por cancelar el evento `reset` conservando `action`, que mantiene la mejora progresiva.
+Pruebas: lint 0 errores/5 warnings; typecheck PASÓ; `pnpm test` **280/280**; `pnpm build` PASÓ; `pnpm test:e2e` **34/34** (con `--workers=2`; con más workers en esta máquina cargada hubo timeouts aislados, y los tests fallidos pasan al repetirlos).
+**Acciones manuales:** añadir la URL de producción a *Redirect URLs* de Supabase Auth y configurar SMTP propio antes de anunciar la recuperación de contraseña (ver `07_RELEASE_Y_RECUPERACION.md`); revisión jurídica de términos y privacidad.
+
+**Defecto heredado hallado por el CI remoto (2026-11-14).** El primer CI del cierre de brechas mostró `Event handlers cannot be passed to Client Component props` (9 veces). Causa: `/cuentas` y `/categorias` son componentes de servidor y pasaban `onClick` a los menús de Radix; además `archiveAccount`/`archiveCategory` eran funciones de servidor que llamaban a `window.location.reload()`. Es decir, **archivar cuentas y categorías desde la interfaz nunca funcionó** (el arreglo B02-01 de las archivadas no era alcanzable por UI), y desde que los usuarios nuevos reciben 9 categorías por defecto todos disparaban el error en `/categorias`. Corregido con el componente de cliente `ArchiveMenuItem` y un E2E nuevo; el botón "Reintentar" de ambas páginas (también con `onClick` en servidor) ahora es un enlace. Se comprobó que no quedan otros manejadores de eventos en componentes de servidor.
+Además: `playwright.config.ts` sube el timeout por test a 60 s y limita a 2 workers en CI, porque con la suite ampliada los 30 s se quedaban cortos en el runner (4 timeouts de onboarding).
+Por qué no se vio antes: ningún test abría `/categorias` o `/cuentas` con datos; la auditoría de accesibilidad pasaba porque el error no rompía el render en desarrollo. Lección: los E2E deben ejercitar cada acción de cada pantalla, y vigilar el log del servidor.
+
+**Segundo defecto hallado al probar el build de producción (2026-11-14).** El E2E de CI fallaba con timeouts en acciones de servidor porque `next dev` recompila rutas en frío con las acciones en vuelo ("An unexpected response was received from the server"). Se cambió `playwright.config.ts` para que en CI (o con `E2E_PROD=1`) pruebe `pnpm build && pnpm start`: es determinista y prueba lo que se despliega. Al hacerlo apareció un defecto real de `/auth/callback`: con `x-forwarded-host` redirigía siempre a `https://`, y `next start` lo añade aunque sea HTTP → `ERR_SSL_PROTOCOL_ERROR` (en Vercel funcionaba por casualidad). Además **`?next=` no se validaba**: `next=@sitio.com` convertía el host en credenciales y permitía una redirección abierta tras el login. Corregido con `src/lib/auth/callback-redirect.ts` (rutas internas únicamente; protocolo reenviado respetado), 14 pruebas unitarias y el E2E de recuperación pasando en producción.
+Resultado local en modo producción: **35/35** (34 + el de recuperación tras el arreglo), 2 workers.
+
+**CI remoto del cierre de brechas (2026-11-14, PR temporal #47 cerrado sin mergear):** `CI Pipeline` PASÓ · `RLS Integration Tests` PASÓ (suite completa) · `Playwright E2E` PASÓ (35 tests contra `pnpm build && pnpm start`). Las dos corridas anteriores fallaron y revelaron los defectos descritos arriba (manejadores de eventos en componentes de servidor; callback de autenticación).
+Unit: 294/294.

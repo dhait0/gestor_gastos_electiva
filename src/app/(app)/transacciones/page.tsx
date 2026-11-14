@@ -1,295 +1,298 @@
-import { Suspense } from "react";
-import { cn, formatCurrency } from "@/lib/utils";
-import { Search, Filter, ArrowUpRight, RotateCcw, AlertCircle } from "lucide-react";
-import { getTransactionsAction } from "@/app/actions/transactions";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { format, subDays } from "date-fns";
+import Link from "next/link";
+import { Fragment } from "react";
+import { AlertCircle, ArrowLeftRight, ArrowUpRight, Pencil, Search } from "lucide-react";
+import { format, parseISO, subDays } from "date-fns";
 import { es } from "date-fns/locale";
+import { cn, formatCurrency } from "@/lib/utils";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getTransactionsAction } from "@/app/actions/transactions";
+import { getAccountsAction } from "@/app/actions/accounts";
+import { getCategoriesAction } from "@/app/actions/categories";
+import { todayInTimezone } from "@/domain/dates";
+import {
+  TRANSACTIONS_PAGE_SIZE,
+  countActiveFilters,
+  getTotalPages,
+  parseTransactionFilters,
+  type TransactionFilters,
+} from "@/domain/transaction-filters";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-async function TransactionsList({
-  initialType,
+function buildQuery(filters: TransactionFilters, overrides: Partial<TransactionFilters> = {}): string {
+  const f = { ...filters, ...overrides };
+  const params = new URLSearchParams();
+  if (f.type) params.set("type", f.type);
+  if (f.accountId) params.set("account", f.accountId);
+  if (f.categoryId) params.set("category", f.categoryId);
+  if (f.from) params.set("from", f.from);
+  if (f.to) params.set("to", f.to);
+  if (f.search) params.set("q", f.search);
+  if (f.page > 1) params.set("page", String(f.page));
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+}
+
+const selectClass =
+  "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+export default async function TransaccionesPage({
+  searchParams,
 }: {
-  initialType?: "INCOME" | "EXPENSE" | "TRANSFER";
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { data: transactions, count, error } = await getTransactionsAction({
-    type: initialType,
-    limit: 50,
-  });
+  const filters = parseTransactionFilters(await searchParams);
+  const activeFilters = countActiveFilters(filters);
 
-  if (error) {
-    return (
-      <div className="rounded-xl border border-border bg-card p-12 text-center">
-        <div className="mx-auto w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-          <AlertCircle className="w-8 h-8 text-destructive" />
-        </div>
-        <h3 className="text-lg font-medium text-foreground">Error al cargar los movimientos</h3>
-        <p className="mt-1 text-sm text-muted-foreground max-w-xs mx-auto">{error}</p>
-        <Button onClick={() => window.location.reload()} className="mt-4 gap-2">
-          <RotateCcw className="w-4 h-4" />
-          Reintentar
-        </Button>
-      </div>
-    );
-  }
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: profile } = user
+    ? await supabase.from("profiles").select("timezone").eq("id", user.id).single()
+    : { data: null };
+  const today = todayInTimezone(profile?.timezone || "America/Bogota");
+  const yesterday = format(subDays(parseISO(today), 1), "yyyy-MM-dd");
 
-  if (!transactions || transactions.length === 0) {
-    return (
-      <div className="rounded-xl border border-border bg-card p-12 text-center">
-        <div className="mx-auto w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-          <Search className="w-8 h-8 text-muted-foreground" />
-        </div>
-        <h3 className="text-lg font-medium text-foreground">Aún no tienes movimientos</h3>
-        <p className="mt-1 text-sm text-muted-foreground max-w-xs mx-auto">
-          Registra tu primer ingreso o gasto para comenzar a ver tu historial.
-        </p>
-        <div className="mt-6 flex items-center justify-center gap-3">
-          <a
-            href="/transacciones/nuevo?type=expense"
-            className={cn(
-              "inline-flex items-center gap-2 px-4 py-2",
-              "bg-primary text-primary-foreground",
-              "rounded-lg font-medium text-sm",
-              "hover:shadow-finn-elevated hover:-translate-y-0.5",
-              "transition-all duration-150"
-            )}
-          >
-            Registrar gasto
-          </a>
-          <a
-            href="/transacciones/nuevo?type=income"
-            className={cn(
-              "inline-flex items-center gap-2 px-4 py-2",
-              "border border-border bg-card text-foreground",
-              "rounded-lg font-medium text-sm",
-              "hover:bg-muted/50",
-              "transition-colors"
-            )}
-          >
-            Registrar ingreso
-          </a>
-        </div>
-      </div>
-    );
-  }
+  const [result, accountsResult, categoriesResult] = await Promise.all([
+    getTransactionsAction({
+      type: filters.type,
+      accountId: filters.accountId,
+      categoryId: filters.categoryId,
+      startDate: filters.from,
+      endDate: filters.to,
+      search: filters.search,
+      limit: TRANSACTIONS_PAGE_SIZE,
+      offset: (filters.page - 1) * TRANSACTIONS_PAGE_SIZE,
+    }),
+    getAccountsAction({ includeArchived: true }),
+    getCategoriesAction(),
+  ]);
 
-  const groupedTransactions = transactions.reduce(
+  const accounts = "data" in accountsResult && accountsResult.data ? accountsResult.data : [];
+  const categories = "data" in categoriesResult && categoriesResult.data ? categoriesResult.data : [];
+  const transactions = "data" in result && result.data ? result.data : [];
+  const count = "count" in result && typeof result.count === "number" ? result.count : transactions.length;
+  const totalPages = getTotalPages(count);
+
+  const grouped = transactions.reduce(
     (acc, tx) => {
-      const dateKey = tx.transaction_date;
-      if (!acc[dateKey]) {
-        acc[dateKey] = [];
-      }
-      acc[dateKey].push(tx);
+      (acc[tx.transaction_date] ??= []).push(tx);
       return acc;
     },
     {} as Record<string, typeof transactions>
   );
+  const dates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
-  const sortedDates = Object.keys(groupedTransactions).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+  const actionLink = "inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors";
 
-  return (
-    <div className="space-y-6">
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <ScrollArea className="h-[600px] lg:h-auto max-h-[600px]">
-          <Table>
-            <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-              <TableRow>
-                <TableHead className="text-left">Fecha</TableHead>
-                <TableHead className="text-left">Descripción</TableHead>
-                <TableHead className="text-left hidden md:table-cell">Categoría</TableHead>
-                <TableHead className="text-left hidden lg:table-cell">Cuenta</TableHead>
-                <TableHead className="text-left hidden md:table-cell">Tipo</TableHead>
-                <TableHead className="text-right">Monto</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedDates.map((dateKey) => {
-                const dayTransactions = groupedTransactions[dateKey];
-                const dateObj = new Date(dateKey + "T00:00:00");
-                const today = new Date();
-                const isToday = dateKey === format(today, "yyyy-MM-dd");
-                const isYesterday = dateKey === format(subDays(today, 1), "yyyy-MM-dd");
-
-                return (
-                  <tbody key={dateKey} className="divide-y divide-border/50">
-                    <TableRow className="bg-muted/30">
-                      <TableCell colSpan={6} className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        {isToday ? "Hoy" : isYesterday ? "Ayer" : format(dateObj, "d 'de' MMMM 'de' yyyy", { locale: es })}
-                      </TableCell>
-                    </TableRow>
-                    {dayTransactions.map((transaction) => (
-                      <TableRow key={transaction.id} className="hover:bg-muted/30 transition-colors">
-                        <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">
-                          {format(new Date(transaction.transaction_date + "T00:00:00"), "HH:mm", { locale: es })}
-                        </TableCell>
-                        <TableCell className="text-left">
-                          <div className="flex items-center gap-3">
-                            <div className={cn(
-                              "p-2 rounded-lg",
-                              transaction.type === "INCOME" ? "bg-success/10 text-success" :
-                              transaction.type === "EXPENSE" ? "bg-danger/10 text-danger" :
-                              "bg-primary/10 text-primary"
-                            )}>
-                              {transaction.categories && (
-                                <span className="text-lg" aria-hidden="true">
-                                  {transaction.categories.icon || "💰"}
-                                </span>
-                              )}
-                              {!transaction.categories && (
-                                <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-foreground truncate">
-                                {transaction.description}
-                              </p>
-                              <p className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
-                                {transaction.categories && <span>{transaction.categories.name}</span>}
-                                {transaction.accounts && (
-                                  <>
-                                    {transaction.categories && <span>·</span>}
-                                    <span>{transaction.accounts.name}</span>
-                                  </>
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                          {transaction.categories?.name || "—"}
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                          {transaction.accounts?.name || "—"}
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <span className={cn(
-                            "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
-                            transaction.type === "INCOME" && "bg-success/10 text-success",
-                            transaction.type === "EXPENSE" && "bg-danger/10 text-danger",
-                            transaction.type === "TRANSFER" && "bg-primary/10 text-primary"
-                          )}>
-                            {transaction.type === "INCOME" && "Ingreso"}
-                            {transaction.type === "EXPENSE" && "Gasto"}
-                            {transaction.type === "TRANSFER" && "Transferencia"}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right font-semibold tabular-nums">
-                          <p className={cn(
-                            transaction.type === "INCOME" ? "text-success" :
-                            transaction.type === "EXPENSE" ? "text-danger" :
-                            "text-primary"
-                          )}>
-                            {transaction.type === "INCOME" ? "+" : transaction.type === "EXPENSE" ? "-" : ""}
-                            {formatCurrency(Number(transaction.amount), transaction.currency_code)}
-                          </p>
-                          {transaction.type === "TRANSFER" && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {transaction.direction === "INFLOW" ? "Entrada" : "Salida"}
-                            </p>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </tbody>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </ScrollArea>
-        {count && count > 50 && (
-          <div className="border-t border-border p-4 text-center text-sm text-muted-foreground">
-            Mostrando 50 de {count} movimientos. Filtros avanzados próximamente.
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-export default async function TransaccionesPage() {
   return (
     <main className="p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground font-heading">
-              Movimientos
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Historial de tus transacciones
-            </p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground font-heading">Movimientos</h1>
+            <p className="text-muted-foreground mt-1">Historial de tus transacciones</p>
           </div>
-          <div className="flex items-center gap-3">
-            <a
-              href="/transacciones/nuevo?type=expense"
-              className={cn(
-                "inline-flex items-center gap-2 px-4 py-2",
-                "bg-primary text-primary-foreground",
-                "rounded-lg font-medium text-sm",
-                "hover:shadow-finn-elevated hover:-translate-y-0.5",
-                "transition-all duration-150"
-              )}
-            >
+          <div className="flex flex-wrap items-center gap-3">
+            <Link href="/transacciones/transferir" className={cn(actionLink, "border border-border bg-card text-foreground hover:bg-muted/50")}>
+              <ArrowLeftRight className="w-4 h-4" aria-hidden="true" />
+              Transferir
+            </Link>
+            <Link href="/transacciones/nuevo?type=income" className={cn(actionLink, "border border-border bg-card text-foreground hover:bg-muted/50")}>
+              Registrar ingreso
+            </Link>
+            <Link href="/transacciones/nuevo?type=expense" className={cn(actionLink, "bg-primary text-primary-foreground hover:shadow-finn-elevated")}>
               Registrar gasto
-            </a>
+            </Link>
           </div>
         </header>
 
-        <div className="rounded-xl border border-border bg-card p-4 sm:p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            <Tabs defaultValue="all" className="w-full sm:w-auto">
-              <TabsList className="grid w-full sm:w-auto grid-cols-3 bg-muted p-1">
-                <TabsTrigger value="all" className="data-[state=active]:bg-background data-[state=active]:shadow-finn-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
-                  Todos
-                </TabsTrigger>
-                <TabsTrigger value="EXPENSE" className="data-[state=active]:bg-background data-[state=active]:shadow-finn-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
-                  Gastos
-                </TabsTrigger>
-                <TabsTrigger value="INCOME" className="data-[state=active]:bg-background data-[state=active]:shadow-finn-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
-                  Ingresos
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="relative flex-1 max-w-xs">
+        <form method="get" role="search" aria-label="Filtrar movimientos" className="rounded-xl border border-border bg-card p-4 sm:p-6 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="lg:col-span-2">
+              <label htmlFor="q" className="text-sm font-medium text-foreground">Buscar</label>
+              <div className="relative mt-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-                <Input
-                  type="search"
-                  placeholder="Buscar movimientos..."
-                  className="pl-10 pr-4 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                  aria-label="Buscar movimientos"
-                />
+                <input id="q" name="q" type="search" defaultValue={filters.search} maxLength={100} placeholder="Descripción del movimiento" className={cn(selectClass, "pl-9")} />
               </div>
-              <Button variant="outline" size="icon" className="hidden sm:flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
-                <Filter className="w-4 h-4" />
-              </Button>
+            </div>
+            <div>
+              <label htmlFor="type" className="text-sm font-medium text-foreground">Tipo</label>
+              <select id="type" name="type" defaultValue={filters.type ?? ""} className={cn(selectClass, "mt-1")}>
+                <option value="">Todos</option>
+                <option value="EXPENSE">Gastos</option>
+                <option value="INCOME">Ingresos</option>
+                <option value="TRANSFER">Transferencias</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="account" className="text-sm font-medium text-foreground">Cuenta</label>
+              <select id="account" name="account" defaultValue={filters.accountId ?? ""} className={cn(selectClass, "mt-1")}>
+                <option value="">Todas</option>
+                {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="category" className="text-sm font-medium text-foreground">Categoría</label>
+              <select id="category" name="category" defaultValue={filters.categoryId ?? ""} className={cn(selectClass, "mt-1")}>
+                <option value="">Todas</option>
+                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="from" className="text-sm font-medium text-foreground">Desde</label>
+              <input id="from" name="from" type="date" defaultValue={filters.from} className={cn(selectClass, "mt-1")} />
+            </div>
+            <div>
+              <label htmlFor="to" className="text-sm font-medium text-foreground">Hasta</label>
+              <input id="to" name="to" type="date" defaultValue={filters.to} className={cn(selectClass, "mt-1")} />
             </div>
           </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="submit" className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground">Filtrar</button>
+            {activeFilters > 0 && (
+              <Link href="/transacciones" className="text-sm text-primary hover:underline font-medium">
+                Limpiar filtros ({activeFilters})
+              </Link>
+            )}
+          </div>
+        </form>
 
-          <Suspense fallback={
-            <div className="rounded-xl border border-border bg-card p-8 text-center">
-              <div className="animate-pulse flex justify-center">
-                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
-              </div>
-              <p className="mt-4 text-sm text-muted-foreground">Cargando movimientos...</p>
+        {"error" in result && result.error ? (
+          <div className="rounded-xl border border-border bg-card p-12 text-center" role="alert">
+            <div className="mx-auto w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+              <AlertCircle className="w-8 h-8 text-destructive" aria-hidden="true" />
             </div>
-          }>
-            <Tabs defaultValue="all">
-              <TabsContent value="all">
-                <TransactionsList />
-              </TabsContent>
-              <TabsContent value="EXPENSE">
-                <TransactionsList initialType="EXPENSE" />
-              </TabsContent>
-              <TabsContent value="INCOME">
-                <TransactionsList initialType="INCOME" />
-              </TabsContent>
-            </Tabs>
-          </Suspense>
-        </div>
+            <h2 className="text-lg font-medium text-foreground">Error al cargar los movimientos</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{result.error}</p>
+            <Link href={`/transacciones${buildQuery(filters)}`} className="mt-4 inline-block text-sm text-primary hover:underline font-medium">
+              Reintentar
+            </Link>
+          </div>
+        ) : transactions.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card p-12 text-center">
+            <div className="mx-auto w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+              <Search className="w-8 h-8 text-muted-foreground" aria-hidden="true" />
+            </div>
+            {activeFilters > 0 ? (
+              <>
+                <h2 className="text-lg font-medium text-foreground">Ningún movimiento coincide con tu búsqueda</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Prueba con otros filtros.</p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-lg font-medium text-foreground">Aún no tienes movimientos</h2>
+                <p className="mt-1 text-sm text-muted-foreground max-w-xs mx-auto">
+                  Registra tu primer ingreso o gasto para comenzar a entender tus finanzas.
+                </p>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-left">Descripción</TableHead>
+                    <TableHead className="text-left hidden md:table-cell">Categoría</TableHead>
+                    <TableHead className="text-left hidden lg:table-cell">Cuenta</TableHead>
+                    <TableHead className="text-left hidden md:table-cell">Tipo</TableHead>
+                    <TableHead className="text-right">Monto</TableHead>
+                    <TableHead className="w-12"><span className="sr-only">Acciones</span></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dates.map((dateKey) => (
+                    <Fragment key={dateKey}>
+                      <TableRow className="bg-muted/30">
+                        <TableCell colSpan={6} className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          {dateKey === today ? "Hoy" : dateKey === yesterday ? "Ayer" : format(parseISO(dateKey), "d 'de' MMMM 'de' yyyy", { locale: es })}
+                        </TableCell>
+                      </TableRow>
+                      {grouped[dateKey].map((tx) => (
+                        <TableRow key={tx.id} className="hover:bg-muted/30 transition-colors">
+                          <TableCell className="text-left">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={cn(
+                                  "p-2 rounded-lg",
+                                  tx.type === "INCOME" ? "bg-success/10 text-success" : tx.type === "EXPENSE" ? "bg-danger/10 text-danger" : "bg-primary/10 text-primary"
+                                )}
+                              >
+                                {tx.categories ? (
+                                  <span className="text-lg" aria-hidden="true">{tx.categories.icon || "💰"}</span>
+                                ) : (
+                                  <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-foreground truncate">{tx.description}</p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {[tx.categories?.name, tx.accounts?.name].filter(Boolean).join(" · ")}
+                                </p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{tx.categories?.name || "—"}</TableCell>
+                          <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">{tx.accounts?.name || "—"}</TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <span
+                              className={cn(
+                                "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
+                                tx.type === "INCOME" && "bg-success/10 text-success",
+                                tx.type === "EXPENSE" && "bg-danger/10 text-danger",
+                                tx.type === "TRANSFER" && "bg-primary/10 text-primary"
+                              )}
+                            >
+                              {tx.type === "INCOME" ? "Ingreso" : tx.type === "EXPENSE" ? "Gasto" : "Transferencia"}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right font-semibold tabular-nums">
+                            <p className={cn(tx.type === "INCOME" ? "text-success" : tx.type === "EXPENSE" ? "text-danger" : "text-primary")}>
+                              {tx.type === "INCOME" ? "+" : tx.type === "EXPENSE" ? "-" : ""}
+                              {formatCurrency(Number(tx.amount), tx.currency_code)}
+                            </p>
+                            {tx.type === "TRANSFER" && (
+                              <p className="text-xs text-muted-foreground mt-0.5">{tx.direction === "INFLOW" ? "Entrada" : "Salida"}</p>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Link
+                              href={`/transacciones/${tx.id}/editar`}
+                              aria-label={`Ver o editar ${tx.description}`}
+                              className="inline-flex p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                            >
+                              <Pencil className="w-4 h-4" aria-hidden="true" />
+                            </Link>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </Fragment>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            <nav aria-label="Paginación" className="flex items-center justify-between gap-3 border-t border-border p-4 text-sm text-muted-foreground">
+              <span aria-live="polite">
+                {count} {count === 1 ? "movimiento" : "movimientos"} · página {filters.page} de {totalPages}
+              </span>
+              <div className="flex gap-2">
+                {filters.page > 1 && (
+                  <Link href={`/transacciones${buildQuery(filters, { page: filters.page - 1 })}`} className="rounded-lg border border-border px-3 py-1.5 hover:bg-muted">
+                    Anterior
+                  </Link>
+                )}
+                {filters.page < totalPages && (
+                  <Link href={`/transacciones${buildQuery(filters, { page: filters.page + 1 })}`} className="rounded-lg border border-border px-3 py-1.5 hover:bg-muted">
+                    Siguiente
+                  </Link>
+                )}
+              </div>
+            </nav>
+          </div>
+        )}
       </div>
     </main>
   );

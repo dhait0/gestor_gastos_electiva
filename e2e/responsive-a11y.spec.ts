@@ -9,6 +9,9 @@ const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.E2E_POR
 
 const ROUTES = [
   "/dashboard",
+  "/transacciones/transferir",
+  "/presupuestos/copiar?month=2026-11",
+  "/recurrentes/nuevo",
   "/cuentas",
   "/categorias",
   "/transacciones",
@@ -48,10 +51,14 @@ async function login(page: Page, email: string, password: string) {
   await page.waitForURL(/\/(dashboard|onboarding)/, { timeout: 15000 });
 }
 
-test.describe("Responsive y accesibilidad (P01)", () => {
-  test.use({ viewport: { width: 390, height: 844 } });
+for (const [name, viewport] of [
+  ["móvil 390 px", { width: 390, height: 844 }],
+  ["escritorio 1280 px", { width: 1280, height: 800 }],
+] as const) {
+  test.describe(`Responsive y accesibilidad (P01) · ${name}`, () => {
+  test.use({ viewport });
 
-  test("las rutas principales no desbordan en móvil y exponen controles con nombre", async ({ page }) => {
+  test("las rutas principales no desbordan y exponen controles con nombre", async ({ page }) => {
     test.setTimeout(240000);
     await login(page, `test-a11y-${Date.now()}@finwise.test`, "TestPass123!");
 
@@ -122,4 +129,5 @@ test.describe("Responsive y accesibilidad (P01)", () => {
 
     expect(problems, problems.join("\n")).toEqual([]);
   });
-});
+  });
+}

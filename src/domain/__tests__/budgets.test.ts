@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateBudgetUsage, getBudgetMonthRange, getBudgetStatus } from "../budgets";
+import { calculateBudgetUsage, getBudgetMonthRange, getBudgetStatus, planBudgetCopy, shiftMonth } from "../budgets";
 import type { Transaction, TransactionType } from "../transactions";
 
 const budget = { category_id: "c1", period_month: "2026-11-01", limit_amount: "1000", currency_code: "COP" };
@@ -95,5 +95,47 @@ describe("calculateBudgetUsage", () => {
   it("conserva precisión decimal", () => {
     const u = calculateBudgetUsage([tx("1", "0.1", "2026-11-05"), tx("2", "0.2", "2026-11-05")], budget);
     expect(u.spent.toString()).toBe("0.3");
+  });
+});
+
+describe("shiftMonth", () => {
+  it("avanza y retrocede cruzando el año", () => {
+    expect(shiftMonth("2026-11", 1)).toBe("2026-12");
+    expect(shiftMonth("2026-12", 1)).toBe("2027-01");
+    expect(shiftMonth("2026-01", -1)).toBe("2025-12");
+    expect(shiftMonth("2026-03", -14)).toBe("2025-01");
+  });
+});
+
+describe("planBudgetCopy (UC-25)", () => {
+  const previous = [
+    { id: "p1", category_id: "c1", limit_amount: "100" },
+    { id: "p2", category_id: "c2", limit_amount: "200" },
+    { id: "p3", category_id: "c3", limit_amount: "300" },
+  ];
+
+  it("copia todos si no hay selección ni existentes", () => {
+    const plan = planBudgetCopy(previous, []);
+    expect(plan.toCreate.map((b) => b.id)).toEqual(["p1", "p2", "p3"]);
+    expect(plan.skipped).toEqual([]);
+  });
+  it("copia solo los seleccionados", () => {
+    expect(planBudgetCopy(previous, [], ["p2"]).toCreate.map((b) => b.id)).toEqual(["p2"]);
+    expect(planBudgetCopy(previous, [], []).toCreate).toEqual([]);
+  });
+  it("evita duplicados: las categorías que ya tienen presupuesto se omiten", () => {
+    const plan = planBudgetCopy(previous, ["c2"]);
+    expect(plan.toCreate.map((b) => b.id)).toEqual(["p1", "p3"]);
+    expect(plan.skipped.map((b) => b.id)).toEqual(["p2"]);
+  });
+  it("no duplica una categoría repetida dentro del mes origen", () => {
+    const plan = planBudgetCopy([...previous, { id: "p4", category_id: "c1", limit_amount: "999" }], []);
+    expect(plan.toCreate.map((b) => b.id)).toEqual(["p1", "p2", "p3"]);
+    expect(plan.skipped.map((b) => b.id)).toEqual(["p4"]);
+  });
+  it("ignora ids seleccionados que no existen y no muta la entrada", () => {
+    const copy = JSON.stringify(previous);
+    expect(planBudgetCopy(previous, [], ["zzz"]).toCreate).toEqual([]);
+    expect(JSON.stringify(previous)).toBe(copy);
   });
 });

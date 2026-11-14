@@ -1,5 +1,6 @@
 "use client";
 
+import { preventFormReset, resetFormFields } from "@/lib/keep-form-on-error";
 import { useActionState, useEffect, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
@@ -23,7 +24,7 @@ export function AddContributionForm({ goalId, disabled }: { goalId: string; disa
   const succeeded = "data" in state && !!state.data;
   useEffect(() => {
     if (succeeded) {
-      formRef.current?.reset();
+      resetFormFields(formRef.current);
       router.refresh();
     }
   }, [succeeded, state, router]);
@@ -33,7 +34,7 @@ export function AddContributionForm({ goalId, disabled }: { goalId: string; disa
   const generalError = "error" in state && typeof state.error === "string" ? state.error : undefined;
 
   return (
-    <form ref={formRef} action={formAction} className="space-y-3">
+    <form ref={formRef} action={formAction} onReset={preventFormReset} className="space-y-3">
       <input type="hidden" name="goal_id" value={goalId} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>

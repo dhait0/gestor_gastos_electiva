@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { preventFormReset } from "@/lib/keep-form-on-error";
+import { Suspense, useActionState, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,11 +21,18 @@ interface Option {
   name: string;
 }
 
-export default function NuevoRecurrentePage() {
+function NuevoRecurrenteForm() {
   const router = useRouter();
+  const params = useSearchParams();
   const [state, formAction, isPending] = useActionState(createRecurringAction, initialState);
-  const [type, setType] = useState<"INCOME" | "EXPENSE">("EXPENSE");
-  const [frequency, setFrequency] = useState("MONTHLY");
+  // Los parámetros permiten precargar una sugerencia detectada (UC-30); el usuario siempre confirma
+  const [type, setType] = useState<"INCOME" | "EXPENSE">(params.get("type") === "INCOME" ? "INCOME" : "EXPENSE");
+  const suggestedFrequency = params.get("frequency");
+  const [frequency, setFrequency] = useState(
+    suggestedFrequency && ["WEEKLY", "MONTHLY", "QUARTERLY", "YEARLY", "CUSTOM"].includes(suggestedFrequency) ? suggestedFrequency : "MONTHLY"
+  );
+  const [accountId, setAccountId] = useState(params.get("account") ?? "");
+  const [categoryId, setCategoryId] = useState(params.get("category") ?? "");
   const [accounts, setAccounts] = useState<Option[]>([]);
   const [categories, setCategories] = useState<Option[]>([]);
 
@@ -51,35 +59,39 @@ export default function NuevoRecurrentePage() {
   const fieldError = (field: string) =>
     "error" in state && state.error && typeof state.error === "object" ? state.error[field]?.[0] : undefined;
   const generalError = "error" in state && typeof state.error === "string" ? state.error : undefined;
-  const today = new Date().toISOString().split("T")[0];
+  const suggestedStart = params.get("start");
+  const today = suggestedStart && /^\d{4}-\d{2}-\d{2}$/.test(suggestedStart) ? suggestedStart : new Date().toISOString().split("T")[0];
 
   return (
     <main className="p-4 sm:p-6 lg:p-8">
-      <form action={formAction} className="mx-auto max-w-2xl space-y-6">
+      <form action={formAction} onReset={preventFormReset} className="mx-auto max-w-2xl space-y-6">
         <h1 className="text-2xl font-bold text-foreground font-heading">Nuevo movimiento recurrente</h1>
 
         <div>
           <Label htmlFor="name">Nombre *</Label>
-          <Input id="name" name="name" required maxLength={100} disabled={isPending} placeholder="Ej: Arriendo" />
+          <Input id="name" name="name" required maxLength={100} disabled={isPending} placeholder="Ej: Arriendo" defaultValue={params.get("name")?.slice(0, 100) ?? ""} />
           {fieldError("name") && <p className="mt-1 text-sm text-destructive" role="alert">{fieldError("name")}</p>}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="type">Tipo *</Label>
-            <select id="type" name="type" value={type} onChange={(e) => setType(e.target.value as "INCOME" | "EXPENSE")} className={selectClass} disabled={isPending}>
+            <select id="type" name="type" value={type} onChange={(e) => {
+                setType(e.target.value as "INCOME" | "EXPENSE");
+                setCategoryId("");
+              }} className={selectClass} disabled={isPending}>
               <option value="EXPENSE">Gasto</option>
               <option value="INCOME">Ingreso</option>
             </select>
           </div>
           <div>
             <Label htmlFor="amount">Monto *</Label>
-            <Input id="amount" name="amount" type="number" step="0.01" min="0.01" required disabled={isPending} className="tabular-nums" />
+            <Input id="amount" name="amount" type="number" step="0.01" min="0.01" required disabled={isPending} className="tabular-nums" defaultValue={/^\d+(\.\d+)?$/.test(params.get("amount") ?? "") ? (params.get("amount") as string) : ""} />
             {fieldError("amount") && <p className="mt-1 text-sm text-destructive" role="alert">{fieldError("amount")}</p>}
           </div>
           <div>
             <Label htmlFor="account_id">Cuenta *</Label>
-            <select id="account_id" name="account_id" required defaultValue="" className={selectClass} disabled={isPending}>
+            <select id="account_id" name="account_id" required value={accountId} onChange={(e) => setAccountId(e.target.value)} className={selectClass} disabled={isPending}>
               <option value="" disabled>Selecciona una cuenta</option>
               {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
@@ -87,7 +99,7 @@ export default function NuevoRecurrentePage() {
           </div>
           <div>
             <Label htmlFor="category_id">Categoría *</Label>
-            <select id="category_id" name="category_id" key={type} required defaultValue="" className={selectClass} disabled={isPending}>
+            <select id="category_id" name="category_id" required value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={selectClass} disabled={isPending}>
               <option value="" disabled>Selecciona una categoría</option>
               {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
@@ -137,5 +149,13 @@ export default function NuevoRecurrentePage() {
         </div>
       </form>
     </main>
+  );
+}
+
+export default function NuevoRecurrentePage() {
+  return (
+    <Suspense fallback={null}>
+      <NuevoRecurrenteForm />
+    </Suspense>
   );
 }

@@ -7,6 +7,7 @@ import {
   getFirstOccurrenceOnOrAfter,
   type RecurrenceFrequency,
 } from "@/domain/recurrence";
+import { detectRecurrences, normalizeDescription, type RecurrenceSuggestion } from "@/domain/recurrence-detection";
 import { z } from "zod";
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato de fecha inválido (YYYY-MM-DD)");
@@ -292,4 +293,88 @@ export async function registerDueOccurrencesAction(
   }
 
   return { registered, skipped };
+}
+
+export interface SuggestionRow {
+  key: string;
+  type: "INCOME" | "EXPENSE";
+  description: string;
+  amount: string;
+  currency_code: string;
+  category_id: string;
+  category_name: string;
+  account_id: string;
+  account_name: string;
+  frequency: RecurrenceSuggestion["frequency"];
+  occurrences: number;
+  lastDate: string;
+  nextDate: string;
+  confidence: "MEDIUM" | "HIGH";
+}
+
+/** Meses de historial que se analizan para detectar recurrencias. */
+const DETECTION_LOOKBACK_MONTHS = 13;
+
+/**
+ * Sugerencias de movimientos recurrentes detectados en el historial (UC-30).
+ * Solo lee: no crea nada; el usuario las confirma desde el formulario (UC-31).
+ */
+export async function getRecurrenceSuggestionsAction(): Promise<{ data: SuggestionRow[] } | { error: string }> {
+  const supabase = await createSupabaseServerClient();
+  const user = await getUser(supabase);
+  if (!user) return { error: "No autorizado" };
+
+  const today = todayInTimezone(await getTimezone(supabase, user.id));
+  const since = new Date(`${today}T00:00:00Z`);
+  since.setUTCMonth(since.getUTCMonth() - DETECTION_LOOKBACK_MONTHS);
+
+  const [{ data: transactions, error }, { data: existing }] = await Promise.all([
+    supabase
+      .from("transactions")
+      .select("id, type, description, amount, currency_code, category_id, account_id, transaction_date, recurring_transaction_id, accounts(name), categories(name)")
+      .eq("user_id", user.id)
+      .is("deleted_at", null)
+      .neq("type", "TRANSFER")
+      .gte("transaction_date", since.toISOString().slice(0, 10)),
+    supabase
+      .from("recurring_transactions")
+      .select("name, type")
+      .eq("user_id", user.id)
+      .is("deleted_at", null)
+      .neq("status", "CANCELLED"),
+  ]);
+
+  if (error) return { error: "Error al analizar los movimientos" };
+
+  const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? (v[0] ?? null) : v);
+  const names = new Map<string, { account: string; category: string }>();
+  for (const t of transactions ?? []) {
+    names.set(`a:${t.account_id}`, { account: one(t.accounts)?.name ?? "", category: "" });
+    if (t.category_id) names.set(`c:${t.category_id}`, { account: "", category: one(t.categories)?.name ?? "" });
+  }
+
+  const suggestions = detectRecurrences(
+    (transactions ?? []).map((t) => ({ ...t, amount: String(t.amount) })),
+    today,
+    (existing ?? []).map((r) => `${r.type.toLowerCase()}|${normalizeDescription(r.name)}`)
+  );
+
+  return {
+    data: suggestions.map((s) => ({
+      key: s.key,
+      type: s.type,
+      description: s.description,
+      amount: s.amount.toString(),
+      currency_code: s.currency_code,
+      category_id: s.category_id,
+      category_name: names.get(`c:${s.category_id}`)?.category ?? "",
+      account_id: s.account_id,
+      account_name: names.get(`a:${s.account_id}`)?.account ?? "",
+      frequency: s.frequency,
+      occurrences: s.occurrences,
+      lastDate: s.lastDate,
+      nextDate: s.nextDate,
+      confidence: s.confidence,
+    })),
+  };
 }
