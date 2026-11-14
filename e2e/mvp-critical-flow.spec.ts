@@ -382,3 +382,41 @@ test.describe("Presupuestos (G03)", () => {
     await expect(page.locator("text=Sin presupuestos en este mes")).toBeVisible();
   });
 });
+
+
+test.describe("Metas (H03)", () => {
+  test("crear meta, aportar, completarla y revertir al eliminar un aporte", async ({ page }) => {
+    const uniqueId = Date.now() + 7;
+    await registerUser(page, `test-goal-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Meta ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Meta", "1000000");
+
+    await page.goto(`${BASE_URL}/metas/nueva`);
+    await page.waitForLoadState("networkidle");
+    await page.fill('input[name="name"]', "Viaje E2E");
+    await page.fill('input[name="target_amount"]', "100000");
+    await page.click('main form button[type="submit"]');
+    await page.waitForURL(/\/metas\/[0-9a-f-]{36}$/, { timeout: 10000 });
+    await expect(page.getByRole("heading", { name: "Viaje E2E" })).toBeVisible();
+
+    // Aporte parcial: 40 %
+    await page.fill('input[name="amount"]', "40000");
+    await page.click('main form button[type="submit"]');
+    await expect(page.getByRole("progressbar").first()).toHaveAttribute("aria-valuenow", "40");
+
+    // Aporte que completa la meta
+    await page.fill('input[name="amount"]', "60000");
+    await page.click('main form button[type="submit"]');
+    await expect(page.locator("text=Meta cumplida")).toBeVisible();
+    await expect(page.locator("text=Cumplida").first()).toBeVisible();
+
+    // Eliminar el aporte de 60.000: vuelve a "En curso"
+    page.once("dialog", (d) => d.accept());
+    await page.getByRole("button", { name: "Eliminar aporte" }).first().click();
+    await expect(page.locator("text=En curso").first()).toBeVisible();
+    await expect(page.getByRole("progressbar").first()).toHaveAttribute("aria-valuenow", "40");
+
+    // Aportar no mueve dinero entre cuentas: el disponible sigue igual
+    await page.goto(`${BASE_URL}/dashboard`);
+    await expect(page.locator("main").first()).toContainText(/900[.,]000/);
+  });
+});
