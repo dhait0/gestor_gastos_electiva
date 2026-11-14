@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { Plus, Repeat } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
-import { getRecurringAction } from "@/app/actions/recurring";
+import { getRecurrenceSuggestionsAction, getRecurringAction } from "@/app/actions/recurring";
 import { FREQUENCY_LABELS } from "@/domain/recurrence";
 import { AutoRegister, RecurringStatusControls, RegisterDueButton } from "@/components/recurring/RecurringControls";
 
 const STATUS_LABEL = { ACTIVE: "Activa", PAUSED: "En pausa", CANCELLED: "Cancelada" } as const;
 
 export default async function RecurrentesPage() {
-  const result = await getRecurringAction();
+  const [result, suggestionsResult] = await Promise.all([getRecurringAction(), getRecurrenceSuggestionsAction()]);
+  const suggestions = "data" in suggestionsResult ? suggestionsResult.data : [];
 
   if ("error" in result) {
     return (
@@ -40,6 +41,49 @@ export default async function RecurrentesPage() {
             Nuevo recurrente
           </Link>
         </header>
+
+        {suggestions.length > 0 && (
+          <section aria-labelledby="suggestions-heading" className="space-y-3">
+            <h2 id="suggestions-heading" className="text-lg font-semibold text-foreground">Detectamos posibles recurrentes</h2>
+            <p className="text-sm text-muted-foreground">
+              Son movimientos que se repiten en tu historial. No activamos nada hasta que lo confirmes.
+            </p>
+            <ul className="space-y-3" role="list">
+              {suggestions.map((s) => {
+                const query = new URLSearchParams({
+                  name: s.description,
+                  type: s.type,
+                  amount: s.amount,
+                  account: s.account_id,
+                  category: s.category_id,
+                  frequency: s.frequency,
+                  start: s.nextDate,
+                });
+                return (
+                  <li key={s.key} className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-foreground">{s.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {FREQUENCY_LABELS[s.frequency]} · {s.occurrences} repeticiones · último {s.lastDate} · próximo {s.nextDate}
+                        {s.confidence === "HIGH" ? " · confianza alta" : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold tabular-nums text-foreground">{formatCurrency(Number(s.amount), s.currency_code)}</span>
+                      <Link
+                        href={`/recurrentes/nuevo?${query.toString()}`}
+                        aria-label={`Crear recurrente para ${s.description}`}
+                        className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
+                      >
+                        Revisar y crear
+                      </Link>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         {items.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-8 text-center">

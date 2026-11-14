@@ -897,3 +897,66 @@ test.describe("Presupuestos: editar y copiar mes anterior (UC-24, UC-25)", () =>
     await expect(page.getByText(/mayor a 0/)).toBeVisible();
   });
 });
+
+
+test.describe("Detección de recurrencias (UC-30)", () => {
+  test.skip(!SERVICE_URL || !SERVICE_KEY, "Requiere E2E_SUPABASE_URL y E2E_SERVICE_ROLE_KEY para sembrar el historial");
+
+  test("sugiere un patrón mensual, se confirma con el formulario y no se vuelve a sugerir", async ({ page }) => {
+    const uniqueId = Date.now() + 21;
+    const email = `test-detect-${uniqueId}@finwise.test`;
+    await registerUser(page, email, "TestPass123!", `Usuario Detección ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Detección", "1000000");
+
+    // Historial: 3 gastos "Netflix" los días 1 de los 3 meses anteriores, sembrados con la clave service
+    const service = serviceClient();
+    const userId = await findUserId(email);
+    const { data: account } = await service.from("accounts").select("id").eq("user_id", userId).single();
+    const { data: category } = await service.from("categories").select("id").eq("user_id", userId).eq("type", "EXPENSE").limit(1).single();
+    const now = new Date();
+    const rows = [3, 2, 1].map((back) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - back, 1);
+      return {
+        user_id: userId,
+        account_id: account!.id,
+        category_id: category!.id,
+        type: "EXPENSE",
+        direction: "OUTFLOW",
+        amount: 30000,
+        description: `Netflix ${d.getMonth() + 1}`,
+        transaction_date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`,
+      };
+    });
+    const { error } = await service.from("transactions").insert(rows);
+    expect(error).toBeNull();
+
+    await page.goto(`${BASE_URL}/recurrentes`);
+    await expect(page.getByRole("heading", { name: "Detectamos posibles recurrentes" })).toBeVisible();
+    await expect(page.getByText("No activamos nada hasta que lo confirmes")).toBeVisible();
+    await expect(page.getByText(/Mensual · 3 repeticiones/)).toBeVisible();
+    // Nada se creó por sí solo
+    await expect(page.getByText("Aún no tienes movimientos recurrentes")).toBeVisible();
+
+    await page.getByRole("link", { name: /Crear recurrente para Netflix/ }).click();
+    await expect(page.locator('input[name="name"]')).toHaveValue(/Netflix/);
+    await expect(page.locator('input[name="amount"]')).toHaveValue("30000");
+    await expect(page.locator('select[name="frequency"]')).toHaveValue("MONTHLY");
+    await expect(page.locator('select[name="category_id"]')).toHaveValue(category!.id);
+    await expect(page.locator('select[name="account_id"]')).toHaveValue(account!.id);
+    await page.click('main form button[type="submit"]');
+    await page.waitForURL(`${BASE_URL}/recurrentes`, { timeout: 10000 });
+
+    // Ya existe: no se vuelve a sugerir, y la próxima fecha es futura (no registra atrasados)
+    await expect(page.getByRole("heading", { name: "Detectamos posibles recurrentes" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Registrar \d+ vencido/ })).toHaveCount(0);
+  });
+
+  test("sin historial suficiente no se sugiere nada", async ({ page }) => {
+    const uniqueId = Date.now() + 22;
+    await registerUser(page, `test-nodetect-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Sin Patrón ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Sin Patrón", "1000");
+    await createTransaction(page, "expense", "10000", "Compra suelta");
+    await page.goto(`${BASE_URL}/recurrentes`);
+    await expect(page.getByRole("heading", { name: "Detectamos posibles recurrentes" })).toHaveCount(0);
+  });
+});
