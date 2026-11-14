@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Home, List, Plus, LayoutDashboard, CreditCard, TrendingUp, Settings, LogOut, User, PiggyBank, Target, Repeat, CalendarClock, Landmark, Bell } from "lucide-react";
+import { Home, List, Plus, LayoutDashboard, CreditCard, TrendingUp, Settings, LogOut, User, PiggyBank, Target, Repeat, CalendarClock, Landmark, Bell, Shield } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -18,6 +18,8 @@ const mobileNav = [
   { href: "/cuentas", label: "Cuentas", icon: CreditCard },
   { href: "/obligaciones", label: "Obligaciones", icon: TrendingUp },
 ];
+
+const adminNavItem = { href: "/admin", label: "Administración", icon: Shield };
 
 const desktopNav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -67,7 +69,7 @@ function MobileNav({ pathname }: { pathname: string }) {
   );
 }
 
-function DesktopSidebar({ pathname }: { pathname: string }) {
+function DesktopSidebar({ pathname, showAdmin }: { pathname: string; showAdmin: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -84,7 +86,7 @@ function DesktopSidebar({ pathname }: { pathname: string }) {
               <h1 className="text-xl font-bold text-foreground font-heading">Lukiva</h1>
             </div>
             <ul className="flex-1 space-y-1 p-4" role="list">
-              {desktopNav.map((item) => (
+              {[...desktopNav, ...(showAdmin ? [adminNavItem] : [])].map((item) => (
                 <li key={item.label}>
                   <Link
                     href={item.href}
@@ -147,14 +149,14 @@ function UserMenu() {
   );
 }
 
-function AppHeader() {
+function AppHeader({ showAdmin }: { showAdmin: boolean }) {
   const pathname = usePathname();
 
   return (
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
       <div className="flex items-center justify-between h-16 px-4">
         <div className="flex items-center gap-4">
-          <DesktopSidebar pathname={pathname} />
+          <DesktopSidebar pathname={pathname} showAdmin={showAdmin} />
           <h1 className="text-lg font-bold text-foreground font-heading hidden sm:block">
             Lukiva
           </h1>
@@ -165,13 +167,13 @@ function AppHeader() {
   );
 }
 
-export function AppLayoutClient({ children }: { children: React.ReactNode }) {
+export function AppLayoutClient({ children, showAdmin = false }: { children: React.ReactNode; showAdmin?: boolean }) {
   const pathname = usePathname();
 
   return (
     <ToastProvider>
       <div className="min-h-screen bg-background flex flex-col">
-        <AppHeader />
+        <AppHeader showAdmin={showAdmin} />
         <main className="flex-1 pb-20">{children}</main>
         <MobileNav pathname={pathname} />
       </div>

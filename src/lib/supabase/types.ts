@@ -43,6 +43,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"admin_audit_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"created_at": string,"id": string,"metadata": NonNullable<Json>,"target_user_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"created_at"?: string,"id"?: string,"metadata"?: NonNullable<Json>,"target_user_id"?: string | null
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"created_at"?: string,"id"?: string,"metadata"?: NonNullable<Json>,"target_user_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "admin_audit_logs_actor_id_fkey"
+      columns: ["actor_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "admin_audit_logs_target_user_id_fkey"
+      columns: ["target_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"alerts": {
                   Row: {
                     "created_at": string,"dedup_key": string | null,"expires_at": string | null,"id": string,"is_read": boolean,"message": string,"metadata": NonNullable<Json>,"read_at": string | null,"severity": Database["public"]['Enums']["alert_severity"],"title": string,"type": string,"user_id": string
@@ -221,6 +247,20 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"permissions": {
+                  Row: {
+                    "created_at": string,"description": string,"id": string,"key": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"description": string,"id"?: string,"key": string
+                  }
+                  Update: {
+                    "created_at"?: string,"description"?: string,"id"?: string,"key"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"profiles": {
                   Row: {
                     "created_at": string,"currency_code": string,"display_name": string | null,"id": string,"locale": string,"safety_reserve": number,"timezone": string,"updated_at": string
@@ -266,6 +306,46 @@ isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
     }
+                  ]
+                },"role_permissions": {
+                  Row: {
+                    "permission_id": string,"role_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "permission_id": string,"role_id": string
+                  }
+                  Update: {
+                    "permission_id"?: string,"role_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "role_permissions_permission_id_fkey"
+      columns: ["permission_id"]
+isOneToOne: false
+      referencedRelation: "permissions"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "role_permissions_role_id_fkey"
+      columns: ["role_id"]
+isOneToOne: false
+      referencedRelation: "roles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"roles": {
+                  Row: {
+                    "created_at": string,"description": string,"id": string,"key": string,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"description": string,"id"?: string,"key": string,"name": string
+                  }
+                  Update: {
+                    "created_at"?: string,"description"?: string,"id"?: string,"key"?: string,"name"?: string
+                  }
+                  Relationships: [
+                    
                   ]
                 },"subscriptions": {
                   Row: {
@@ -337,13 +417,71 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"user_roles": {
+                  Row: {
+                    "granted_at": string,"granted_by": string | null,"role_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "granted_at"?: string,"granted_by"?: string | null,"role_id": string,"user_id": string
+                  }
+                  Update: {
+                    "granted_at"?: string,"granted_by"?: string | null,"role_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "user_roles_granted_by_fkey"
+      columns: ["granted_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "user_roles_role_id_fkey"
+      columns: ["role_id"]
+isOneToOne: false
+      referencedRelation: "roles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "user_roles_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
             [_ in never]: never
           }
           Functions: {
-            "record_debt_payment":
+            "admin_aggregate_metrics":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "metric": string,"value": number
+            }[]
+                           },
+"admin_list_audit_logs":
+{ Args: { "p_limit"?: number }; Returns: {
+              "action": string,"actor_email": string,"actor_id": string,"created_at": string,"id": string,"metadata": Json,"target_email": string,"target_user_id": string
+            }[]
+                           },
+"admin_list_users":
+{ Args: { "p_limit"?: number,"p_offset"?: number }; Returns: {
+              "created_at": string,"display_name": string,"email": string,"id": string,"role_key": string
+            }[]
+                           },
+"admin_set_user_role":
+{ Args: { "p_role_key": string,"p_target": string }; Returns: undefined
+                           },
+"current_user_permissions":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "permission_key": string
+            }[]
+                           },
+"current_user_role":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
+"record_debt_payment":
 { Args: { "p_amount": number,"p_debt_id": string,"p_interest"?: number,"p_notes"?: string,"p_payment_date"?: string }; Returns: string
                            },
 "void_debt_payment":

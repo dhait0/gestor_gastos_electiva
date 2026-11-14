@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { createClient } from "@supabase/supabase-js";
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
 
@@ -570,5 +571,96 @@ test.describe("Alertas (L03)", () => {
 
     await page.getByRole("button", { name: "Marcar leída" }).click();
     await expect(page.getByText("Estás al día")).toBeVisible();
+  });
+});
+
+
+// Asignar roles requiere la clave service del Supabase LOCAL; sin ella estos tests se omiten.
+const SERVICE_URL = process.env.E2E_SUPABASE_URL;
+const SERVICE_KEY = process.env.E2E_SERVICE_ROLE_KEY;
+
+function serviceClient() {
+  return createClient(SERVICE_URL!, SERVICE_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
+}
+
+async function findUserId(email: string): Promise<string> {
+  const { data, error } = await serviceClient().auth.admin.listUsers({ perPage: 1000 });
+  if (error) throw error;
+  const user = data.users.find((u) => u.email === email);
+  if (!user) throw new Error(`Usuario ${email} no encontrado`);
+  return user.id;
+}
+
+async function grantRole(email: string, roleKey: "support" | "admin") {
+  const service = serviceClient();
+  const userId = await findUserId(email);
+  const { data: role } = await service.from("roles").select("id").eq("key", roleKey).single();
+  const { error } = await service.from("user_roles").upsert({ user_id: userId, role_id: role!.id });
+  if (error) throw error;
+}
+
+test.describe("Administración (N)", () => {
+  test.skip(!SERVICE_URL || !SERVICE_KEY, "Requiere E2E_SUPABASE_URL y E2E_SERVICE_ROLE_KEY del Supabase local");
+
+  test("un usuario sin rol no accede a /admin (404) y no ve el acceso", async ({ page }) => {
+    const uniqueId = Date.now() + 12;
+    await registerUser(page, `test-plain-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Normal ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Normal", "1000");
+
+    for (const path of ["/admin", "/admin/usuarios", "/admin/auditoria"]) {
+      await page.goto(`${BASE_URL}${path}`);
+      await expect(page.locator("text=This page could not be found")).toBeVisible();
+    }
+    await page.goto(`${BASE_URL}/dashboard`);
+    await expect(page.getByRole("link", { name: "Administración" })).toHaveCount(0);
+  });
+
+  test("soporte entra pero sin gestión de roles, métricas ni auditoría", async ({ page }) => {
+    const uniqueId = Date.now() + 13;
+    const email = `test-support-${uniqueId}@finwise.test`;
+    await registerUser(page, email, "TestPass123!", `Usuario Soporte ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Soporte", "1000");
+    await grantRole(email, "support");
+
+    await page.goto(`${BASE_URL}/admin`);
+    await expect(page.getByRole("heading", { name: "Administración", level: 1 })).toBeVisible();
+    await expect(page.getByText("Tu rol no incluye métricas")).toBeVisible();
+
+    await page.goto(`${BASE_URL}/admin/usuarios`);
+    await expect(page.getByRole("heading", { name: "Usuarios" })).toBeVisible();
+    await expect(page.getByRole("combobox", { name: /Rol de/ })).toHaveCount(0);
+
+    await page.goto(`${BASE_URL}/admin/auditoria`);
+    await expect(page.locator("text=This page could not be found")).toBeVisible();
+  });
+
+  test("el admin cambia un rol, ve métricas sin importes y el cambio queda auditado", async ({ page }) => {
+    const uniqueId = Date.now() + 14;
+    const adminEmail = `test-admin-${uniqueId}@finwise.test`;
+    const targetEmail = `test-target-${uniqueId}@finwise.test`;
+
+    const { error } = await serviceClient().auth.admin.createUser({ email: targetEmail, password: "TestPass123!", email_confirm: true });
+    expect(error).toBeNull();
+
+    await registerUser(page, adminEmail, "TestPass123!", `Usuario Admin ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Admin", "1000");
+    await grantRole(adminEmail, "admin");
+
+    await page.goto(`${BASE_URL}/admin`);
+    await expect(page.getByText("Usuarios registrados")).toBeVisible();
+    // Las métricas son solo conteos: ni símbolo de moneda ni importes
+    await expect(page.getByRole("region", { name: "Métricas" })).not.toContainText(/\$|saldo|importe/i);
+
+    await page.goto(`${BASE_URL}/admin/usuarios`);
+    const select = page.getByRole("combobox", { name: `Rol de ${targetEmail}` });
+    await select.selectOption("support");
+    await expect(select).toHaveValue("support");
+    // No se puede cambiar el propio rol: no hay selector para la fila propia
+    await expect(page.getByRole("combobox", { name: `Rol de ${adminEmail}` })).toHaveCount(0);
+
+    await page.goto(`${BASE_URL}/admin/auditoria`);
+    await expect(page.getByText("Cambio de rol").first()).toBeVisible();
+    await expect(page.getByText(new RegExp(targetEmail)).first()).toBeVisible();
+    await expect(page.getByText(/user → support/).first()).toBeVisible();
   });
 });

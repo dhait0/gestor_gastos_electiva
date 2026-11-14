@@ -32,8 +32,12 @@ async function createTestUser(suffix: string) {
   });
   if (createError) throw createError;
   
-  // Sign in to get access token
-  const { data, error } = await anon.auth.signInWithPassword({ email, password });
+  // Sign in with a throwaway client: signing in on the shared `anon` client would
+  // leave it authenticated and make every "anon cannot ..." test meaningless.
+  const signInClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data, error } = await signInClient.auth.signInWithPassword({ email, password });
   if (error) throw error;
   if (!data.session) {
     throw new Error('No session returned from signIn');
@@ -520,7 +524,11 @@ describe('RLS - P0 Tables', () => {
       const email = `trigger-test-${Date.now()}@example.com`;
       const password = 'TestPass123!';
       
-      const { data: signUpData, error: signUpError } = await anon.auth.signUp({ email, password });
+      // Throwaway client: signUp may start a session and would turn the shared `anon` client into a user
+      const signUpClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const { data: signUpData, error: signUpError } = await signUpClient.auth.signUp({ email, password });
       expect(signUpError).toBeNull();
       expect(signUpData.user).not.toBeNull();
 
@@ -1130,5 +1138,201 @@ describe('alerts', () => {
     expect(bad.error).not.toBeNull();
     const good = await clientA.from('alerts').update({ is_read: true, read_at: new Date().toISOString() }).eq('id', alertA);
     expect(good.error).toBeNull();
+  });
+});
+
+
+describe('RBAC and administration (ADR-008)', () => {
+  let adminUser: TestUser;
+  let supportUser: TestUser;
+  let plainUser: TestUser;
+
+  async function grant(user: TestUser, roleKey: 'support' | 'admin') {
+    const { data: role } = await service.from('roles').select('id').eq('key', roleKey).single();
+    const { error } = await service.from('user_roles').upsert({ user_id: user.id, role_id: role!.id });
+    expect(error).toBeNull();
+  }
+
+  beforeAll(async () => {
+    adminUser = await createTestUser('rbac-admin');
+    supportUser = await createTestUser('rbac-support');
+    plainUser = await createTestUser('rbac-plain');
+    await grant(adminUser, 'admin');
+    await grant(supportUser, 'support');
+  });
+
+  describe('default deny', () => {
+    it('a plain user has the user role and no permissions', async () => {
+      const { data: role } = await plainUser.client.rpc('current_user_role');
+      expect(role).toBe('user');
+      const { data: perms } = await plainUser.client.rpc('current_user_permissions');
+      expect(perms).toEqual([]);
+    });
+
+    it('a plain user cannot call any admin function', async () => {
+      expect((await plainUser.client.rpc('admin_list_users')).error).not.toBeNull();
+      expect((await plainUser.client.rpc('admin_aggregate_metrics')).error).not.toBeNull();
+      expect((await plainUser.client.rpc('admin_list_audit_logs')).error).not.toBeNull();
+      expect((await plainUser.client.rpc('admin_set_user_role', { p_target: supportUser.id, p_role_key: 'admin' })).error).not.toBeNull();
+    });
+
+    it('no client can read the RBAC reference tables or the audit log directly', async () => {
+      for (const table of ['roles', 'permissions', 'role_permissions', 'admin_audit_logs']) {
+        for (const client of [plainUser.client, adminUser.client, anon]) {
+          const { data } = await client.from(table).select('*');
+          expect(data ?? []).toEqual([]);
+        }
+      }
+    });
+
+    it('a user only sees their own user_roles row', async () => {
+      const { data: asAdmin } = await adminUser.client.from('user_roles').select('user_id');
+      expect(asAdmin!.map((r) => r.user_id)).toEqual([adminUser.id]);
+      const { data: asPlain } = await plainUser.client.from('user_roles').select('user_id');
+      expect(asPlain).toEqual([]);
+    });
+
+    it('anon cannot execute the admin functions', async () => {
+      expect((await anon.rpc('admin_list_users')).error).not.toBeNull();
+      expect((await anon.rpc('current_user_role')).error).not.toBeNull();
+    });
+  });
+
+  describe('no self-escalation', () => {
+    it('a user cannot write user_roles, even for themselves', async () => {
+      const { data: role } = await service.from('roles').select('id').eq('key', 'admin').single();
+      const insert = await plainUser.client.from('user_roles').insert({ user_id: plainUser.id, role_id: role!.id });
+      expect(insert.error).not.toBeNull();
+      const update = await supportUser.client.from('user_roles').update({ role_id: role!.id }).eq('user_id', supportUser.id).select();
+      expect(update.data ?? []).toEqual([]);
+      const { data: still } = await supportUser.client.rpc('current_user_role');
+      expect(still).toBe('support');
+    });
+
+    it('support cannot change roles (no escalation to admin)', async () => {
+      const { error } = await supportUser.client.rpc('admin_set_user_role', { p_target: plainUser.id, p_role_key: 'admin' });
+      expect(error).not.toBeNull();
+      const { data: role } = await plainUser.client.rpc('current_user_role');
+      expect(role).toBe('user');
+    });
+
+    it('the private bootstrap function is not reachable from the API', async () => {
+      const { error } = await plainUser.client.rpc('bootstrap_first_admin', { p_user: plainUser.id });
+      expect(error).not.toBeNull();
+    });
+  });
+
+  describe('support permissions', () => {
+    it('support can list users but not read metrics or the audit log', async () => {
+      const { data, error } = await supportUser.client.rpc('admin_list_users');
+      expect(error).toBeNull();
+      expect(data!.length).toBeGreaterThanOrEqual(3);
+      expect((await supportUser.client.rpc('admin_aggregate_metrics')).error).not.toBeNull();
+      expect((await supportUser.client.rpc('admin_list_audit_logs')).error).not.toBeNull();
+    });
+  });
+
+  describe('admin permissions and audit', () => {
+    it('admin sees aggregate metrics as counts only', async () => {
+      const { data, error } = await adminUser.client.rpc('admin_aggregate_metrics');
+      expect(error).toBeNull();
+      const keys = data!.map((m: { metric: string }) => m.metric);
+      expect(keys).toContain('users_total');
+      for (const m of data!) {
+        expect(Number.isInteger(Number(m.value))).toBe(true);
+        expect(m.metric).not.toMatch(/amount|balance|saldo|importe/);
+      }
+    });
+
+    it('admin cannot change their own role', async () => {
+      const { error } = await adminUser.client.rpc('admin_set_user_role', { p_target: adminUser.id, p_role_key: 'user' });
+      expect(error).not.toBeNull();
+    });
+
+    it('rejects an unknown role', async () => {
+      const { error } = await adminUser.client.rpc('admin_set_user_role', { p_target: plainUser.id, p_role_key: 'superadmin' });
+      expect(error).not.toBeNull();
+    });
+
+    it('changing a role takes effect and is audited with actor, target and before/after', async () => {
+      const { error } = await adminUser.client.rpc('admin_set_user_role', { p_target: plainUser.id, p_role_key: 'support' });
+      expect(error).toBeNull();
+      const { data: role } = await plainUser.client.rpc('current_user_role');
+      expect(role).toBe('support');
+
+      const { data: logs } = await adminUser.client.rpc('admin_list_audit_logs');
+      const entry = logs!.find((l: { target_user_id: string; action: string }) => l.target_user_id === plainUser.id && l.action === 'role.changed');
+      expect(entry).toBeDefined();
+      expect(entry.actor_id).toBe(adminUser.id);
+      expect(entry.metadata).toEqual({ from: 'user', to: 'support' });
+
+      // Revocar vuelve al rol user y también se audita
+      expect((await adminUser.client.rpc('admin_set_user_role', { p_target: plainUser.id, p_role_key: 'user' })).error).toBeNull();
+      const { data: back } = await plainUser.client.rpc('current_user_role');
+      expect(back).toBe('user');
+    });
+
+    it('the audit log cannot be forged or edited by any client', async () => {
+      const forged = await adminUser.client.from('admin_audit_logs').insert({ action: 'forjado' });
+      expect(forged.error).not.toBeNull();
+      const edited = await adminUser.client.from('admin_audit_logs').update({ action: 'x' }).neq('action', '').select();
+      expect(edited.data ?? []).toEqual([]);
+      const removed = await adminUser.client.from('admin_audit_logs').delete().neq('action', '').select();
+      expect(removed.data ?? []).toEqual([]);
+    });
+  });
+
+  describe('admin and support have no access to other users financial data', () => {
+    let privateAccountId: string;
+
+    beforeAll(async () => {
+      const { data: acc } = await service
+        .from('accounts')
+        .insert({ user_id: plainUser.id, name: 'Cuenta privada rbac', type: 'CHECKING', opening_balance: 12345 })
+        .select('id')
+        .single();
+      privateAccountId = acc!.id;
+      const { data: cat } = await service
+        .from('categories')
+        .insert({ user_id: plainUser.id, name: `Privada ${Date.now()}`, type: 'EXPENSE' })
+        .select('id')
+        .single();
+      await service.from('transactions').insert({
+        user_id: plainUser.id,
+        account_id: privateAccountId,
+        category_id: cat!.id,
+        type: 'EXPENSE',
+        direction: 'OUTFLOW',
+        amount: 100,
+        description: 'privada',
+        transaction_date: '2026-11-01',
+      });
+      await service.from('goals').insert({ user_id: plainUser.id, name: 'Meta privada', target_amount: 10 });
+      await service.from('debts').insert({ user_id: plainUser.id, name: 'Deuda privada', original_amount: 10, current_balance: 10 });
+    });
+
+    it.each(['accounts', 'transactions', 'categories', 'goals', 'debts', 'obligations', 'budgets', 'subscriptions', 'recurring_transactions', 'alerts', 'goal_contributions', 'debt_payments', 'profiles'])(
+      'admin and support read nothing of the plain user in %s',
+      async (table) => {
+        const column = table === 'profiles' ? 'id' : 'user_id';
+        for (const client of [adminUser.client, supportUser.client]) {
+          const { data } = await client.from(table).select('*').eq(column, plainUser.id);
+          expect(data ?? []).toEqual([]);
+        }
+      }
+    );
+
+    it('admin cannot modify the private data of another user', async () => {
+      const { data } = await adminUser.client.from('accounts').update({ name: 'hack' }).eq('id', privateAccountId).select();
+      expect(data ?? []).toEqual([]);
+      const { data: row } = await service.from('accounts').select('name').eq('id', privateAccountId).single();
+      expect(row!.name).toBe('Cuenta privada rbac');
+    });
+
+    it('the user list exposes minimal account data only, never financial fields', async () => {
+      const { data } = await adminUser.client.rpc('admin_list_users');
+      const columns = Object.keys(data![0]).sort();
+      expect(columns).toEqual(['created_at', 'display_name', 'email', 'id', 'role_key']);
+    });
   });
 });
