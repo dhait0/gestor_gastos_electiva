@@ -68,3 +68,50 @@ export function calculateBudgetUsage(transactions: Transaction[], budget: Budget
     status: getBudgetStatus(percentDecimal),
   };
 }
+
+/** Desplaza un mes `YYYY-MM` en `delta` meses (puede ser negativo). */
+export function shiftMonth(month: string, delta: number): string {
+  const total = Number(month.slice(0, 4)) * 12 + (Number(month.slice(5, 7)) - 1) + delta;
+  return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, "0")}`;
+}
+
+export interface CopyableBudget {
+  id: string;
+  category_id: string;
+  limit_amount: string | number | Decimal;
+}
+
+export interface BudgetCopyPlan<T extends CopyableBudget> {
+  /** Presupuestos que se crearán en el nuevo mes. */
+  toCreate: T[];
+  /** Seleccionados que ya existen en el mes destino (misma categoría): no se duplican. */
+  skipped: T[];
+}
+
+/**
+ * Plan para copiar presupuestos de un mes a otro (UC-25). Solo se copian los
+ * seleccionados (todos si no se indica selección), se evitan duplicados por
+ * categoría y nunca se copian dos veces la misma categoría.
+ */
+export function planBudgetCopy<T extends CopyableBudget>(
+  previous: T[],
+  existingCategoryIds: Iterable<string>,
+  selectedIds?: string[]
+): BudgetCopyPlan<T> {
+  const taken = new Set(existingCategoryIds);
+  const selected = selectedIds ? new Set(selectedIds) : null;
+  const toCreate: T[] = [];
+  const skipped: T[] = [];
+
+  for (const budget of previous) {
+    if (selected && !selected.has(budget.id)) continue;
+    if (taken.has(budget.category_id)) {
+      skipped.push(budget);
+      continue;
+    }
+    taken.add(budget.category_id);
+    toCreate.push(budget);
+  }
+
+  return { toCreate, skipped };
+}

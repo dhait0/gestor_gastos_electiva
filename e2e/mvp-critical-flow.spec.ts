@@ -842,3 +842,58 @@ test.describe("Movimientos: transferir, editar, eliminar y filtrar (UC-11, 12, 1
     expect(hydrationErrors, hydrationErrors.join("\n")).toEqual([]);
   });
 });
+
+
+test.describe("Presupuestos: editar y copiar mes anterior (UC-24, UC-25)", () => {
+  test("copiar solo lo seleccionado sin duplicar y editar el límite", async ({ page }) => {
+    const uniqueId = Date.now() + 20;
+    await registerUser(page, `test-bcopy-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Copia ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Copia", "1000000");
+
+    const now = new Date();
+    const ym = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const current = ym(now);
+    const previous = ym(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+
+    // Dos presupuestos en el mes anterior, de categorías distintas
+    for (const [index, limit] of [[1, "100000"], [2, "200000"]] as const) {
+      await page.goto(`${BASE_URL}/presupuestos/nuevo?month=${previous}`);
+      await page.waitForLoadState("networkidle");
+      await page.selectOption('select[name="category_id"]', { index });
+      await page.fill('input[name="limit_amount"]', limit);
+      await page.click('main form button[type="submit"]');
+      await page.waitForURL(/\/presupuestos(\?|$)/, { timeout: 10000 });
+    }
+
+    // Copiar al mes actual solo el primero
+    await page.goto(`${BASE_URL}/presupuestos?month=${current}`);
+    await expect(page.getByText("Sin presupuestos en este mes")).toBeVisible();
+    await page.getByRole("link", { name: "Copiar mes anterior" }).click();
+    const boxes = page.getByRole("checkbox");
+    await expect(boxes).toHaveCount(2);
+    await boxes.nth(1).uncheck();
+    await page.click('main form button[type="submit"]');
+    await page.waitForURL(new RegExp(`/presupuestos\\?month=${current}`), { timeout: 10000 });
+    await expect(page.getByRole("progressbar")).toHaveCount(1);
+
+    // Copiar de nuevo: la categoría ya copiada queda deshabilitada y no se duplica
+    await page.getByRole("link", { name: "Copiar mes anterior" }).click();
+    await expect(page.getByText("ya existe en este mes")).toBeVisible();
+    await expect(page.getByRole("checkbox").first()).toBeDisabled();
+
+    // Editar el límite
+    await page.goto(`${BASE_URL}/presupuestos?month=${current}`);
+    await page.getByRole("link", { name: /Editar presupuesto de/ }).click();
+    await page.fill('input[name="limit_amount"]', "250000");
+    await page.click('main form button[type="submit"]');
+    await page.waitForURL(new RegExp(`/presupuestos\\?month=${current}`), { timeout: 10000 });
+    await expect(page.getByText(/de .*250[.,]000/)).toBeVisible();
+
+    // Un límite inválido se rechaza con mensaje
+    await page.getByRole("link", { name: /Editar presupuesto de/ }).click();
+    await page.fill('input[name="limit_amount"]', "-5");
+    await page.evaluate(() => document.querySelector("main form")?.setAttribute("novalidate", ""));
+    await page.click('main form button[type="submit"]');
+    await expect(page.getByText(/mayor a 0/)).toBeVisible();
+  });
+});

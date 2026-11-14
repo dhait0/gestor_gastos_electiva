@@ -1,7 +1,8 @@
-import { ChevronLeft, ChevronRight, PiggyBank, Plus } from "lucide-react";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight, Copy, Pencil, PiggyBank, Plus } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { getBudgetsWithUsageAction } from "@/app/actions/budgets";
-import type { BudgetStatus } from "@/domain/budgets";
+import { shiftMonth, type BudgetStatus } from "@/domain/budgets";
 import { DeleteBudgetButton } from "@/components/budgets/DeleteBudgetButton";
 
 const STATUS_INFO: Record<BudgetStatus, { label: string; badge: string; bar: string }> = {
@@ -15,11 +16,6 @@ const MONTH_NAMES = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ];
-
-function shiftMonth(month: string, delta: number): string {
-  const d = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)) - 1 + delta, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
 
 function monthLabel(month: string): string {
   return `${MONTH_NAMES[Number(month.slice(5, 7)) - 1]} ${month.slice(0, 4)}`;
@@ -54,13 +50,22 @@ export default async function PresupuestosPage({
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground font-heading">Presupuestos</h1>
             <p className="mt-1 text-muted-foreground">Cuánto planeas gastar por categoría cada mes</p>
           </div>
-          <a
-            href={`/presupuestos/nuevo?month=${month}`}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm"
-          >
-            <Plus className="w-4 h-4" />
-            Nuevo presupuesto
-          </a>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/presupuestos/copiar?month=${month}`}
+              className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-lg font-medium text-sm hover:bg-muted"
+            >
+              <Copy className="w-4 h-4" aria-hidden="true" />
+              Copiar mes anterior
+            </Link>
+            <a
+              href={`/presupuestos/nuevo?month=${month}`}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Nuevo presupuesto
+            </a>
+          </div>
         </header>
 
         <nav aria-label="Mes del presupuesto" className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2">
@@ -97,7 +102,16 @@ export default async function PresupuestosPage({
                         {info.label}
                       </span>
                     </div>
-                    <DeleteBudgetButton budgetId={b.id} categoryName={b.category_name} />
+                    <div className="flex items-center">
+                      <Link
+                        href={`/presupuestos/${b.id}/editar`}
+                        aria-label={`Editar presupuesto de ${b.category_name}`}
+                        className="inline-flex p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        <Pencil className="w-4 h-4" aria-hidden="true" />
+                      </Link>
+                      <DeleteBudgetButton budgetId={b.id} categoryName={b.category_name} />
+                    </div>
                   </div>
                   <div
                     className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted"
