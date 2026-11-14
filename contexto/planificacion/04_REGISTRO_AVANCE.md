@@ -1089,3 +1089,25 @@ Pruebas: `pnpm lint` 0 errores/5 warnings; `pnpm typecheck` PASÓ; `pnpm test` *
 Pendiente: job `e2e.yml` y los 2 casos RLS nuevos aún no se han ejecutado en CI remoto; `pnpm test:rls` no se ejecuta en local (borra datos de la base de desarrollo).
 Hallazgo abierto: B0.1-c (aviso de hidratación en el E2E) sin investigar.
 Siguiente microtarea sugerida: G01.
+
+---
+
+## Bloque G-H — Presupuestos y metas (2026-11-14)
+
+Rama: feature/lukiva-fase-g-h (apilada sobre fix/lukiva-estabilizacion-e2e, PR #40).
+
+| ID | Estado | Evidencia |
+|---|---|---|
+| G01 | VALIDADO | `20261114130000_budgets.sql`: `budgets` con FK compuesta a categories, índice único parcial (usuario, categoría, mes) mientras no esté eliminado, `period_month` día 1, límite > 0, trigger que exige categoría EXPENSE del usuario, RLS select/insert/update sin DELETE. **Desviación del modelo §33:** añade `deleted_at`. Probado por SQL con ROLLBACK: INCOME rechazada, día ≠ 1 rechazado, categoría ajena rechazada, duplicado rechazado |
+| G02 | VALIDADO | `src/domain/budgets.ts` (consumo derivado, estados 70/90/100 %, estado sobre porcentaje exacto, Decimal) + `src/app/actions/budgets.ts`; 15 pruebas |
+| G03 | VALIDADO | `/presupuestos` (navegación por mes, barras, estados) y `/presupuestos/nuevo`; E2E: consumo 80 % → "Atención", duplicado con error legible, eliminación y estado vacío |
+| H01 | VALIDADO | `20261114130100_goals.sql`: `goals` y `goal_contributions` (FK compuesta, montos con CHECK, RLS sin DELETE). Reutiliza el enum `goal_status` de la migración base. **Desviación §33:** `goal_contributions` con `deleted_at` |
+| H02 | VALIDADO | `src/domain/goals.ts` (progreso derivado, tope 100 %, mes mínimo 1, aporte mensual recomendado con redondeo hacia arriba, vencida, zona horaria del perfil) + acciones con sincronización de estado COMPLETED↔ACTIVE; 10 pruebas |
+| H03 | VALIDADO | `/metas`, `/metas/nueva`, `/metas/[id]`; E2E: aporte 40 %, completar, revertir al borrar un aporte, y el disponible no cambia (un aporte no mueve dinero) |
+
+Tipos de Supabase regenerados (`src/lib/supabase/types.ts`, solo se añadieron las 3 tablas).
+Pruebas: lint 0 errores/5 warnings; typecheck PASÓ; `pnpm test` **119/119**; `pnpm test:e2e` **9/9**; `pnpm build` PASÓ (exit 0).
+Matriz RLS de las 3 tablas añadida en `supabase/tests/rls.test.ts` (A/B/anon, FK, trigger, unicidad, CHECK): **NO EJECUTADA en local** por borrar datos de desarrollo; la ejecuta `rls.yml`.
+Aprendizaje: con una categoría ajena salta primero el trigger BEFORE y no la FK compuesta; la prueba lo refleja.
+Brechas: copiar presupuestos del mes anterior (UC-25) no implementado. "Dinero disponible" no descuenta aún el compromiso mensual de las metas (decisión de producto pendiente, ver plan).
+Siguiente microtarea sugerida: I01.

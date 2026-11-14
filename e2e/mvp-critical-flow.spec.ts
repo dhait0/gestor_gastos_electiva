@@ -344,3 +344,79 @@ test.describe("Transacciones", () => {
     await expect(page.locator("text=Transporte")).toBeVisible();
   });
 });});
+
+
+test.describe("Presupuestos (G03)", () => {
+  test("crear presupuesto, consumirlo con un gasto y ver el estado", async ({ page }) => {
+    const uniqueId = Date.now() + 6;
+    await registerUser(page, `test-budget-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Presupuesto ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Presupuesto", "1000000");
+
+    // Gasto de 80.000 en la primera categoría de gasto (índice 1 del select)
+    await createTransaction(page, "expense", "80000", "Compra del mes");
+
+    await page.goto(`${BASE_URL}/presupuestos/nuevo`);
+    await page.waitForLoadState("networkidle");
+    await page.selectOption('select[name="category_id"]', { index: 1 });
+    await page.fill('input[name="limit_amount"]', "100000");
+    await page.click('main form button[type="submit"]');
+    await page.waitForURL(/\/presupuestos(\?|$)/, { timeout: 10000 });
+
+    // 80.000 de 100.000 = 80 % → "Atención"
+    await expect(page.getByRole("heading", { level: 2 }).first()).toBeVisible();
+    await expect(page.locator("text=Atención")).toBeVisible();
+    await expect(page.getByRole("progressbar").first()).toHaveAttribute("aria-valuenow", "80");
+
+    // Duplicado: mismo mes y categoría → error legible
+    await page.goto(`${BASE_URL}/presupuestos/nuevo`);
+    await page.waitForLoadState("networkidle");
+    await page.selectOption('select[name="category_id"]', { index: 1 });
+    await page.fill('input[name="limit_amount"]', "50000");
+    await page.click('main form button[type="submit"]');
+    await expect(page.locator("text=Ya existe un presupuesto")).toBeVisible();
+
+    // Eliminar (soft delete) y volver al estado vacío
+    await page.goto(`${BASE_URL}/presupuestos`);
+    page.once("dialog", (d) => d.accept());
+    await page.getByRole("button", { name: /Eliminar presupuesto/ }).click();
+    await expect(page.locator("text=Sin presupuestos en este mes")).toBeVisible();
+  });
+});
+
+
+test.describe("Metas (H03)", () => {
+  test("crear meta, aportar, completarla y revertir al eliminar un aporte", async ({ page }) => {
+    const uniqueId = Date.now() + 7;
+    await registerUser(page, `test-goal-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Meta ${uniqueId}`);
+    await completeOnboarding(page, "Cuenta Meta", "1000000");
+
+    await page.goto(`${BASE_URL}/metas/nueva`);
+    await page.waitForLoadState("networkidle");
+    await page.fill('input[name="name"]', "Viaje E2E");
+    await page.fill('input[name="target_amount"]', "100000");
+    await page.click('main form button[type="submit"]');
+    await page.waitForURL(/\/metas\/[0-9a-f-]{36}$/, { timeout: 10000 });
+    await expect(page.getByRole("heading", { name: "Viaje E2E" })).toBeVisible();
+
+    // Aporte parcial: 40 %
+    await page.fill('input[name="amount"]', "40000");
+    await page.click('main form button[type="submit"]');
+    await expect(page.getByRole("progressbar").first()).toHaveAttribute("aria-valuenow", "40");
+
+    // Aporte que completa la meta
+    await page.fill('input[name="amount"]', "60000");
+    await page.click('main form button[type="submit"]');
+    await expect(page.locator("text=Meta cumplida")).toBeVisible();
+    await expect(page.locator("text=Cumplida").first()).toBeVisible();
+
+    // Eliminar el aporte de 60.000: vuelve a "En curso"
+    page.once("dialog", (d) => d.accept());
+    await page.getByRole("button", { name: "Eliminar aporte" }).first().click();
+    await expect(page.locator("text=En curso").first()).toBeVisible();
+    await expect(page.getByRole("progressbar").first()).toHaveAttribute("aria-valuenow", "40");
+
+    // Aportar no mueve dinero entre cuentas: el disponible sigue igual
+    await page.goto(`${BASE_URL}/dashboard`);
+    await expect(page.locator("main").first()).toContainText(/900[.,]000/);
+  });
+});
