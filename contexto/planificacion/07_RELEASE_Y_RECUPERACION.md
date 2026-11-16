@@ -1,18 +1,22 @@
 # 07 — Release, recuperación y validación de despliegue (P03)
 
-**Fecha:** 2026-11-14. Este documento no autoriza ningún despliegue: producción solo cambia con aprobación del propietario sobre el merge a `main`.
+**Fecha:** 2026-11-14 · **actualizado 2026-11-16** tras integrar la cadena de PR en `staging`. Este documento no autoriza ningún despliegue: producción solo cambia con aprobación del propietario sobre el merge a `main`.
 
-## 1. Cadena de PR pendiente de merge
-Los PR están apilados; se mergean **en orden** y, tras cada uno, se reapunta la base del siguiente a `staging`:
+## 1. Estado de la integración
+**Los 6 PR de las fases F–P y del cierre de brechas están integrados en `staging`** (2026-11-14), mergeados en orden con *merge commit* y no con *squash*, a propósito: las ramas estaban apiladas y un squash reescribe la ascendencia y habría producido conflictos al reapuntar cada PR siguiente. Tras cada merge se esperó a que el CI de `staging` (`ci`, `rls` y `e2e`) terminara en verde antes del siguiente.
 
-| Orden | PR | Contenido |
-|---|---|---|
-| 1 | #40 | Estabilización E2E, tarjetas como deuda, F01 (bug real de fechas) y F02 |
-| 2 | #41 | G: presupuestos · H: metas |
-| 3 | #42 | I: recurrentes · J: suscripciones · K: deudas · L: alertas |
-| 4 | #43 | M-N: RBAC y consola `/admin` (**ADR-008 por ratificar**) |
-| 5 | #44 | O: inteligencia financiera · P: cierre, parche de seguridad de Next.js |
-| 6 | cierre de brechas | Los 12 casos de uso pendientes (UC-03, 11, 12, 13, 21, 24, 25, 30, 41, 46, 47, 50) |
+| Orden | PR | Merge en `staging` | Contenido |
+|---|---|---|---|
+| 1 | #40 | `9247854` | Estabilización E2E, tarjetas como deuda, F01 (bug real de fechas) y F02 |
+| 2 | #41 | `abb3cec` | G: presupuestos · H: metas |
+| 3 | #42 | `1202489` | I: recurrentes · J: suscripciones · K: deudas · L: alertas |
+| 4 | #43 | `de5c4d7` | M-N: RBAC y consola `/admin` (**ADR-008 por ratificar**) |
+| 5 | #44 | `c6e9dc5` | O: inteligencia financiera · P: cierre, parche de seguridad de Next.js |
+| 6 | #46 | `37abe16` | Cierre de brechas: UC-03, 11, 12, 13, 21, 24, 25, 30, 41, 46, 47, 50 |
+
+Resultado: `staging` @ `37abe16`, con unit 294/294, lint sin errores y E2E de 35 tests contra el build de producción. **`main` no se ha tocado**: va 38 commits por detrás de `staging` (los 5 que `main` tiene de más son los merges de promociones anteriores `staging → main`, sin contenido nuevo). Las ramas de trabajo se borraron una vez comprobado que estaban totalmente fusionadas.
+
+**Lo que falta para llegar a producción** es un único paso, que requiere aprobación del propietario: el PR `staging → main` (convención del repositorio, como #32, #33 y #37). Ver §3.
 
 ## 2. Migraciones nuevas (aditivas, en este orden)
 | Migración | Qué hace | Rollback |
@@ -26,14 +30,16 @@ Los PR están apilados; se mergean **en orden** y, tras cada uno, se reapunta la
 | `20261114170000_alerts` | `alerts` | `drop table` |
 | `20261114180000_rbac_admin` | tablas RBAC, funciones de administración, `bootstrap_first_admin` | ver cabecera de la migración |
 
-Ninguna toca datos existentes ni las políticas RLS de las 5 tablas originales. Todas se ensayaron en la instancia local; el esquema remoto **no se pudo cotejar** (sin credenciales): **pendiente de comprobación remota**.
+Ninguna toca datos existentes ni las políticas RLS de las 5 tablas originales. Todas se ensayaron en la instancia local y la suite RLS completa pasó en el CI de `staging` sobre base limpia; el esquema remoto de producción **no se pudo cotejar** (sin credenciales): **pendiente de comprobación remota**.
+
+> **Estas 8 migraciones son exactamente lo que `main` aún no tiene.** Se aplicarán a producción de forma automática en el momento del merge a `main` (ver §3, punto 4).
 
 ## 3. Antes de desplegar a producción
-1. **Revisar y mergear la cadena** (§1). CI debe estar en verde en cada PR: `ci` (lint, typecheck, test, build), `rls` (suite completa de RLS, incluida la nueva) y `e2e`.
-2. **Hacer una copia de seguridad de la base de producción** (Supabase: Database → Backups; o `supabase db dump`). No migrar sin copia.
+1. **Cadena integrada en `staging`** (§1): hecho, con `ci`, `rls` y `e2e` en verde en cada paso. Queda **revisar el diff `staging → main`** y abrir el PR de promoción; los checks de ese PR deben estar en verde.
+2. **Hacer una copia de seguridad de la base de producción** (Supabase: Database → Backups; o `supabase db dump`) **antes** de mergear a `main`, porque el merge dispara las migraciones. No migrar sin copia.
 3. **Comprobar en producción** que no existen transacciones de saldo inicial compensatorias heredadas (riesgo R2 de B02):
    `select count(*) from transactions where description ilike '%saldo inicial%';` debe ser 0.
-4. `deploy-migrations` aplica las migraciones al hacer push a `main` (job con `needs: ci` y environment `production`). Confirmar que `SUPABASE_ACCESS_TOKEN` y `SUPABASE_PROJECT_REF` siguen vigentes.
+4. `deploy-migrations` aplica las migraciones al hacer push a `main` (job con `needs: ci` y environment `production`): **el merge `staging → main` es el momento exacto en que las 8 migraciones de §2 llegan a producción**, sin otro paso intermedio. Confirmar antes que `SUPABASE_ACCESS_TOKEN` y `SUPABASE_PROJECT_REF` siguen vigentes y que los puntos 2, 3 y 6 están hechos. Si el job falla a medias, no reintentar a ciegas: ver §6.
 5. **Crear el primer administrador** (no hay UI a propósito), con un operador con acceso al proyecto, en el SQL editor:
    `select private.bootstrap_first_admin('<uuid del usuario>');`
    Solo funciona mientras no exista ningún admin y queda registrado en `admin_audit_logs` (`role.bootstrap`).
@@ -63,10 +69,12 @@ Sin cambios: `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 | Recurrencia duplicada | Imposible por el índice único `(recurring_transaction_id, transaction_date)`; si el índice faltara, no ejecutar "Registrar vencidos" |
 
 ## 7. Riesgos y acciones manuales abiertas
-1. **Seguridad de Next.js (hecho en este PR):** `next@16.4.0` tenía 2 advisories **críticos** (RCE sin autenticación en el optimizador de imágenes y en `use cache`) y 1 alto (DoS con Server Actions). Se subió a **16.4.1** (parche de la misma versión menor). Verificado: unit 229/229, E2E 19/19, build. `pnpm audit --prod` ya no reporta Next. Existe 16.4.6 (última); actualizar es decisión del propietario.
+1. **Seguridad de Next.js (hecho, ya en `staging`):** `next@16.4.0` tenía 2 advisories **críticos** (RCE sin autenticación en el optimizador de imágenes y en `use cache`) y 1 alto (DoS con Server Actions). Se subió a **16.4.1** (parche de la misma versión menor); `pnpm audit --prod` ya no reporta Next. **Producción sigue en 16.4.0 hasta el merge a `main`**, así que esa exposición persiste hasta entonces. Existe 16.4.6 (última); actualizar es decisión del propietario.
 2. **Dependencias transitivas altas:** 7 advisories altos (`undici`, `body-parser`, `systeminformation`, `zod`) vienen de la CLI `shadcn`, declarada como dependencia de **producción**. No se tocó: moverla a `devDependencies` requiere comprobar que ningún import en tiempo de build la necesite.
 3. **Protección de ramas** `main`/`staging` sin activar en GitHub (acción del propietario).
 4. **Cotejo del esquema remoto** y de las variables de Vercel: pendiente de comprobación remota.
 5. **Brechas de producto:** cerradas (ver `06_MATRIZ_UC_50.md`, 50/50). Quedan mejoras opcionales listadas allí en "Límites conocidos".
 6. ~~Advertencia de hidratación en `/transacciones`~~: **resuelta** (era un `<tbody>` anidado en la tabla).
-7. **Suite RLS completa** no se ejecuta en local (borra datos de desarrollo); se ejecutó el bloque RBAC contra el Supabase local y el resto lo cubre `rls.yml`.
+7. **Suite RLS completa** no se ejecuta en local (borra datos de desarrollo); se ejecutó el bloque RBAC contra el Supabase local y la suite completa la ejecuta `rls.yml` en cada PR y en cada push a `staging`/`main`.
+8. **Fragilidad conocida del CI:** los workflows usan `supabase/setup-cli` con `version: latest`, que consulta la API de GitHub y falló una vez por *rate limit* (se resolvió relanzando el job); `supabase start` en `rls` y `e2e` a la vez también puede chocar con el límite del registro de imágenes. Recomendado: fijar la versión del CLI. El E2E ahora prueba `pnpm build && pnpm start` (no `next dev`) en CI.
+9. **Páginas `/terminos` y `/privacidad`:** provisionales, pendientes de revisión jurídica; no presentarlas como definitivas.
