@@ -19,7 +19,8 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Fija: `latest` consulta la API de GitHub y fallaba por rate limit; además evita cambios de comportamiento entre ejecuciones
+          version: 3.2.0
 
       - name: Start local Supabase
         run: supabase start
