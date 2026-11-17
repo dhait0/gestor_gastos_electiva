@@ -1214,3 +1214,22 @@ Resultado local en modo producción: **35/35** (34 + el de recuperación tras el
 
 **CI remoto del cierre de brechas (2026-11-14, PR temporal #47 cerrado sin mergear):** `CI Pipeline` PASÓ · `RLS Integration Tests` PASÓ (suite completa) · `Playwright E2E` PASÓ (35 tests contra `pnpm build && pnpm start`). Las dos corridas anteriores fallaron y revelaron los defectos descritos arriba (manejadores de eventos en componentes de servidor; callback de autenticación).
 Unit: 294/294.
+
+---
+
+## Integración de la cadena de PR en `staging` (2026-11-14)
+
+Con autorización expresa del propietario, se mergearon en orden #40 → #41 → #42 → #43 → #44 → #46. Se usó **merge commit** (no squash) para conservar la ascendencia de las ramas apiladas; tras cada merge se reapuntó la base del siguiente a `staging` y se comprobó que su diff contuviera solo sus propios archivos (21, 35, 18, 29 y 66 respectivamente) antes de mergear.
+
+| PR | Merge | CI de `staging` (`ci` · `rls` · `e2e`) |
+|---|---|---|
+| #40 | `9247854` | verde |
+| #41 | `abb3cec` | verde (el `e2e` falló una vez por *rate limit* de `supabase/setup-cli`; pasó al relanzar el job) |
+| #42 | `1202489` | verde |
+| #43 | `de5c4d7` | verde |
+| #44 | `c6e9dc5` | verde |
+| #46 | `37abe16` | verde (E2E contra el build de producción) |
+
+El árbol de `staging` quedó idéntico al de la última rama (diff vacío). Se borraron las 6 ramas remotas y 9 locales ya fusionadas, y los 301 usuarios `@finwise.test` creados por los E2E en la base local (los 16 anteriores se conservaron). Los PR temporales #45 y #47, usados solo para ejecutar CI sobre la cadena completa, se cerraron sin mergear.
+**`main` y producción no se tocaron.** Pendiente: PR `staging → main` (aprobación del propietario) y los pasos de `07_RELEASE_Y_RECUPERACION.md` §3.
+**Higiene del repositorio:** en el commit `4756dab` entró por error un archivo suelto `src/lib/supabase/types 2.ts` (copia vieja de `types.ts`, sin ninguna referencia), por un `git add -A` que recogió un duplicado; se retira en el PR de documentación. Además hay en el árbol de trabajo local 95 copias sin versionar con sufijo ` 2`/` 3` (p. ej. `e2e/password-recovery.spec 2.ts`), con fecha de modificación del 14 de nov a las 14:40 y permisos distintos al resto del proyecto; no consta que las creara ningún comando de este trabajo (parecen duplicados de sincronización o de copia de carpeta). **No se versionaron ni se borraron:** conviene que el propietario las revise y no usar `git add -A` mientras existan.
