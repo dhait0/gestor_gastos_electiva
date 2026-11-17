@@ -58,12 +58,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Versión fija: con `latest` el CLI 3.x empezó a exigir confirmación en cada `db push` y el job
+      # fallaba en CI («Confirmation required… Re-run with --yes») sin aplicar nada. Subirla es una
+      # decisión explícita, no algo que cambie solo entre un despliegue y otro.
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 3.2.0
 
+      # Solo lista: deja en el log exactamente qué migraciones van a aplicarse a producción
+      - name: Preview pending migrations (dry run)
+        run: supabase db push --dry-run --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      # `--yes` es necesario porque en CI no hay terminal para confirmar. Las migraciones son aditivas
+      # y el job solo corre en push a `main`, protegido por el environment `production`.
       - name: Push migrations to Supabase
-        run: supabase db push --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: supabase db push --yes --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

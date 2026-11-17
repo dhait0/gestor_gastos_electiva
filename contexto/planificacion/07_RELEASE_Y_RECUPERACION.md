@@ -1,6 +1,6 @@
 # 07 — Release, recuperación y validación de despliegue (P03)
 
-**Fecha:** 2026-11-14 · **actualizado 2026-11-16** tras integrar la cadena de PR en `staging`. Este documento no autoriza ningún despliegue: producción solo cambia con aprobación del propietario sobre el merge a `main`.
+**Fecha:** 2026-11-14 · **actualizado 2026-11-17** tras integrar la cadena de PR en `staging`. Este documento no autoriza ningún despliegue: producción solo cambia con aprobación del propietario sobre el merge a `main`.
 
 ## 1. Estado de la integración
 **Los 6 PR de las fases F–P y del cierre de brechas están integrados en `staging`** (2026-11-14), mergeados en orden con *merge commit* y no con *squash*, a propósito: las ramas estaban apiladas y un squash reescribe la ascendencia y habría producido conflictos al reapuntar cada PR siguiente. Tras cada merge se esperó a que el CI de `staging` (`ci`, `rls` y `e2e`) terminara en verde antes del siguiente.
@@ -76,5 +76,5 @@ Sin cambios: `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 5. **Brechas de producto:** cerradas (ver `06_MATRIZ_UC_50.md`, 50/50). Quedan mejoras opcionales listadas allí en "Límites conocidos".
 6. ~~Advertencia de hidratación en `/transacciones`~~: **resuelta** (era un `<tbody>` anidado en la tabla).
 7. **Suite RLS completa** no se ejecuta en local (borra datos de desarrollo); se ejecutó el bloque RBAC contra el Supabase local y la suite completa la ejecuta `rls.yml` en cada PR y en cada push a `staging`/`main`.
-8. **Fragilidad conocida del CI:** los workflows usan `supabase/setup-cli` con `version: latest`, que consulta la API de GitHub y falló una vez por *rate limit* (se resolvió relanzando el job); `supabase start` en `rls` y `e2e` a la vez también puede chocar con el límite del registro de imágenes. Recomendado: fijar la versión del CLI. El E2E ahora prueba `pnpm build && pnpm start` (no `next dev`) en CI.
+8. **Migraciones en CI (incidente 2026-11-17, corregido):** la primera promoción `staging → main` (#49) desplegó el código en Vercel pero **no aplicó las 8 migraciones**: el job `Deploy Migrations to Supabase` usaba `supabase/setup-cli` con `version: latest`, que pasó a ser el CLI 3.2.0, el cual exige confirmación en cada `db push` y, sin terminal, aborta con *«Confirmation required… Re-run with --yes. Nothing was changed»*. El fallo fue seguro (no cambió nada) pero dejó producción con código nuevo sobre el esquema viejo. Corrección: CLI **fijado en 3.2.0** en `ci.yml`, `rls.yml` y `e2e.yml`, `db push --yes`, y un paso previo `db push --dry-run` que deja en el log qué se va a aplicar. Subir la versión del CLI es ahora una decisión explícita. Esto también elimina los fallos por *rate limit* al resolver `latest`.
 9. **Páginas `/terminos` y `/privacidad`:** provisionales, pendientes de revisión jurídica; no presentarlas como definitivas.
