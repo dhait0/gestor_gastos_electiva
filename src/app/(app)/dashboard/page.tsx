@@ -100,6 +100,7 @@ export default async function DashboardPage({
           <div className="flex items-center gap-3">
             <a
               href="/transacciones/nuevo?type=expense"
+              data-tour="nueva-transaccion"
               className={cn(
                 "inline-flex items-center gap-2 px-4 py-2",
                 "bg-primary text-primary-foreground",
@@ -143,7 +144,7 @@ export default async function DashboardPage({
           <h2 id="available-heading" className="sr-only">
             Dinero disponible
           </h2>
-          <div className={cn(
+          <div data-tour="disponible" className={cn(
             "rounded-2xl p-6 sm:p-8",
             statusInfo.bgColor,
             statusInfo.borderColor,
