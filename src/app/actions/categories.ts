@@ -2,6 +2,7 @@
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { z } from "zod";
+import { readCheckbox } from "@/lib/form-parsing";
 
 const categoryTypeSchema = z.enum(["INCOME", "EXPENSE"]);
 
@@ -121,7 +122,7 @@ export async function updateCategoryAction(_prevState: FormState, formData: Form
     type: formData.get("type"),
     color: formData.get("color"),
     icon: formData.get("icon"),
-    is_default: formData.get("is_default"),
+    is_default: readCheckbox(formData, "is_default"),
   };
 
   const parsed = updateCategorySchema.safeParse(rawData);

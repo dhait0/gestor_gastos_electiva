@@ -167,13 +167,13 @@ function AccountCard({ account, isArchived = false }: { account: Account; isArch
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <Link href={`/cuentas/${account.id}/editar`} className="block">
-                <DropdownMenuItem className="flex items-center gap-2 px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+              <DropdownMenuItem asChild className="flex items-center gap-2 px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+                <Link href={`/cuentas/${account.id}/editar`}>
                   <Edit className="w-4 h-4" />
                   Editar
-                </DropdownMenuItem>
-              </Link>
-              {isArchived ? null : <ArchiveMenuItem id={account.id} kind="account" />}
+                </Link>
+              </DropdownMenuItem>
+              <ArchiveMenuItem id={account.id} kind="account" restore={isArchived} />
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
