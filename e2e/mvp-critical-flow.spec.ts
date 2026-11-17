@@ -319,7 +319,9 @@ test.describe("Autenticación básica", () => {
     await page.click('button[type="submit"]');
     await page.waitForURL(`${BASE_URL}/dashboard`, { timeout: 10000 });
 
-    await expect(page.locator("text=Dashboard")).toBeVisible();
+    // Por rol: "Dashboard" también está en el menú lateral y en el anunciador de rutas de Next,
+    // y un locator por texto coincidía con 1 o 3 elementos según cuánto hubiera llegado de la página
+    await expect(page.getByRole("heading", { name: "Dashboard", level: 1 })).toBeVisible();
   });
 
   test("usuario no autenticado redirigido a login", async ({ page }) => {
