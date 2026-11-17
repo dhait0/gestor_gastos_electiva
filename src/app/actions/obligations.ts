@@ -276,30 +276,3 @@ export async function archiveObligationAction(obligationId: string): Promise<Sim
   return { success: true };
 }
 
-export async function getPendingObligationsTotalAction() {
-  const supabase = await createSupabaseServerClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return { error: "No autorizado" };
-  }
-
-  const { data, error } = await supabase
-    .from("obligations")
-    .select("amount, currency_code")
-    .eq("user_id", user.id)
-    .eq("status", "PENDING")
-    .is("deleted_at", null);
-
-  if (error) {
-    return { error: "Error al obtener el total de obligaciones pendientes" };
-  }
-
-  const total = data.reduce((sum, o) => sum + (o.amount || 0), 0);
-
-  return { data: { total, currency_code: data[0]?.currency_code || "COP" } };
-}

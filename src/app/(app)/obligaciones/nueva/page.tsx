@@ -1,5 +1,6 @@
 "use client";
 
+import { preventFormReset } from "@/lib/keep-form-on-error";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, AlertCircle, CreditCard, Repeat, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -57,7 +58,7 @@ function NewObligationForm() {
   }
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} onReset={preventFormReset} className="space-y-6">
       <div className="flex items-center gap-4 mb-6">
         <Link href="/obligaciones" className="p-2 hover:bg-muted rounded-lg transition-colors">
           <ArrowLeft className="w-5 h-5 text-muted-foreground" />

@@ -1,5 +1,6 @@
 "use client";
 
+import { preventFormReset } from "@/lib/keep-form-on-error";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, AlertCircle, CreditCard, Repeat, MoreHorizontal, CheckCircle } from "lucide-react";
@@ -166,7 +167,7 @@ function EditObligationForm({ obligationId }: { obligationId: string }) {
         </div>
       </div>
 
-      <form action={formAction} id="edit-form" className="space-y-6">
+      <form action={formAction} onReset={preventFormReset} id="edit-form" className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">

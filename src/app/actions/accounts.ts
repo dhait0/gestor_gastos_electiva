@@ -3,7 +3,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { toDomainTransactions } from "@/lib/supabase/transactions";
 import type { Database } from "@/lib/supabase/types";
-import { calculateAccountBalance } from "@/domain/transactions";
+import { calculateAccountCurrentValue } from "@/domain/transactions";
 import { Decimal } from "decimal.js";
 import { z } from "zod";
 
@@ -115,7 +115,7 @@ export async function createAccountAction(_prevState: FormState, formData: FormD
   return { data: { id: data.id } };
 }
 
-export async function getAccountsAction() {
+export async function getAccountsAction(options: { includeArchived?: boolean } = {}) {
   const supabase = await createSupabaseServerClient();
 
   const {
@@ -127,12 +127,18 @@ export async function getAccountsAction() {
     return { error: "No autorizado" };
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("accounts")
     .select("*")
     .eq("user_id", user.id)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
+    .is("deleted_at", null);
+
+  // Las cuentas archivadas no se ofrecen para registrar movimientos (B02-01).
+  if (!options.includeArchived) {
+    query = query.eq("is_archived", false);
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: false });
 
   if (error) {
     return { error: "Error al obtener las cuentas" };
@@ -188,11 +194,8 @@ export async function getAccountsWithBalancesAction(): Promise<
 
   const data: AccountWithBalance[] = (accounts ?? []).map((account) => ({
     ...account,
-    current_balance: calculateAccountBalance(
-      typedTransactions,
-      account.id,
-      account.opening_balance
-    ),
+    // Cuentas de activo: saldo; tarjetas de crédito: deuda (B02-02).
+    current_balance: calculateAccountCurrentValue(typedTransactions, account),
   }));
 
   return { data };
@@ -282,7 +285,7 @@ export async function archiveAccountAction(accountId: string) {
 
   const { error } = await supabase
     .from("accounts")
-    .update({ is_archived: true, deleted_at: new Date().toISOString() })
+    .update({ is_archived: true })
     .eq("id", accountId)
     .eq("user_id", user.id);
 

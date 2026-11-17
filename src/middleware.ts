@@ -35,9 +35,10 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/registro");
+  const isAuthRoute =
+    pathname.startsWith("/login") || pathname.startsWith("/registro") || pathname.startsWith("/forgot-password");
   const isAuthCallback = pathname.startsWith("/auth/callback");
-  const isPublicRoute = pathname === "/" || pathname.startsWith("/api/") || pathname.startsWith("/_next/") || pathname.startsWith("/favicon");
+  const isPublicRoute = pathname === "/" || pathname === "/terminos" || pathname === "/privacidad" || pathname.startsWith("/api/") || pathname.startsWith("/_next/") || pathname.startsWith("/favicon");
 
   if (isAuthRoute && user) {
     return NextResponse.redirect(new URL("/dashboard", request.url));

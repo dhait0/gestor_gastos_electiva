@@ -999,3 +999,237 @@ No es un defecto funcional. Es un problema de preparación de datos de prueba: l
 Abierto: https://github.com/dhait0/gestor_gastos_electiva/pull/38
 
 STOP
+
+---
+
+## B03.2 — Endurecimiento de contratos multimoneda (2026-10-22)
+
+ID: B03.2
+Rama: fix/lukiva-b03-2-currency-contracts
+Archivos modificados:
+  - src/domain/transactions.ts (calculateLiquidBalance ahora exige baseCurrency y filtra internamente por moneda; BalanceAccount.currency_code opcional; documentación de precondición en calculateAccountBalance)
+  - src/app/actions/financial.ts (pasa baseCurrency a calculateLiquidBalance)
+  - src/app/actions/obligations.ts (eliminada getPendingObligationsTotalAction, código muerto que mezclaba monedas con aritmética number)
+  - src/domain/__tests__/transactions.test.ts (+1 caso multimoneda)
+  - src/domain/__tests__/opening-balance.contract.test.ts (firma actualizada para baseCurrency)
+  - contexto/planificacion/04_REGISTRO_AVANCE.md (este registro)
+
+Cambios:
+- `calculateLiquidBalance(transactions, accounts, baseCurrency)` ahora filtra internamente cuentas y movimientos por moneda base. Ya no depende del llamador para evitar mezcla.
+- Eliminada función muerta `getPendingObligationsTotalAction` (sin consumidores; mezclaba monedas y usaba number).
+- Documentada precondición de moneda única en `calculateAccountBalance`.
+
+Validaciones:
+- `pnpm lint`: 0 errores, 6 warnings (baseline).
+- `pnpm typecheck`: PASÓ.
+- `pnpm test`: 71/71 PASARON.
+- `pnpm build`: PASÓ.
+
+Riesgos pendientes:
+- CREDIT_CARD (B02-02) sigue separado, sin cambios.
+- `calculateAccountBalance` sigue currency-agnóstico por diseño; precondición documentada.
+
+Estado: VALIDADO (sin merge a staging).
+Próxima microtarea sugerida: B02-02 (decisión de propietario) o F01.
+STOP
+
+---
+
+## B0.1 — Estabilización E2E (2026-11-14)
+
+ID: B0.1 (Bloque 0, punto 1 del plan F→P; el punto 2 queda parcial: script añadido, job de CI pendiente)
+Rama: fix/lukiva-estabilizacion-e2e
+Archivos modificados:
+  - supabase/migrations/20261114120000_seed_default_categories.sql (nuevo: `private.handle_new_user()` siembra 9 categorías `is_default` por usuario nuevo; sin backfill)
+  - supabase/tests/rls.test.ts (+2 casos: defaults sembrados y aislamiento A/B)
+  - e2e/mvp-critical-flow.spec.ts (selectores acotados a `main form button[type="submit"]`; `.first()` en el aviso de déficit; test de flujo completo reactivado con aserción numérica del disponible 770.000)
+  - playwright.config.ts (puerto configurable con `E2E_PORT`/`BASE_URL`)
+  - package.json (script `test:e2e`)
+  - src/components/layout/AppLayoutClient.tsx (`<main>` reserva siempre `pb-20`, antes `lg:pb-0`)
+
+Diagnóstico corregido respecto a "Diagnóstico E2E — Categorías y sesión" (2026-10-22):
+- La "pérdida de sesión" no existía: el primer `button[type="submit"]` de las páginas internas es el de **cerrar sesión** del header, y los tests lo pulsaban en lugar del del formulario (el log del servidor mostraba `logoutAction()` justo antes del redirect a `/login`).
+- Además faltaban categorías (resuelto con el sembrado en la BD), el bottom nav fijo tapaba el botón del formulario en viewport de escritorio, y había un selector ambiguo (`strict mode violation`).
+- `playwright.config.ts` tenía `reuseExistingServer: true` con puerto fijo 3000: en esta máquina :3000 lo ocupa otro proyecto, y la suite se ejecutó una vez contra esa app (sin escrituras; fallaron por 404). Ahora se usa `E2E_PORT`.
+
+Pruebas / evidencia:
+- `pnpm test:e2e` (servidor propio en :3217, Supabase local): **7/7 PASÓ** (antes 3 fallando + 1 skip).
+- `pnpm lint`: 0 errores, 5 warnings. `pnpm typecheck`: PASÓ. `pnpm test`: **71/71 PASÓ**. `pnpm build`: PASÓ (exit 0).
+- Trigger verificado por SQL en transacción con ROLLBACK: usuario nuevo → 2 INCOME + 7 EXPENSE, todas `is_default`; sin residuos.
+- `pnpm test:rls`: **NO EJECUTADO** localmente. La suite hace `delete` con service role sobre toda `categories`/`transactions`/`accounts` y borraría datos de desarrollo de la instancia local. Los 2 casos nuevos los verificará `rls.yml` en CI sobre base limpia.
+
+Hallazgos nuevos (no corregidos):
+- **B0.1-a** El escritorio no tiene navegación propia: el bottom nav móvil es la única navegación en `lg` (el `Sheet` tiene el disparador `lg:hidden` y no hay sidebar fija). Destino: E/F.
+- **B0.1-b** El dashboard muestra dos veces "Tus compromisos superan tu saldo líquido" y renderiza dos `<main>` anidados. Destino: F01.
+- **B0.1-c** Aviso de hidratación en el navegador durante el E2E. Destino: F01 (investigar).
+- **B0.1-d** Next.js 16.4.0 es marcado por `next dev`/`next build` como afectado por una vulnerabilidad conocida; el primer arranque de cada comando falla con exit 1 (el aviso es intermitente). Decisión del propietario sobre actualizar.
+- **B0.1-e** Los usuarios de prueba E2E se crean en la base local con `@finwise.test`; hay que limpiarlos o aislarlos antes de activar E2E en CI.
+- Usuarios existentes **no** reciben categorías por defecto (sin backfill; decisión del propietario si se desea).
+
+Rollback: archivar las categorías sembradas con `deleted_at` y restaurar la versión previa de `handle_new_user()` con una migración nueva.
+Registro actualizado: sí.
+Siguiente microtarea sugerida: B0.2 (job E2E en CI + limpieza de usuarios de prueba) y luego B0.3 (quitar `console.log/error` de onboarding), B0.4 (tarjetas, B02-02).
+STOP
+
+---
+
+## B0.2–B0.4 y Bloque F (2026-11-14)
+
+Rama: fix/lukiva-estabilizacion-e2e (el Bloque 0 y el Bloque F comparten rama y PR; desviación de "una rama por bloque" por dependencia directa).
+
+| ID | Estado | Evidencia |
+|---|---|---|
+| B0.2 | VALIDADO (CI pendiente de primera ejecución remota) | `.github/workflows/e2e.yml`: `supabase start`, credenciales locales vía `supabase status -o env`, Playwright chromium, sube `test-results/` si falla |
+| B0.3 | VALIDADO | Eliminados los `console.log/error` de depuración de `onboarding.ts` y `onboarding/page.tsx`; solo quedan 3 `console.error` de error real, sin datos del usuario |
+| B0.4 | VALIDADO | B02-02: `calculateCreditCardDebt` (deuda = saldo inicial + salidas − entradas) y `calculateAccountCurrentValue` (despacha por tipo); `/cuentas` muestra "Deuda actual/inicial" en tarjetas. B02-01: archivar solo marca `is_archived` (ya no `deleted_at`), la sección "Archivadas" se llena y las archivadas no se ofrecen para nuevos movimientos. 9 pruebas nuevas |
+| F01 | VALIDADO | **Bug real encontrado:** la consulta de `financial.ts` no traía `transaction_date` y `toDomainTransactions` ponía la fecha de hoy a todas las filas → ingresos/gastos "del mes" y tendencia contaban todo el historial. Corregido; 2 pruebas de regresión (rojas antes del fix: 520 vs 20) |
+| F02 | VALIDADO | `src/domain/analytics.ts` (períodos current/previous/last3/year con zona horaria del perfil, ingresos/gastos por rango, desglose por categoría con Decimal); selector de período por `searchParams`; `ExpenseBreakdown`; 12 pruebas de dominio + aserciones E2E |
+
+Pruebas: `pnpm lint` 0 errores/5 warnings; `pnpm typecheck` PASÓ; `pnpm test` **94/94**; `pnpm test:e2e` **7/7** (Supabase local, :3217); `pnpm build` PASÓ.
+Pendiente: job `e2e.yml` y los 2 casos RLS nuevos aún no se han ejecutado en CI remoto; `pnpm test:rls` no se ejecuta en local (borra datos de la base de desarrollo).
+Hallazgo abierto: B0.1-c (aviso de hidratación en el E2E) sin investigar.
+Siguiente microtarea sugerida: G01.
+
+---
+
+## Bloque G-H — Presupuestos y metas (2026-11-14)
+
+Rama: feature/lukiva-fase-g-h (apilada sobre fix/lukiva-estabilizacion-e2e, PR #40).
+
+| ID | Estado | Evidencia |
+|---|---|---|
+| G01 | VALIDADO | `20261114130000_budgets.sql`: `budgets` con FK compuesta a categories, índice único parcial (usuario, categoría, mes) mientras no esté eliminado, `period_month` día 1, límite > 0, trigger que exige categoría EXPENSE del usuario, RLS select/insert/update sin DELETE. **Desviación del modelo §33:** añade `deleted_at`. Probado por SQL con ROLLBACK: INCOME rechazada, día ≠ 1 rechazado, categoría ajena rechazada, duplicado rechazado |
+| G02 | VALIDADO | `src/domain/budgets.ts` (consumo derivado, estados 70/90/100 %, estado sobre porcentaje exacto, Decimal) + `src/app/actions/budgets.ts`; 15 pruebas |
+| G03 | VALIDADO | `/presupuestos` (navegación por mes, barras, estados) y `/presupuestos/nuevo`; E2E: consumo 80 % → "Atención", duplicado con error legible, eliminación y estado vacío |
+| H01 | VALIDADO | `20261114130100_goals.sql`: `goals` y `goal_contributions` (FK compuesta, montos con CHECK, RLS sin DELETE). Reutiliza el enum `goal_status` de la migración base. **Desviación §33:** `goal_contributions` con `deleted_at` |
+| H02 | VALIDADO | `src/domain/goals.ts` (progreso derivado, tope 100 %, mes mínimo 1, aporte mensual recomendado con redondeo hacia arriba, vencida, zona horaria del perfil) + acciones con sincronización de estado COMPLETED↔ACTIVE; 10 pruebas |
+| H03 | VALIDADO | `/metas`, `/metas/nueva`, `/metas/[id]`; E2E: aporte 40 %, completar, revertir al borrar un aporte, y el disponible no cambia (un aporte no mueve dinero) |
+
+Tipos de Supabase regenerados (`src/lib/supabase/types.ts`, solo se añadieron las 3 tablas).
+Pruebas: lint 0 errores/5 warnings; typecheck PASÓ; `pnpm test` **119/119**; `pnpm test:e2e` **9/9**; `pnpm build` PASÓ (exit 0).
+Matriz RLS de las 3 tablas añadida en `supabase/tests/rls.test.ts` (A/B/anon, FK, trigger, unicidad, CHECK): **NO EJECUTADA en local** por borrar datos de desarrollo; la ejecuta `rls.yml`.
+Aprendizaje: con una categoría ajena salta primero el trigger BEFORE y no la FK compuesta; la prueba lo refleja.
+Brechas: copiar presupuestos del mes anterior (UC-25) no implementado. "Dinero disponible" no descuenta aún el compromiso mensual de las metas (decisión de producto pendiente, ver plan).
+Siguiente microtarea sugerida: I01.
+
+---
+
+## Bloque I-J-K-L — Recurrentes, suscripciones, deudas y alertas (2026-11-14)
+
+Rama: feature/lukiva-fase-i-l (apilada sobre feature/lukiva-fase-g-h, PR #41).
+
+| ID | Estado | Evidencia |
+|---|---|---|
+| I01 | VALIDADO | `20261114140000_recurring_transactions.sql`: FK compuestas a cuentas y categorías, CHECK de intervalo (CUSTOM exige N > 0; las demás lo prohíben), trigger de tipo de categoría, `start_date` como ancla, FK compuesta en `transactions.recurring_transaction_id` (columna que estaba huérfana) e **índice único (recurrencia, fecha) activo** que garantiza la idempotencia en BD. Probado por SQL con ROLLBACK |
+| I02 | VALIDADO | `src/domain/recurrence.ts`: ocurrencias calculadas desde el ancla (el día 31 no deriva a 28), bisiestos, tope de 366 por ejecución, reanudar sin back-fill; `registerDueOccurrencesAction` trata el conflicto 23505 como "ya registrada" y solo avanza lo realmente registrado. 16 pruebas |
+| I03 | VALIDADO | `/recurrentes`: registrar vencidos una sola vez, recarga sin duplicados, pausar/reanudar sin back-fill; registro automático interno al abrir (no ejecuta pagos externos) |
+| J01–J03 | VALIDADO | `20261114150000_subscriptions.sql` (no genera movimientos ni obligaciones por sí sola: evita el doble conteo del modelo §19); dominio de costo mensual/anual y próxima renovación (15 pruebas); `/suscripciones` con totales, marcar pagada, pausar |
+| K01 | VALIDADO | `20261114160000_debts.sql`: `debts` y `debt_payments` (CHECK capital + interés = abono). **El saldo solo se mueve por `record_debt_payment()` / `void_debt_payment()`** (SECURITY DEFINER con `auth.uid()` explícito, `search_path` vacío, ejecución solo para `authenticated`); el cliente no tiene política de INSERT/UPDATE sobre abonos. **Desviación §33:** `deleted_at` en debt_payments. Verificado por SQL como `authenticated`: 1000 → 750 → 0 (PAID) → anular → 250 (ACTIVE); otro usuario y anon rechazados |
+| K02–K03 | VALIDADO | `src/domain/debts.ts` (validación espejo de la BD, simulación de liquidación, totales por moneda; 13 pruebas); `/deudas` con abono, anulación y liquidación |
+| L01 | VALIDADO | `20261114170000_alerts.sql`: `unique (user_id, dedup_key)` **no parcial** (los NULL siguen siendo distintos) para que PostgREST pueda inferirlo en `upsert … ignoreDuplicates`; CHECK de consistencia `is_read`/`read_at`; solo alertas internas, nada se envía fuera de la app |
+| L02–L03 | VALIDADO | `src/domain/alerts.ts` (presupuesto cerca/superado, obligación próxima ≤3 días/vencida, disponible bajo/negativo, meta vencida/en riesgo; claves con período; 9 pruebas) + `/alertas` con evaluación al abrir, marcar leída y "marcar todas" |
+
+Tipos de Supabase regenerados.
+Pruebas: lint 0 errores/5 warnings; typecheck PASÓ; `pnpm test` **172/172**; `pnpm build` PASÓ (exit 0); `pnpm test:e2e` **13 tests**, todos pasan en ejecución normal.
+Nota de entorno: con la máquina bajo carga alta (promedio 30 por otros procesos) hubo timeouts aislados y distintos en ejecuciones completas; cada test pasa solo y la suite pasó completa en otras corridas. Los runners de CI no comparten ese problema.
+Matriz RLS de recurrentes, suscripciones, deudas (incluidas las RPC), abonos y alertas añadida a `supabase/tests/rls.test.ts`: **NO EJECUTADA en local** (la suite borra datos de desarrollo); la ejecuta `rls.yml`. Las restricciones y las funciones sí se verificaron por SQL con ROLLBACK.
+Brechas: la deuda de tarjeta (`debts.type = CREDIT_CARD`) y la cuenta `CREDIT_CARD` de `accounts` son entidades independientes; no hay conciliación entre ambas (decisión de producto pendiente). Las alertas no tienen badge de no leídas en la navegación. El "dinero disponible" aún no descuenta pagos mínimos de deudas ni el compromiso mensual de metas.
+Siguiente microtarea sugerida: M01 (matriz de permisos; requiere aprobación del propietario).
+
+---
+
+## Bloque M-N — Roles y consola de administración (2026-11-14)
+
+Rama: feature/lukiva-fase-m-n (apilada sobre feature/lukiva-fase-i-l, PR #42).
+
+| ID | Estado | Evidencia |
+|---|---|---|
+| M01 | PROPUESTO — **requiere ratificación del propietario** | `contexto/arquitectura/adr/ADR-008-RBAC-Y-ADMINISTRACION.md`: roles `user`/`support`/`admin`, **un rol elevado por usuario**, matriz de permisos, amenazas, procedimiento de primer admin. Decisiones tomadas por defecto seguro (ver ADR) y marcadas para tu revisión |
+| M02 | VALIDADO | `20261114180000_rbac_admin.sql`: `roles`, `permissions`, `role_permissions`, `user_roles`, `admin_audit_logs`; RLS sin políticas de escritura y sin lectura de tablas de referencia/auditoría (denegación por defecto); funciones SECURITY DEFINER con `search_path` vacío y `auth.uid()` explícito; `admin_set_user_role` cambia el rol y audita en la misma transacción; guardias de no-autocambio y último admin; `bootstrap_first_admin` solo en el esquema `private`, solo si no hay admin |
+| M03 | VALIDADO | 29 casos RBAC en `supabase/tests/rls.test.ts` (**ejecutados contra el Supabase local: 29/29**, filtrando por bloque porque es independiente y solo inserta): denegación por defecto, sin autoescalada, soporte no escala, auditoría inalterable, **admin y soporte no leen ni modifican datos financieros ajenos en 13 tablas**, lista de usuarios con solo 5 columnas mínimas. Además 6 pruebas de contrato de la matriz en `src/domain/permissions.ts` |
+| N01 | VALIDADO | `/admin` con `requirePermission()` en servidor (sin sesión → /login; sin permiso → 404) y enlace visible solo con `admin.access`; la autorización se comprueba otra vez en cada acción y en la BD |
+| N02 | VALIDADO | `/admin/usuarios` (nombre, email, rol, alta; selector de rol solo con `users.roles.manage` y nunca sobre la propia fila) y `/admin/auditoria` |
+| N03 | VALIDADO | `/admin` con métricas agregadas (solo conteos, sin importes); E2E: usuario sin rol → 404, soporte sin gestión ni auditoría, admin cambia rol y queda auditado, las métricas no muestran importes |
+
+**Defecto previo corregido en la suite RLS:** `createTestUser` y el test de signup hacían `signIn/signUp` sobre el cliente compartido `anon`, dejándolo autenticado como el último usuario; todas las pruebas "anon cannot …" probaban en realidad a un usuario logueado. Ahora usan un cliente desechable. Las pruebas "anon" existentes y nuevas verifican ya a un anon real.
+Pruebas: lint 0 errores/5 warnings; typecheck PASÓ; `pnpm test` **178/178**; `pnpm build` PASÓ; E2E de administración **3/3** (requieren `E2E_SUPABASE_URL` y `E2E_SERVICE_ROLE_KEY`; el workflow `e2e.yml` los exporta del Supabase local del runner y sin ellos los tests se omiten). Los E2E anteriores siguen pasando.
+Suite RLS completa: **NO EJECUTADA en local** (el resto de bloques borra datos de desarrollo); la cubre `rls.yml`. Se ejecutó solo el bloque RBAC y se eliminaron los usuarios de prueba creados.
+**Acciones manuales:** (1) ratificar o ajustar el ADR-008; (2) tras desplegar la migración, crear el primer admin con `select private.bootstrap_first_admin('<uuid>')` desde el SQL editor (no hay UI a propósito); (3) no desplegar a producción sin aprobar el ADR.
+Siguiente microtarea sugerida: O01.
+
+---
+
+## Bloque O-P — Inteligencia financiera y cierre (2026-11-14)
+
+Rama: feature/lukiva-fase-o-p (apilada sobre feature/lukiva-fase-m-n, PR #43).
+
+| ID | Estado | Evidencia |
+|---|---|---|
+| O01 | VALIDADO | Contratos explícitos y deterministas en `src/domain/`: `forecast.ts` (UC-29), `score.ts` (UC-40), `purchase-simulator.ts` (UC-39), `debt-strategies.ts` (UC-35/36), `insights.ts`. Cada resultado declara su naturaleza (`isEstimate`, `isInternalIndicator`, `persisted: false`) |
+| O02 | VALIDADO | 51 pruebas de dominio: forecast (cierre de mes, baja confianza, obligaciones), score (componentes, ausencia de datos, bandas), simulador (tarjeta vs líquido, presupuesto, metas, no muta entradas), estrategias (orden con empates, plan de pago, determinismo, null si no se liquida), insights (umbrales y explicaciones) |
+| O03 | VALIDADO | `/analisis` (forecast como estimación, score explicado componente a componente, insights con "¿Cómo se calculó?"), `/simulador` (no persiste: el E2E comprueba que disponible y movimientos no cambian), `/deudas/estrategia`; 2 E2E |
+| P01 | VALIDADO | `e2e/responsive-a11y.spec.ts` audita 21 rutas a 390 px. **Encontró y se corrigió:** botón del menú móvil sin nombre accesible (en todas las páginas), menús de acciones de cuentas/categorías/obligaciones, enlaces "Volver", etiqueta del selector de cuenta, y un **desbordamiento horizontal en `/obligaciones`** (filtros). Seguridad: `pnpm audit` halló **2 críticos y 1 alto en `next@16.4.0`** (RCE sin autenticación); **actualizado a 16.4.1** |
+| P02 | VALIDADO | `06_MATRIZ_UC_50.md`: 38 ✅, 9 🟡, 3 ❌ con evidencia y brechas declaradas |
+| P03 | VALIDADO | `07_RELEASE_Y_RECUPERACION.md`: orden de merge, migraciones con rollback, copia previa, arranque del primer admin, humo posterior, recuperación y riesgos abiertos |
+
+Pruebas finales: lint 0 errores/5 warnings; typecheck PASÓ; `pnpm test` **229/229**; `pnpm build` PASÓ (exit 0, sin aviso de vulnerabilidad); `pnpm test:e2e` **19/19** sobre Next 16.4.1.
+**Decisión de producto pendiente:** fórmula y umbrales del Financial Score (UC-40), propuestos y explicados en `score.ts`.
+**Acción del propietario:** revisar el cambio de dependencia (`next` y `eslint-config-next` 16.4.0 → 16.4.1, parche de seguridad de la misma versión menor), ratificar ADR-008 y el score, y mergear la cadena #40→#44 en orden.
+Estado global de fases: A–P ejecutadas; ver matriz para las 12 brechas de casos de uso (UC-03, 25, 30 sin implementar; 9 parciales).
+Siguiente microtarea sugerida: cerrar brechas de UC (transferencias UI, editar/eliminar movimientos, recuperar contraseña) o ratificar decisiones pendientes.
+
+**Evidencia de CI remoto (2026-11-14).** Se abrió un PR temporal hacia `staging` con la cadena completa (#40→#44) solo para ejecutar los workflows, y se cerró sin mergear (#45): `CI Pipeline` PASÓ (lint, typecheck, test, build) · `RLS Integration Tests` PASÓ (**suite completa sobre base limpia, incluidos los bloques nuevos y el RBAC**) · `Playwright E2E` PASÓ (19 tests, incluidos los de `/admin`). El E2E falló la primera vez por infraestructura (`error from registry: Rate exceeded` al ejecutar `supabase start` en paralelo con el job RLS) y pasó al relanzar el job. Si se repite, escalonar los jobs o reintentar el arranque de Supabase.
+Esto cierra los pendientes "pendiente de ejecución en CI remoto" de los bloques anteriores. Sigue pendiente el cotejo del esquema de producción (sin credenciales).
+
+---
+
+## Cierre de brechas de casos de uso (2026-11-14)
+
+Rama: feature/lukiva-cierre-brechas-uc (apilada sobre feature/lukiva-fase-o-p, PR #44). Cierra los 12 casos que la matriz marcaba como parciales o sin implementar. Resultado: **UC-01 a UC-50 completos** (`06_MATRIZ_UC_50.md`).
+
+| UC | Qué se hizo | Evidencia |
+|---|---|---|
+| 03 | `/forgot-password` y `/reset-password`, respuesta neutral, **corregido el `redirectTo` que apuntaba al host de Supabase** en lugar de la app; `/terminos` y `/privacidad` (enlazadas y en 404) | E2E con el correo real del Mailpit local |
+| 11, 12 | `/transacciones/[id]/editar`; `transaction-edit.ts`. **Se endureció el servidor:** antes se podía editar una sola pata de una transferencia o cambiar tipo/moneda, y eliminar una pata dejaba el saldo descuadrado | 8 pruebas + E2E |
+| 13 | `/transacciones/transferir` (solo misma moneda) | E2E: neutral, no editable, se elimina completa |
+| 21 | Filtros por URL y paginación; `transaction-filters.ts` descarta valores inválidos. **Se corrigió un `<tbody>` anidado: era la causa del aviso de hidratación (B0.1-c)** y se quitó la hora "00:00" inventada | 10 pruebas + E2E |
+| 24, 25 | Editar límite y copiar mes anterior con vista previa; `planBudgetCopy` evita duplicados | 5 pruebas + E2E |
+| 30 | `recurrence-detection.ts`: criterios del UC, solo patrones activos, fecha propuesta futura (activarla no genera atrasados), nunca crea sin confirmar | 17 pruebas + E2E |
+| 41 | Texto exacto del UC con acciones en dashboard y movimientos | E2E |
+| 46 | `error.tsx`, `global-error.tsx`, 404 en español, y **los formularios dejan de perder lo escrito al fallar** (React 19 los vaciaba): `preventFormReset` en 24 formularios | Prueba unitaria que reproduce el defecto + E2E |
+| 47 | `loading.tsx` accesible | Prueba de componente |
+| 50 | Menú lateral persistente y agrupado en escritorio; barra inferior móvil con "Crear" activo y "Más"; navegación sin recargar; la marca ya no es `h1` | E2E en ambos tamaños |
+| 07 | Aviso al editar el saldo inicial | — |
+
+**Decisión técnica a señalar:** la primera versión del arreglo de formularios usaba `onSubmit`; provocó un fallo intermitente real (un envío antes de terminar la hidratación se perdía). Se descartó y se cambió por cancelar el evento `reset` conservando `action`, que mantiene la mejora progresiva.
+Pruebas: lint 0 errores/5 warnings; typecheck PASÓ; `pnpm test` **280/280**; `pnpm build` PASÓ; `pnpm test:e2e` **34/34** (con `--workers=2`; con más workers en esta máquina cargada hubo timeouts aislados, y los tests fallidos pasan al repetirlos).
+**Acciones manuales:** añadir la URL de producción a *Redirect URLs* de Supabase Auth y configurar SMTP propio antes de anunciar la recuperación de contraseña (ver `07_RELEASE_Y_RECUPERACION.md`); revisión jurídica de términos y privacidad.
+
+**Defecto heredado hallado por el CI remoto (2026-11-14).** El primer CI del cierre de brechas mostró `Event handlers cannot be passed to Client Component props` (9 veces). Causa: `/cuentas` y `/categorias` son componentes de servidor y pasaban `onClick` a los menús de Radix; además `archiveAccount`/`archiveCategory` eran funciones de servidor que llamaban a `window.location.reload()`. Es decir, **archivar cuentas y categorías desde la interfaz nunca funcionó** (el arreglo B02-01 de las archivadas no era alcanzable por UI), y desde que los usuarios nuevos reciben 9 categorías por defecto todos disparaban el error en `/categorias`. Corregido con el componente de cliente `ArchiveMenuItem` y un E2E nuevo; el botón "Reintentar" de ambas páginas (también con `onClick` en servidor) ahora es un enlace. Se comprobó que no quedan otros manejadores de eventos en componentes de servidor.
+Además: `playwright.config.ts` sube el timeout por test a 60 s y limita a 2 workers en CI, porque con la suite ampliada los 30 s se quedaban cortos en el runner (4 timeouts de onboarding).
+Por qué no se vio antes: ningún test abría `/categorias` o `/cuentas` con datos; la auditoría de accesibilidad pasaba porque el error no rompía el render en desarrollo. Lección: los E2E deben ejercitar cada acción de cada pantalla, y vigilar el log del servidor.
+
+**Segundo defecto hallado al probar el build de producción (2026-11-14).** El E2E de CI fallaba con timeouts en acciones de servidor porque `next dev` recompila rutas en frío con las acciones en vuelo ("An unexpected response was received from the server"). Se cambió `playwright.config.ts` para que en CI (o con `E2E_PROD=1`) pruebe `pnpm build && pnpm start`: es determinista y prueba lo que se despliega. Al hacerlo apareció un defecto real de `/auth/callback`: con `x-forwarded-host` redirigía siempre a `https://`, y `next start` lo añade aunque sea HTTP → `ERR_SSL_PROTOCOL_ERROR` (en Vercel funcionaba por casualidad). Además **`?next=` no se validaba**: `next=@sitio.com` convertía el host en credenciales y permitía una redirección abierta tras el login. Corregido con `src/lib/auth/callback-redirect.ts` (rutas internas únicamente; protocolo reenviado respetado), 14 pruebas unitarias y el E2E de recuperación pasando en producción.
+Resultado local en modo producción: **35/35** (34 + el de recuperación tras el arreglo), 2 workers.
+
+**CI remoto del cierre de brechas (2026-11-14, PR temporal #47 cerrado sin mergear):** `CI Pipeline` PASÓ · `RLS Integration Tests` PASÓ (suite completa) · `Playwright E2E` PASÓ (35 tests contra `pnpm build && pnpm start`). Las dos corridas anteriores fallaron y revelaron los defectos descritos arriba (manejadores de eventos en componentes de servidor; callback de autenticación).
+Unit: 294/294.
+
+---
+
+## Integración de la cadena de PR en `staging` (2026-11-14)
+
+Con autorización expresa del propietario, se mergearon en orden #40 → #41 → #42 → #43 → #44 → #46. Se usó **merge commit** (no squash) para conservar la ascendencia de las ramas apiladas; tras cada merge se reapuntó la base del siguiente a `staging` y se comprobó que su diff contuviera solo sus propios archivos (21, 35, 18, 29 y 66 respectivamente) antes de mergear.
+
+| PR | Merge | CI de `staging` (`ci` · `rls` · `e2e`) |
+|---|---|---|
+| #40 | `9247854` | verde |
+| #41 | `abb3cec` | verde (el `e2e` falló una vez por *rate limit* de `supabase/setup-cli`; pasó al relanzar el job) |
+| #42 | `1202489` | verde |
+| #43 | `de5c4d7` | verde |
+| #44 | `c6e9dc5` | verde |
+| #46 | `37abe16` | verde (E2E contra el build de producción) |
+
+El árbol de `staging` quedó idéntico al de la última rama (diff vacío). Se borraron las 6 ramas remotas y 9 locales ya fusionadas, y los 301 usuarios `@finwise.test` creados por los E2E en la base local (los 16 anteriores se conservaron). Los PR temporales #45 y #47, usados solo para ejecutar CI sobre la cadena completa, se cerraron sin mergear.
+**`main` y producción no se tocaron.** Pendiente: PR `staging → main` (aprobación del propietario) y los pasos de `07_RELEASE_Y_RECUPERACION.md` §3.
+**Higiene del repositorio:** en el commit `4756dab` entró por error un archivo suelto `src/lib/supabase/types 2.ts` (copia vieja de `types.ts`, sin ninguna referencia), por un `git add -A` que recogió un duplicado; se retira en el PR de documentación. Además hay en el árbol de trabajo local 95 copias sin versionar con sufijo ` 2`/` 3` (p. ej. `e2e/password-recovery.spec 2.ts`), con fecha de modificación del 14 de nov a las 14:40 y permisos distintos al resto del proyecto; no consta que las creara ningún comando de este trabajo (parecen duplicados de sincronización o de copia de carpeta). **No se versionaron ni se borraron:** conviene que el propietario las revise y no usar `git add -A` mientras existan.

@@ -47,6 +47,8 @@ export interface BalanceAccount {
   type: string;
   opening_balance?: Money | null;
   is_archived?: boolean | null;
+  /** Moneda de la cuenta. Si se omite, se asume la moneda base del agregado. */
+  currency_code?: string | null;
 }
 
 /** Tipos de cuenta que componen el saldo líquido (dinero disponible). */
@@ -178,6 +180,16 @@ export function createTransferPair(
  * cuenta, no un movimiento, de modo que nunca se duplica por tener
  * transacciones registradas.
  */
+/**
+ * Saldo actual de una cuenta (estrategia B).
+ *
+ * Precondición de moneda: se asume que todas las transacciones del `accountId`
+ * comparten la moneda de la cuenta (validado en `createTransactionAction` y
+ * `createTransferAction`). Esta función no filtra por moneda ni convierte; si se
+ * le pasan movimientos en otra moneda, los sumará sin distinción.
+ *
+ *   saldo actual = opening_balance + entradas − salidas
+ */
 export function calculateAccountBalance(
   transactions: Transaction[],
   accountId: string,
@@ -197,22 +209,78 @@ export function calculateAccountBalance(
 }
 
 /**
+ * Deuda actual de una tarjeta de crédito (B02-02).
+ *
+ *   deuda = opening_balance + salidas − entradas
+ *
+ * El saldo inicial de una tarjeta es la deuda existente al registrarla: las
+ * compras (salidas) la aumentan y los pagos (entradas) la reducen. Un valor
+ * negativo indica saldo a favor. Mismas precondiciones de moneda que
+ * `calculateAccountBalance`.
+ */
+export function calculateCreditCardDebt(
+  transactions: Transaction[],
+  accountId: string,
+  openingBalance: Money = 0
+): Decimal {
+  const movements = transactions
+    .filter((t) => t.account_id === accountId && !t.deleted_at)
+    .reduce((debt, t) => {
+      const amount = new Decimal(t.amount);
+      return t.direction === "OUTFLOW" ? debt.plus(amount) : debt.minus(amount);
+    }, new Decimal(0));
+
+  return movements.plus(toDecimal(openingBalance));
+}
+
+/**
+ * Valor actual de una cuenta según su tipo: saldo para cuentas de activo y
+ * deuda para `CREDIT_CARD`. Usar este despachador en vez de elegir la fórmula
+ * en cada llamador.
+ */
+export function calculateAccountCurrentValue(
+  transactions: Transaction[],
+  account: BalanceAccount
+): Decimal {
+  return account.type === "CREDIT_CARD"
+    ? calculateCreditCardDebt(transactions, account.id, account.opening_balance ?? 0)
+    : calculateAccountBalance(transactions, account.id, account.opening_balance ?? 0);
+}
+
+/**
  * Saldo líquido: suma el saldo actual de las cuentas líquidas y no archivadas.
  *
  * Las cuentas archivadas se excluyen (defensa en profundidad: el filtro de
  * `is_archived` en las consultas no debe ser la única barrera).
  */
+/**
+ * Saldo líquido: suma el saldo actual de las cuentas líquidas y no archivadas,
+ * **filtrando internamente por `baseCurrency`** para no mezclar monedas.
+ *
+ * Las cuentas archivadas se excluyen (defensa en profundidad). Las cuentas y
+ * transacciones cuya moneda no coincida con `baseCurrency` se excluyen del
+ * agregado; no se realiza conversión.
+ */
 export function calculateLiquidBalance(
   transactions: Transaction[],
-  accounts: BalanceAccount[]
+  accounts: BalanceAccount[],
+  baseCurrency: string
 ): Decimal {
   const liquidAccounts = accounts.filter(
-    (a) => LIQUID_ACCOUNT_TYPES.includes(a.type) && !a.is_archived
+    (a) =>
+      LIQUID_ACCOUNT_TYPES.includes(a.type) &&
+      !a.is_archived &&
+      (a.currency_code ?? baseCurrency) === baseCurrency
   );
   const liquidAccountIds = liquidAccounts.map((a) => a.id);
 
   const movements = transactions
-    .filter((t) => liquidAccountIds.includes(t.account_id) && !t.deleted_at)
+    .filter(
+      (t) =>
+        liquidAccountIds.includes(t.account_id) &&
+        !t.deleted_at &&
+        t.currency_code === baseCurrency
+    )
     .reduce((balance, t) => {
       const amount = new Decimal(t.amount);
       if (t.direction === "INFLOW") {

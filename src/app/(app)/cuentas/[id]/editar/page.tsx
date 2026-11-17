@@ -162,8 +162,11 @@ function EditAccountForm({ initialData }: { initialData: AccountData }) {
               placeholder="0"
               defaultValue={initialData.opening_balance.toString()}
               disabled={isPending}
-              aria-describedby={getFieldError("opening_balance") ? "opening_balance-error" : undefined}
+              aria-describedby={getFieldError("opening_balance") ? "opening_balance-error opening_balance-hint" : "opening_balance-hint"}
             />
+            <p id="opening_balance-hint" className="mt-1 text-xs text-muted-foreground">
+              Es el saldo con el que empezó la cuenta. Si lo cambias, también cambia tu saldo actual.
+            </p>
             {getFieldError("opening_balance") && (
               <p id="opening_balance-error" className="mt-1 text-sm text-destructive" role="alert">
                 {getFieldError("opening_balance")}
@@ -326,7 +329,7 @@ export default async function EditarCuentaPage({ params }: { params: Promise<{ i
   
   // Call the server action directly
   const { getAccountsAction } = await import("@/app/actions/accounts");
-  const { data: accounts } = await getAccountsAction();
+  const { data: accounts } = await getAccountsAction({ includeArchived: true });
   const account = accounts?.find((a) => a.id === id);
 
   if (!account) {
