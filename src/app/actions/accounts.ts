@@ -6,13 +6,14 @@ import type { Database } from "@/lib/supabase/types";
 import { calculateAccountCurrentValue } from "@/domain/transactions";
 import { Decimal } from "decimal.js";
 import { z } from "zod";
+import { readCheckbox, readOptional } from "@/lib/form-parsing";
 
 const accountTypeSchema = z.enum(["CASH", "CHECKING", "SAVINGS", "CREDIT_CARD", "DIGITAL_WALLET", "OTHER"]);
 
 const createAccountSchema = z.object({
   name: z.string().trim().min(1, "El nombre es requerido").max(50),
   type: accountTypeSchema,
-  opening_balance: z.coerce.number().min(0, "El saldo inicial no puede ser negativo").default(0),
+  opening_balance: z.coerce.number().default(0), // puede ser negativo (sobregiro)
   currency_code: z.string().length(3).default("COP"),
   color: z.string().optional(),
   icon: z.string().optional(),
@@ -25,7 +26,7 @@ const updateAccountSchema = z.object({
   id: z.string().uuid(),
   name: z.string().trim().min(1, "El nombre es requerido").max(50).optional(),
   type: accountTypeSchema.optional(),
-  opening_balance: z.coerce.number().min(0).optional(),
+  opening_balance: z.coerce.number().optional(), // puede ser negativo (sobregiro)
   currency_code: z.string().length(3).optional(),
   color: z.string().optional(),
   icon: z.string().optional(),
@@ -217,14 +218,14 @@ export async function updateAccountAction(_prevState: FormState, formData: FormD
     id: formData.get("id"),
     name: formData.get("name"),
     type: formData.get("type"),
-    opening_balance: formData.get("opening_balance"),
+    opening_balance: readOptional(formData, "opening_balance"),
     currency_code: formData.get("currency_code"),
-    color: formData.get("color"),
-    icon: formData.get("icon"),
-    credit_limit: formData.get("credit_limit"),
-    payment_due_day: formData.get("payment_due_day"),
-    statement_closing_day: formData.get("statement_closing_day"),
-    is_archived: formData.get("is_archived"),
+    color: readOptional(formData, "color"),
+    icon: readOptional(formData, "icon"),
+    credit_limit: readOptional(formData, "credit_limit"),
+    payment_due_day: readOptional(formData, "payment_due_day"),
+    statement_closing_day: readOptional(formData, "statement_closing_day"),
+    is_archived: readCheckbox(formData, "is_archived"),
   };
 
   const parsed = updateAccountSchema.safeParse(rawData);
@@ -291,6 +292,31 @@ export async function archiveAccountAction(accountId: string) {
 
   if (error) {
     return { error: "Error al archivar la cuenta" };
+  }
+
+  return { success: true };
+}
+
+export async function unarchiveAccountAction(accountId: string) {
+  const supabase = await createSupabaseServerClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "No autorizado" };
+  }
+
+  const { error } = await supabase
+    .from("accounts")
+    .update({ is_archived: false })
+    .eq("id", accountId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    return { error: "Error al desarchivar la cuenta" };
   }
 
   return { success: true };

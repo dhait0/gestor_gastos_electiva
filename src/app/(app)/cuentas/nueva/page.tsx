@@ -142,7 +142,6 @@ function NewAccountForm() {
               name="opening_balance"
               type="number"
               step="0.01"
-              min="0"
               placeholder="0"
               defaultValue="0"
               disabled={isPending}

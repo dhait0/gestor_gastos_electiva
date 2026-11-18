@@ -1242,3 +1242,24 @@ El árbol de `staging` quedó idéntico al de la última rama (diff vacío). Se 
 Verificado sobre producción de forma solo lectura: el alias público responde, el código nuevo está en vivo (`/forgot-password`, `/terminos`, `/privacidad`), las rutas privadas redirigen a login y las cabeceras incluyen HSTS, `X-Frame-Options: DENY` y `nosniff`. No se verificó nada con sesión iniciada ni el esquema de la base.
 Hallazgos menores: `/manifest.json`, `/robots.txt` y `/sw.js` redirigen a login (el manifest de la PWA no es público; defecto anterior); el CLI fijado se probó con `--yes` y `--dry-run` contra la base local.
 Corrección en `fix/ci-supabase-cli-pin`: CLI fijado en 3.2.0, `--yes` y paso `--dry-run`. **Pendiente de aplicar:** tras mergear ese PR a `staging` y promoverlo a `main`, el job aplicará las 8 migraciones (requiere copia de seguridad previa, ver `07_RELEASE_Y_RECUPERACION.md` §3).
+
+---
+
+## Edición de cuentas rota y ayuda guiada (2026-11-17)
+
+Reportado por el propietario: al editar una cuenta no deja desarchivar, el botón de editar no sirve y no se entiende el flujo de uso.
+**Causa (tres defectos a la vez, reproducidos en el navegador antes de tocar nada):**
+1. `/cuentas/[id]/editar` y `/categorias/[id]/editar` eran componentes de cliente (`"use client"`) con `export default async function`: React no lo permite y la página **entraba en un bucle infinito de peticiones** a la acción de servidor (cientos de `POST` por segundo) y nunca terminaba de cargar. El linter ya lo avisaba (2 warnings que se ignoraron).
+2. El menú de cada fila envolvía el `DropdownMenuItem` de Radix dentro de un `<Link>`: pulsar «Editar» no navegaba.
+3. `updateAccountAction` pasaba `formData.get("is_archived")` (`"on"` o `null`) a `z.boolean()`: **toda edición fallaba en silencio**, porque el error de campo no se mostraba. Igual en `is_default` de categorías. Además los números vacíos se convertían en 0 y el saldo inicial negativo (sobregiro) estaba prohibido (`min(0)`), lo que impedía editar una cuenta con sobregiro.
+**Corrección:** página de servidor + formulario de cliente (`src/components/accounts/EditAccountForm.tsx`, `src/components/categories/EditCategoryForm.tsx`), menús con `asChild`, helper `src/lib/form-parsing.ts` (`readCheckbox`, `readOptional`), saldo inicial negativo permitido, y «Desarchivar» en el menú de cuentas archivadas (`unarchiveAccountAction`).
+**Ayuda guiada:** botón flotante «?» (`src/components/help`) que abre un panel con la ayuda de la sección actual, el flujo de uso en 4 pasos y un glosario (saldo líquido, compromisos, reserva, dinero disponible…), y un recorrido con **driver.js 1.10.0** (dependencia nueva, fijada, MIT, sin dependencias propias; cargada bajo demanda). No arranca solo; mientras no se abra, el botón late. Los pasos que no aplican a la pantalla (p. ej. la barra lateral en móvil) se omiten.
+**Pruebas:** unit 4 nuevos de `form-parsing` + 9 de contenido de ayuda (incluye un guardián de que cada paso apunta a un `data-tour` real); E2E nuevos `accounts-edit.spec.ts` y `help.spec.ts` (escritorio y móvil).
+**Lección:** un warning de lint `no-async-client-component` indicaba un bucle real en producción; no se debe ignorar.
+
+## Migraciones aplicadas y verificación con datos reales (2026-11-17)
+
+Tras mergear #53 (CLI fijado) y la promoción #54, el job `Deploy Migrations to Supabase` corrió en `main`: dry-run con las 8 migraciones `20261114*` y `db push --yes` aplicándolas una a una (job en verde). El propietario creó después su usuario desde la app y cargó sus datos con SQL en el editor de Supabase (la base de producción solo tenía un usuario y autorizó vaciarla).
+Verificado **en local** con un usuario con la misma carga: saldos de dominio = recálculo independiente en centavos; ingresos y gastos por mes y por categoría coinciden con el extracto del banco; las 13 pantallas cargan sin errores de consola y `/admin` da 404 a un usuario sin rol. **No se verificó producción con sesión** (sin credenciales).
+Bug encontrado y corregido en `fix/fechas-sin-desfase`: las fechas `YYYY-MM-DD` se mostraban un día antes en zonas con desfase negativo (Colombia) porque `new Date("2026-11-30")` es medianoche UTC. Afectaba al dashboard (movimientos recientes) y a `/obligaciones` (vencimiento); `/transacciones` ya usaba `parseISO`. Nuevo `formatDateOnly` en `src/lib/utils.ts` y test de regresión con `TZ=America/Bogota` (298 tests, lint sin errores, `tsc` limpio).
+Observaciones de producto (sin cambios): el "dinero disponible" resta **todas** las obligaciones pendientes (incluidas las de diciembre), no solo las del mes; las tarjetas figuran como cuentas, no en `/deudas`; los recurrentes con `next_execution_date` pasada aparecen como "vencidos" y "Registrar vencidos" crearía gastos.

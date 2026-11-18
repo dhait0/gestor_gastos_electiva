@@ -14,3 +14,18 @@ export function formatCurrency(amount: number, currencyCode: string = "COP"): st
     maximumFractionDigits: 0,
   }).format(amount);
 }
+
+/**
+ * Formatea una fecha "solo día" (YYYY-MM-DD, como `transaction_date` o `due_date`).
+ *
+ * `new Date("2026-11-30")` se interpreta como medianoche UTC y, en una zona con
+ * desfase negativo (Colombia, UTC-5), se mostraba como el 29. Aquí el día se
+ * construye en hora local, así que la fecha mostrada es siempre la guardada.
+ */
+export function formatDateOnly(
+  date: string,
+  options: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" }
+): string {
+  const [y, m, d] = date.slice(0, 10).split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("es-CO", options);
+}

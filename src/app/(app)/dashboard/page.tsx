@@ -4,7 +4,7 @@ import { getFinancialSummaryAction } from "@/app/actions/financial";
 import { getTransactionsAction } from "@/app/actions/transactions";
 import { getAccountsAction } from "@/app/actions/accounts";
 import { MonthlyTrendChart } from "@/components/dashboard/MonthlyTrendChart";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDateOnly } from "@/lib/utils";
 import { Decimal } from "decimal.js";
 import { DASHBOARD_PERIODS, parseDashboardPeriod, type DashboardPeriod } from "@/domain/analytics";
 import { ExpenseBreakdown } from "@/components/dashboard/ExpenseBreakdown";
@@ -100,6 +100,7 @@ export default async function DashboardPage({
           <div className="flex items-center gap-3">
             <a
               href="/transacciones/nuevo?type=expense"
+              data-tour="nueva-transaccion"
               className={cn(
                 "inline-flex items-center gap-2 px-4 py-2",
                 "bg-primary text-primary-foreground",
@@ -143,7 +144,7 @@ export default async function DashboardPage({
           <h2 id="available-heading" className="sr-only">
             Dinero disponible
           </h2>
-          <div className={cn(
+          <div data-tour="disponible" className={cn(
             "rounded-2xl p-6 sm:p-8",
             statusInfo.bgColor,
             statusInfo.borderColor,
@@ -382,10 +383,7 @@ export default async function DashboardPage({
                           {formatCurrency(Number(transaction.amount), transaction.currency_code)}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(transaction.transaction_date).toLocaleDateString("es-CO", {
-                            day: "numeric",
-                            month: "short",
-                          })}
+                          {formatDateOnly(transaction.transaction_date)}
                         </p>
                       </div>
                     </div>

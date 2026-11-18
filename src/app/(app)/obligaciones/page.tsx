@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { getObligationsAction, markObligationPaidAction, archiveObligationAction } from "@/app/actions/obligations";
 import { useToast } from "@/components/ui/toast";
@@ -267,7 +267,7 @@ function ObligationsList() {
                     <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3.5 h-3.5" />
-                        Vence: {format(new Date(obligation.due_date), "dd MMM yyyy", { locale: es })}
+                        Vence: {format(parseISO(obligation.due_date), "dd MMM yyyy", { locale: es })}
                       </span>
                       <span className="font-medium tabular-nums">
                         {formatCurrency(obligation.amount, obligation.currency_code)}

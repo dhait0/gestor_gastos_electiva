@@ -29,6 +29,7 @@ import {
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { HelpButton } from "@/components/help/HelpButton";
 import { usePathname } from "next/navigation";
 import { logoutAction } from "@/app/actions/auth";
 import { ToastProvider } from "@/components/ui/toast";
@@ -91,6 +92,7 @@ function NavLinks({ pathname, showAdmin, onNavigate }: { pathname: string; showA
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  data-tour={`nav-${item.href.slice(1)}`}
                   onClick={onNavigate}
                   aria-current={isActive(pathname, item.href) ? "page" : undefined}
                   className={cn(
@@ -160,10 +162,11 @@ function MobileMenu({
 
 /** Barra inferior de acceso rápido (solo móvil/tablet): navega sin recargar y "Más" abre el menú completo. */
 function MobileNav({ pathname, onOpenMenu }: { pathname: string; onOpenMenu: () => void }) {
-  const item = (href: string, label: string, Icon: LucideIcon) => (
+  const item = (href: string, label: string, Icon: LucideIcon, tour: string) => (
     <Link
       key={href}
       href={href}
+      data-tour={tour}
       aria-current={isActive(pathname, href) ? "page" : undefined}
       className={cn(
         "flex flex-col items-center gap-1 py-3 px-2 text-xs font-medium transition-colors",
@@ -182,18 +185,20 @@ function MobileNav({ pathname, onOpenMenu }: { pathname: string; onOpenMenu: () 
       aria-label="Accesos rápidos"
     >
       <div className="grid grid-cols-5">
-        {item("/dashboard", "Inicio", Home)}
-        {item("/transacciones", "Movimientos", List)}
+        {item("/dashboard", "Inicio", Home, "mobile-inicio")}
+        {item("/transacciones", "Movimientos", List, "mobile-movimientos")}
         <Link
           href="/transacciones/nuevo?type=expense"
+          data-tour="mobile-crear"
           className="flex flex-col items-center gap-1 py-3 px-2 text-xs font-medium text-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
         >
           <Plus className="w-5 h-5" aria-hidden="true" />
           Crear
         </Link>
-        {item("/presupuestos", "Presupuestos", PiggyBank)}
+        {item("/presupuestos", "Presupuestos", PiggyBank, "mobile-presupuestos")}
         <button
           type="button"
+          data-tour="mobile-mas"
           onClick={onOpenMenu}
           className="flex flex-col items-center gap-1 py-3 px-2 text-xs font-medium text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
         >
@@ -264,6 +269,7 @@ export function AppLayoutClient({ children, showAdmin = false }: { children: Rea
           <main className="flex-1 pb-20 lg:pb-0">{children}</main>
         </div>
         <MobileNav pathname={pathname} onOpenMenu={() => setMenuOpen(true)} />
+        <HelpButton />
       </div>
     </ToastProvider>
   );
