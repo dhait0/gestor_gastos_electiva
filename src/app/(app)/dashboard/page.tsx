@@ -4,7 +4,7 @@ import { getFinancialSummaryAction } from "@/app/actions/financial";
 import { getTransactionsAction } from "@/app/actions/transactions";
 import { getAccountsAction } from "@/app/actions/accounts";
 import { MonthlyTrendChart } from "@/components/dashboard/MonthlyTrendChart";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDateOnly } from "@/lib/utils";
 import { Decimal } from "decimal.js";
 import { DASHBOARD_PERIODS, parseDashboardPeriod, type DashboardPeriod } from "@/domain/analytics";
 import { ExpenseBreakdown } from "@/components/dashboard/ExpenseBreakdown";
@@ -383,10 +383,7 @@ export default async function DashboardPage({
                           {formatCurrency(Number(transaction.amount), transaction.currency_code)}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(transaction.transaction_date).toLocaleDateString("es-CO", {
-                            day: "numeric",
-                            month: "short",
-                          })}
+                          {formatDateOnly(transaction.transaction_date)}
                         </p>
                       </div>
                     </div>
