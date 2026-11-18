@@ -159,12 +159,12 @@ function CategoryCard({ category }: { category: Category }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <Link href={`/categorias/${category.id}/editar`} className="block">
-                <DropdownMenuItem className="flex items-center gap-2 px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+              <DropdownMenuItem asChild className="flex items-center gap-2 px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+                <Link href={`/categorias/${category.id}/editar`}>
                   <Edit className="w-4 h-4" />
                   Editar
-                </DropdownMenuItem>
-              </Link>
+                </Link>
+              </DropdownMenuItem>
               <ArchiveMenuItem id={category.id} kind="category" />
             </DropdownMenuContent>
           </DropdownMenu>
