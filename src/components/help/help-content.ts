@@ -14,6 +14,8 @@ export interface TourStep {
   title: string;
   description: string;
   side?: "top" | "right" | "bottom" | "left";
+  /** En móvil el elemento vive dentro del menú lateral: el recorrido lo abre para mostrarlo. */
+  inMobileMenu?: boolean;
 }
 
 /** Recorrido guiado. Los pasos sin ningún elemento visible se omiten. */
@@ -27,15 +29,17 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: "cuentas",
-    selectors: ['[data-tour="nav-cuentas"]', '[data-tour="mobile-mas"]'],
+    selectors: ['[data-tour="nav-cuentas"]'],
+    inMobileMenu: true,
     title: "1. Tus cuentas",
     description:
-      "Empieza aquí: crea una cuenta por cada lugar donde tienes dinero (efectivo, banco, billetera digital) y por cada tarjeta de crédito. El saldo inicial es lo que tiene hoy; desde ahí Lukiva lo actualiza con cada movimiento. En móvil, está dentro de «Más».",
+      "Empieza aquí: crea una cuenta por cada lugar donde tienes dinero (efectivo, banco, billetera digital) y por cada tarjeta de crédito. El saldo inicial es lo que tiene hoy; desde ahí Lukiva lo actualiza con cada movimiento.",
     side: "right",
   },
   {
     id: "categorias",
-    selectors: ['[data-tour="nav-categorias"]', '[data-tour="mobile-mas"]'],
+    selectors: ['[data-tour="nav-categorias"]'],
+    inMobileMenu: true,
     title: "2. Tus categorías",
     description:
       "Las categorías ordenan en qué entra y en qué se va tu dinero (Alimentación, Transporte, Salario…). Ya trae unas por defecto; puedes editarlas, crear nuevas o archivar las que no uses.",
@@ -76,7 +80,8 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: "inteligencia",
-    selectors: ['[data-tour="nav-alertas"]', '[data-tour="mobile-mas"]'],
+    selectors: ['[data-tour="nav-alertas"]'],
+    inMobileMenu: true,
     title: "Alertas y análisis",
     description:
       "Alertas te avisa de presupuestos excedidos u obligaciones próximas. Análisis proyecta cómo cerrarías el mes y el Simulador te dice si te alcanza para una compra a cuotas.",
