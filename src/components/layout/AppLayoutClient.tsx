@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
 import { cn } from "@/lib/utils";
 import {
   Home,
@@ -30,6 +30,7 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { HelpButton } from "@/components/help/HelpButton";
+import { tourBridge } from "@/components/help/tour-bridge";
 import { usePathname } from "next/navigation";
 import { logoutAction } from "@/app/actions/auth";
 import { ToastProvider } from "@/components/ui/toast";
@@ -136,20 +137,29 @@ function MobileMenu({
   showAdmin,
   open,
   onOpenChange,
+  tourActive,
 }: {
   pathname: string;
   showAdmin: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Durante el recorrido guiado la hoja no es modal: así se puede pulsar el globo del recorrido sin cerrarla. */
+  tourActive: boolean;
 }) {
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={onOpenChange} modal={!tourActive}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Abrir menú de navegación">
           <Menu className="w-5 h-5" aria-hidden="true" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-72 p-0 flex flex-col">
+      <SheetContent
+        side="left"
+        className="w-72 p-0 flex flex-col"
+        onInteractOutside={(event) => {
+          if (tourActive) event.preventDefault();
+        }}
+      >
         <div className="p-4 border-b border-border">
           <SheetTitle className="text-xl font-bold text-foreground font-heading">Lukiva</SheetTitle>
         </div>
@@ -259,13 +269,17 @@ function AppHeader({ menu }: { menu: React.ReactNode }) {
 export function AppLayoutClient({ children, showAdmin = false }: { children: React.ReactNode; showAdmin?: boolean }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const tourActive = useSyncExternalStore(tourBridge.subscribe, tourBridge.isActive, () => false);
+
+  // El recorrido guiado abre y cierra este menú para poder señalar sus enlaces en móvil.
+  useEffect(() => tourBridge.registerMenu(setMenuOpen), []);
 
   return (
     <ToastProvider>
       <div className="min-h-screen bg-background">
         <DesktopSidebar pathname={pathname} showAdmin={showAdmin} />
         <div className="min-h-screen flex flex-col lg:pl-64">
-          <AppHeader menu={<MobileMenu pathname={pathname} showAdmin={showAdmin} open={menuOpen} onOpenChange={setMenuOpen} />} />
+          <AppHeader menu={<MobileMenu pathname={pathname} showAdmin={showAdmin} open={menuOpen} onOpenChange={setMenuOpen} tourActive={tourActive} />} />
           <main className="flex-1 pb-20 lg:pb-0">{children}</main>
         </div>
         <MobileNav pathname={pathname} onOpenMenu={() => setMenuOpen(true)} />
