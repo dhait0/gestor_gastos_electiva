@@ -37,7 +37,7 @@ async function register(token: string, input: ShortcutMovementInput) {
 
 /**
  * POST /api/atajos/movimientos — registra un gasto o ingreso desde la app Atajos del iPhone.
- * Autorización: `Authorization: Bearer lkv_…` (token creado en Ajustes). Cuerpo JSON:
+ * Autorización: `Authorization: Bearer lkv_…` (token creado en Ajustes). Cuerpo JSON o formulario:
  * { tipo: "gasto"|"ingreso", monto, descripcion?, cuenta?, categoria, fecha?, clave? }
  */
 export async function POST(request: Request) {
@@ -47,11 +47,18 @@ export async function POST(request: Request) {
   const declared = Number(request.headers.get("content-length") ?? 0);
   if (declared > 10_000) return fail(413, "La petición es demasiado grande", "TOO_LARGE");
 
+  // Atajos puede enviar JSON o «Formulario» (form-urlencoded / multipart): este último es el más fiable en la app.
+  const contentType = request.headers.get("content-type") ?? "";
   let body: unknown;
   try {
-    body = await request.json();
+    if (/multipart\/form-data|application\/x-www-form-urlencoded/i.test(contentType)) {
+      const form = await request.formData();
+      body = Object.fromEntries([...form.entries()].filter(([, value]) => typeof value === "string"));
+    } else {
+      body = await request.json();
+    }
   } catch {
-    return fail(400, "El cuerpo debe ser JSON válido", "INVALID_BODY");
+    return fail(400, "El cuerpo debe ser JSON o un formulario válido", "INVALID_BODY");
   }
   const parsed = parseMovementBody(body);
   if (!parsed.ok) return fail(400, parsed.error, "INVALID_BODY");
