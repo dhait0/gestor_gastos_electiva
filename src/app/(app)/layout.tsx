@@ -17,9 +17,11 @@ export default async function AppLayout({
     redirect("/login");
   }
 
+  const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", user.id).single();
+
   // Solo para pintar el acceso: la autorización real se vuelve a comprobar en /admin
   const authorization = await getAuthorizationContext();
   const showAdmin = authorization?.permissions.includes("admin.access") ?? false;
 
-  return <AppLayoutClient showAdmin={showAdmin}>{children}</AppLayoutClient>;
+  return <AppLayoutClient showAdmin={showAdmin} displayName={profile?.display_name ?? null}>{children}</AppLayoutClient>;
 }
