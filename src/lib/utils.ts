@@ -7,6 +7,8 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number, currencyCode: string = "COP"): string {
+  // Un -0 (p. ej. el negativo de una reserva en 0) o un valor que se redondea a 0 no debe verse como «-$ 0».
+  if (Math.round(amount) === 0) amount = 0;
   return new Intl.NumberFormat("es-CO", {
     style: "currency",
     currency: currencyCode,

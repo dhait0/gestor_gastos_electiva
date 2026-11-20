@@ -117,6 +117,14 @@
     #0B1220;
 }
 
+/* Colores de acento elegibles en Ajustes (data-theme en <html>). «oceano» es el predeterminado de :root / .dark. */
+:root[data-theme="menta"] { --primary: #0B7A69; --ring: #0B7A69; }
+:root[data-theme="menta"].dark { --primary: #2DD4BF; --primary-foreground: #04201C; --ring: #2DD4BF; }
+:root[data-theme="atardecer"] { --primary: #C2410C; --ring: #C2410C; }
+:root[data-theme="atardecer"].dark { --primary: #FB923C; --primary-foreground: #2A1004; --ring: #FB923C; }
+:root[data-theme="violeta"] { --primary: #6D28D9; --ring: #6D28D9; }
+:root[data-theme="violeta"].dark { --primary: #A78BFA; --primary-foreground: #1E1038; --ring: #A78BFA; }
+
 @layer base {
   * {
     border-color: var(--border);
