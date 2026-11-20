@@ -24,13 +24,9 @@ export function ShortcutTokens({ tokens, baseUrl, accounts, expenseCategories }:
   const [isRevoking, startRevoke] = useTransition();
   const active = tokens.filter((token) => !token.revoked);
   const movementsUrl = `${baseUrl}/api/atajos/movimientos`;
-  const getBaseUrl = `${movementsUrl}?cuenta=${encodeURIComponent(accounts[0] ?? "Efectivo")}&categoria=${encodeURIComponent(expenseCategories[0] ?? "Alimentación")}&monto=`;
   const exampleToken = state.success ? state.token : "<tu token>";
-  const exampleBody = JSON.stringify(
-    { tipo: "gasto", monto: 45000, descripcion: "Almuerzo", cuenta: accounts[0] ?? "Efectivo", categoria: expenseCategories[0] ?? "Alimentación" },
-    null,
-    2
-  );
+  const optionsUrl = `${baseUrl}/api/atajos/opciones`;
+  const formFields = ["tipo", "monto", "descripcion", "cuenta", "categoria"].join("\n");
 
   return (
     <div className="space-y-6">
@@ -105,34 +101,46 @@ export function ShortcutTokens({ tokens, baseUrl, accounts, expenseCategories }:
 
       <section aria-labelledby="atajos-guia-titulo" className="space-y-3">
         <h3 id="atajos-guia-titulo" className="text-sm font-semibold text-foreground">
-          Cómo armar el atajo «Gasto rápido»
+          Cómo armar el atajo «Gasto rápido» (eliges cuenta y categoría de una lista)
         </h3>
+        <p className="text-sm text-muted-foreground">
+          En el iPhone abre <strong className="text-foreground">Atajos</strong>, toca <strong className="text-foreground">+</strong> y ponle de nombre «Gasto rápido». Añade estas acciones en orden:
+        </p>
         <ol className="list-decimal space-y-2 pl-5 text-sm text-foreground">
-          <li>En el iPhone abre <strong>Atajos</strong>, toca <strong>+</strong> y ponle de nombre «Gasto rápido».</li>
-          <li>Añade <strong>Solicitar entrada</strong> (tipo Número) con la pregunta «¿Cuánto gastaste?».</li>
-          <li>Añade otra <strong>Solicitar entrada</strong> (tipo Texto) con la pregunta «¿En qué?».</li>
           <li>
-            Añade <strong>Obtener contenido de URL</strong> y toca «Mostrar más». <strong>Opción recomendada (GET, sin cuerpo):</strong>
-            <ul className="mt-1 list-disc space-y-1 pl-5 text-muted-foreground">
-              <li>
-                URL: empieza con <code className="break-all text-xs text-foreground">{getBaseUrl}</code> <CopyButton value={getBaseUrl} label="URL base" />
-                {" "}y a continuación escribe <code className="text-xs text-foreground">&amp;descripcion=</code> y la variable del paso 3, y al final de la parte que ya trae <code className="text-xs text-foreground">monto=</code> inserta la variable del paso 2.
-              </li>
-              <li>Método: <strong className="text-foreground">GET</strong> (el que viene por defecto).</li>
-              <li>
-                Encabezado: <code className="text-xs text-foreground">Authorization</code> con el valor{" "}
-                <code className="break-all text-xs text-foreground">Bearer {exampleToken}</code>
-              </li>
-            </ul>
-            <p className="mt-2 text-muted-foreground">
-              <strong className="text-foreground">Alternativa (POST con JSON):</strong> URL <code className="break-all text-xs text-foreground">{movementsUrl}</code>, método POST, el mismo encabezado y cuerpo JSON con estos campos
-              (en <em>monto</em> y <em>descripcion</em> usa las variables de los pasos 2 y 3). Si te sale «la conexión de red se perdió», usa la opción GET.
-            </p>
-            <pre className="mt-2 overflow-x-auto rounded-md bg-muted p-3 text-xs">{exampleBody}</pre>
+            <strong>Obtener contenido de URL</strong> con la URL{" "}
+            <code className="break-all text-xs">{optionsUrl}</code> <CopyButton value={optionsUrl} label="URL de opciones" />. En «Mostrar más»: método <strong>GET</strong> y un encabezado{" "}
+            <code className="text-xs">Authorization</code> con el valor <code className="break-all text-xs">Bearer {exampleToken}</code>. Esto trae tus cuentas y categorías.
           </li>
-          <li>Añade <strong>Obtener valor del diccionario</strong> con la clave <code className="text-xs">mensaje</code> y luego <strong>Mostrar notificación</strong>: verás «Gasto de $45.000 registrado en…».</li>
+          <li>
+            <strong>Obtener valor del diccionario</strong>: clave <code className="text-xs">cuentas_nombres</code> (de «Contenido de URL»). Luego <strong>Elegir de la lista</strong> con el mensaje «¿De qué cuenta?» y{" "}
+            <strong>Definir variable</strong> llamada <code className="text-xs">cuenta</code> con el «Elemento elegido».
+          </li>
+          <li>
+            Otra vez <strong>Obtener valor del diccionario</strong>, ahora con la clave <code className="text-xs">categorias_gasto</code> y tocando su entrada para elegir de nuevo «Contenido de URL». Luego{" "}
+            <strong>Elegir de la lista</strong> («¿Qué categoría?») y <strong>Definir variable</strong> <code className="text-xs">categoria</code>.
+          </li>
+          <li>
+            <strong>Solicitar entrada</strong> tipo <strong>Número</strong> («¿Cuánto gastaste?») y <strong>Definir variable</strong> <code className="text-xs">monto</code> con la «Entrada proporcionada».
+          </li>
+          <li>
+            <strong>Solicitar entrada</strong> tipo <strong>Texto</strong> («¿En qué?») y <strong>Definir variable</strong> <code className="text-xs">descripcion</code>. Puede tener varias palabras.
+          </li>
+          <li>
+            <strong>Obtener contenido de URL</strong> con la URL <code className="break-all text-xs">{movementsUrl}</code> <CopyButton value={movementsUrl} label="URL" />. En «Mostrar más»:
+            método <strong>POST</strong>, el mismo encabezado <code className="text-xs">Authorization</code> y «Solicitar cuerpo» en <strong>Formulario</strong> (es el más fiable en Atajos; también acepta JSON) con estos campos de tipo Texto:
+            <pre className="mt-2 overflow-x-auto rounded-md bg-muted p-3 text-xs">{formFields}</pre>
+            Cada valor es la variable con ese nombre (tócalo y elige «Variables»); <code className="text-xs">tipo</code> es el texto fijo <code className="text-xs">gasto</code>.
+          </li>
+          <li>
+            <strong>Obtener valor del diccionario</strong> con la clave <code className="text-xs">mensaje</code> y luego <strong>Mostrar notificación</strong>: verás «Gasto de $45.000 registrado en…».
+          </li>
           <li>Toca el ⓘ del atajo para <strong>añadirlo a la pantalla de inicio</strong>, asignarlo al botón de Acción o llamarlo con Siri: «Oye Siri, gasto rápido».</li>
         </ol>
+        <p className="text-sm text-muted-foreground">
+          Para <strong className="text-foreground">ingresos</strong> duplica el atajo: usa la clave <code className="text-xs">categorias_ingreso</code> en el paso 3 y <code className="text-xs">tipo</code> = <code className="text-xs">ingreso</code>.
+          ¿Prefieres JSON? Elige «Solicitar cuerpo» → JSON con los mismos nombres de campo. Si Atajos dice «la conexión de red se perdió» con JSON, usa Formulario.
+        </p>
 
         <div className="space-y-1 text-sm text-muted-foreground">
           <p>
@@ -147,7 +155,6 @@ export function ShortcutTokens({ tokens, baseUrl, accounts, expenseCategories }:
           </p>
           <p>
             Opcional: <code className="text-xs">fecha</code> (AAAA-MM-DD) y <code className="text-xs">clave</code> (un texto único; si el atajo se dispara dos veces con la misma clave, no se duplica).
-            Para armar listas de elección dinámicas, consulta <code className="break-all text-xs">{baseUrl}/api/atajos/opciones</code> (GET, mismo encabezado).
           </p>
         </div>
       </section>

@@ -39,6 +39,20 @@ function text(value: unknown, max: number): string | null | undefined {
   return trimmed.length > max ? undefined : trimmed;
 }
 
+/**
+ * Monto escrito como texto. Atajos convierte un Número a texto con el formato del teléfono (en Colombia «45.000»
+ * o «45.000,50»), así que se entienden el punto de miles y la coma decimal; «45000.50» sigue siendo 45000,5.
+ * Devuelve null si no es un número válido.
+ */
+export function parseAmountText(text: string): number | null {
+  const value = text.trim().replace(/\s|\$/g, "");
+  if (/^\d+$/.test(value)) return Number(value);
+  if (/^\d{1,3}(\.\d{3})+(,\d{1,4})?$/.test(value)) return Number(value.replace(/\./g, "").replace(",", "."));
+  if (/^\d+,\d{1,4}$/.test(value)) return Number(value.replace(",", "."));
+  if (/^\d+\.\d{1,2}$/.test(value) || /^\d+\.\d{4}$/.test(value)) return Number(value);
+  return null;
+}
+
 /** Valida el JSON que manda el atajo. Acepta «gasto»/«ingreso» (o EXPENSE/INCOME) y el monto como número o texto. */
 export function parseMovementBody(body: unknown): ParsedBody {
   if (!body || typeof body !== "object" || Array.isArray(body)) return { ok: false, error: "El cuerpo debe ser un objeto JSON" };
@@ -48,10 +62,8 @@ export function parseMovementBody(body: unknown): ParsedBody {
   const tipo = ["gasto", "expense"].includes(tipoRaw) ? "EXPENSE" : ["ingreso", "income"].includes(tipoRaw) ? "INCOME" : null;
   if (!tipo) return { ok: false, error: "El tipo debe ser «gasto» o «ingreso»" };
 
-  let monto: number;
-  if (typeof raw.monto === "number") monto = raw.monto;
-  else if (typeof raw.monto === "string" && /^\s*\d+(\.\d{1,4})?\s*$/.test(raw.monto)) monto = Number(raw.monto);
-  else return { ok: false, error: "El monto debe ser un número positivo, por ejemplo 45000 o 45000.50 (sin separador de miles)" };
+  const monto = typeof raw.monto === "number" ? raw.monto : typeof raw.monto === "string" ? parseAmountText(raw.monto) : null;
+  if (monto === null) return { ok: false, error: "El monto debe ser un número positivo, por ejemplo 45000, 45.000 o 45000,50" };
   if (!Number.isFinite(monto) || monto <= 0 || monto > 1_000_000_000_000) return { ok: false, error: "El monto debe ser mayor que cero" };
 
   const descripcion = text(raw.descripcion, 200);

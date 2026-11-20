@@ -1304,3 +1304,12 @@ Pedido del propietario: poder registrar movimientos desde una automatización/at
 
 El propietario reportó «la conexión de red se perdió» en la app Atajos al usar el atajo. Verificado: el servidor responde correctamente con su token en `gastos.parzkeys.com` y `gestor-gastos-electiva.vercel.app` (200, < 1 s; listado de cuentas/categorías; POST con categoría inexistente rechazado sin crear nada). El fallo ocurre entre el iPhone y el servidor; hay reportes públicos de que «Obtener contenido de URL» falla con POST + cuerpo JSON. **Mitigación:** `GET /api/atajos/movimientos?monto=…&categoria=…&cuenta=…` (token siempre en el encabezado, nunca en la URL), misma validación e idempotencia (`clave`), y la guía de Ajustes presenta el GET como opción recomendada. Observación: con varias cuentas activas el atajo debe enviar `cuenta` (si no, 400 «Indica la cuenta»).
 **Pruebas:** E2E de atajos ampliado (GET: éxito, tildes, duplicado, sin token, monto inválido), 7/7 con Ajustes. El token que el propietario pegó en el chat debe considerarse expuesto: se recomienda revocarlo y crear uno nuevo.
+
+## Atajos: formulario, listas y montos en formato colombiano (2026-11-20)
+
+Con GET la descripción se cortaba en el primer espacio, y el propietario quiere elegir cuenta y categoría de una lista y enviar por POST. El POST con JSON seguía dando «la conexión de red se perdió» solo con esa acción (GET y curl funcionan), por lo que se añade el cuerpo **Formulario**.
+- `POST /api/atajos/movimientos` acepta JSON, `application/x-www-form-urlencoded` y `multipart/form-data` (el «Formulario» de Atajos).
+- Montos en texto: se entiende el formato del teléfono («45.000», «1.250,50») además de «45000.50» (`parseAmountText`); sin esto un «45.000» se habría registrado como 45 pesos.
+- `GET /api/atajos/opciones` devuelve además `cuentas_nombres` (lista simple de textos) para «Elegir de la lista».
+- La guía de Ajustes explica el atajo completo (traer opciones → elegir cuenta y categoría → monto y descripción → POST Formulario → notificación).
+**Pruebas:** unit 11 (incl. formatos de monto), E2E de atajos con POST formulario/multipart, descripción con espacios y lista de cuentas; sin migraciones.
