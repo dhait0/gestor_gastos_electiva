@@ -74,6 +74,14 @@ test.describe("Atajos del iPhone", () => {
     expect((await request.get(`${url}?monto=12000&categoria=Comida%20E2E`)).status()).toBe(401); // sin token
     expect((await request.get(`${url}?monto=abc&categoria=Comida%20E2E&cuenta=Efectivo%20E2E`, { headers: auth })).status()).toBe(400);
 
+    // POST con «Formulario» (lo más fiable en Atajos): descripción con espacios y tildes, y el monto como lo escribe el teléfono (45.000)
+    const viaForm = await request.post(url, { headers: auth, form: { tipo: "gasto", monto: "45.000", descripcion: "Almuerzo con amigos de la oficina", cuenta: "Efectivo E2E", categoria: "Comida E2E", clave: "e2e-form-1" } });
+    expect(viaForm.status()).toBe(200);
+    expect((await viaForm.json()).movimiento).toMatchObject({ monto: 45000, duplicado: false });
+    const viaMultipart = await request.post(url, { headers: auth, multipart: { tipo: "gasto", monto: "1.250,50", descripcion: "Mercado de la semana", cuenta: "Efectivo E2E", categoria: "Comida E2E", clave: "e2e-multi-1" } });
+    expect(viaMultipart.status()).toBe(200);
+    expect((await viaMultipart.json()).movimiento).toMatchObject({ monto: 1250.5 });
+
     // Errores claros para el atajo
     const noToken = await request.post(url, { data: body });
     expect(noToken.status()).toBe(401);
@@ -82,7 +90,7 @@ test.describe("Atajos del iPhone", () => {
     const badAccount = await request.post(url, { headers: auth, data: { ...body, cuenta: "No existe", clave: "e2e-clave-2" } });
     expect(badAccount.status()).toBe(400);
     expect((await badAccount.json()).mensaje).toContain("cuenta");
-    const badAmount = await request.post(url, { headers: auth, data: { ...body, monto: "45.000,50", clave: "e2e-clave-3" } });
+    const badAmount = await request.post(url, { headers: auth, data: { ...body, monto: "cuarenta mil", clave: "e2e-clave-3" } });
     expect(badAmount.status()).toBe(400);
     const notJson = await request.post(url, { headers: { ...auth, "Content-Type": "application/json" }, data: "{no es json" });
     expect(notJson.status()).toBe(400);
@@ -91,11 +99,13 @@ test.describe("Atajos del iPhone", () => {
     const options = await (await request.get(`${BASE_URL}/api/atajos/opciones`, { headers: auth })).json();
     expect(options.cuentas.map((a: { nombre: string }) => a.nombre)).toContain("Efectivo E2E");
     expect(options.categorias_gasto).toContain("Comida E2E");
+    expect(options.cuentas_nombres).toEqual(["Efectivo E2E"]); // lista simple para «Elegir de la lista»
 
     // El movimiento aparece en la app
     await page.goto(`${BASE_URL}/transacciones`);
     await expect(page.getByText("Almuerzo E2E")).toHaveCount(1);
     await expect(page.getByText("Café con tilde á")).toHaveCount(1);
+    await expect(page.getByText("Almuerzo con amigos de la oficina")).toHaveCount(1); // la descripción llega completa
 
     // Revocar corta el acceso al instante
     await page.goto(`${BASE_URL}/ajustes`);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeShortcutError, generateShortcutToken, hashShortcutToken, parseMovementBody, readBearerToken } from "../shortcut";
+import { describeShortcutError, generateShortcutToken, hashShortcutToken, parseAmountText, parseMovementBody, readBearerToken } from "../shortcut";
 
 describe("tokens de atajos", () => {
   it("genera tokens únicos con prefijo, hash SHA-256 y formato aceptado por el servidor", () => {
@@ -44,7 +44,7 @@ describe("parseMovementBody", () => {
 
   it("acepta el monto como número o como texto numérico, y rechaza el resto", () => {
     expect(parseMovementBody({ ...ok, monto: "45000.50" })).toMatchObject({ ok: true, value: { monto: 45000.5 } });
-    for (const monto of [0, -1, "45.000,50", "abc", "", null, undefined, NaN, Infinity, 2e12]) {
+    for (const monto of [0, -1, "abc", "", "1.2.3", "-5", null, undefined, NaN, Infinity, 2e12]) {
       expect(parseMovementBody({ ...ok, monto }), String(monto)).toMatchObject({ ok: false });
     }
   });
@@ -72,5 +72,20 @@ describe("describeShortcutError", () => {
     const unknown = describeShortcutError('relation "x" does not exist');
     expect(unknown.status).toBe(500);
     expect(unknown.message).not.toContain("relation");
+  });
+});
+
+describe("parseAmountText", () => {
+  it("entiende el formato colombiano que Atajos produce al convertir un número a texto", () => {
+    expect(parseAmountText("45000")).toBe(45000);
+    expect(parseAmountText("45.000")).toBe(45000);
+    expect(parseAmountText("1.250.000")).toBe(1250000);
+    expect(parseAmountText("45.000,50")).toBe(45000.5);
+    expect(parseAmountText("45000,5")).toBe(45000.5);
+    expect(parseAmountText("45000.50")).toBe(45000.5);
+    expect(parseAmountText(" $ 45.000 ")).toBe(45000);
+  });
+  it("rechaza lo que no es un monto", () => {
+    for (const text of ["", "abc", "1.2.3", "45,000,000", "-5", "1e6", "45.0000.00"]) expect(parseAmountText(text), text).toBeNull();
   });
 });

@@ -16,5 +16,10 @@ export async function GET(request: Request) {
     const failure = describeShortcutError(error.message);
     return NextResponse.json({ ok: false, codigo: failure.code, error: failure.message }, { status: failure.status });
   }
-  return NextResponse.json({ ok: true, ...(data as object) }, { headers: { "Cache-Control": "no-store" } });
+  const options = data as { cuentas: { nombre: string; moneda: string }[] };
+  // `cuentas_nombres` es una lista simple de textos: la acción «Elegir de la lista» de Atajos la muestra tal cual.
+  return NextResponse.json(
+    { ok: true, ...options, cuentas_nombres: options.cuentas.map((account) => account.nombre) },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }
