@@ -3,12 +3,13 @@
 import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CircleHelp, Compass } from "lucide-react";
+import { CircleHelp, Compass, MapPin } from "lucide-react";
 import "driver.js/dist/driver.css";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { FLOW_STEPS, GLOSSARY, getPageHelp } from "./help-content";
+import { FLOW_STEPS, GLOSSARY, getPageHelp, getPageTour } from "./help-content";
 import { startTour } from "./tour";
+import type { TourStep } from "./help-content";
 
 const SEEN_KEY = "lukiva:ayuda-vista";
 const SEEN_EVENT = "lukiva:ayuda-vista-cambio";
@@ -56,10 +57,12 @@ export function HelpButton() {
     if (next) markSeen();
   };
 
-  const handleStartTour = () => {
+  const pageTour = getPageTour(pathname);
+
+  const handleStartTour = (steps?: TourStep[]) => {
     setOpen(false);
     // Espera a que el panel termine de cerrarse: mientras está abierto el resto de la página no es interactivo.
-    window.setTimeout(() => void startTour(), 300);
+    window.setTimeout(() => void startTour(steps), 300);
   };
 
   const page = getPageHelp(pathname);
@@ -91,10 +94,18 @@ export function HelpButton() {
           </SheetHeader>
 
           <div className="space-y-6 px-6 pb-8">
-            <Button type="button" onClick={handleStartTour} className="w-full">
-              <Compass className="mr-2 h-4 w-4" aria-hidden="true" />
-              Iniciar recorrido guiado
-            </Button>
+            <div className="space-y-2">
+              {pageTour && (
+                <Button type="button" onClick={() => handleStartTour(pageTour.steps)} className="w-full">
+                  <MapPin className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Recorrido de esta pantalla: {pageTour.name}
+                </Button>
+              )}
+              <Button type="button" variant={pageTour ? "outline" : "default"} onClick={() => handleStartTour()} className="w-full">
+                <Compass className="mr-2 h-4 w-4" aria-hidden="true" />
+                Recorrido general de Lukiva
+              </Button>
+            </div>
 
             <section aria-labelledby="ayuda-aqui">
               <h3 id="ayuda-aqui" className="text-sm font-semibold text-foreground">

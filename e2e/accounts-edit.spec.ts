@@ -73,4 +73,22 @@ test.describe("Editar, archivar y desarchivar cuentas", () => {
     await page.waitForURL(/\/cuentas$/, { timeout: 15000 });
     await expect(page.getByText(/Activas \(1\)/)).toBeVisible();
   });
+
+  test("el icono se elige de una lista, se guarda y aparece marcado al editar", async ({ page }) => {
+    await registerAndLogin(page, `cuentas-icono-${Date.now()}@finwise.test`, "TestPassword123!");
+    await page.goto(`${BASE_URL}/cuentas/nueva`);
+    await page.fill("#name", "Cuenta con icono");
+    await page.getByRole("combobox").first().click();
+    await page.getByRole("option", { name: /Efectivo/ }).click();
+    await expect(page.locator('input[name="icon"]')).not.toHaveCount(0); // radios de la lista, no un campo de texto
+    await expect(page.locator('input[type="text"][name="icon"]')).toHaveCount(0);
+    await page.getByRole("radio", { name: "Viajes" }).check({ force: true });
+    await page.getByRole("button", { name: /Crear cuenta/ }).click();
+    await page.waitForURL(/\/cuentas(\?|$)/, { timeout: 15000 });
+
+    await page.getByRole("button", { name: "Acciones de Cuenta con icono" }).click();
+    await page.getByRole("menuitem", { name: "Editar" }).click();
+    await page.waitForURL(/\/editar/);
+    await expect(page.getByRole("radio", { name: "Viajes" })).toBeChecked();
+  });
 });

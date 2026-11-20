@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { Fragment } from "react";
-import { AlertCircle, ArrowLeftRight, ArrowUpRight, Pencil, Search } from "lucide-react";
+import { AlertCircle, ArrowLeftRight, Pencil, Search } from "lucide-react";
 import { format, parseISO, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn, formatCurrency } from "@/lib/utils";
+import { MOVEMENT_TONE_CLASSES, describeMovement } from "@/lib/movement-kind";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTransactionsAction } from "@/app/actions/transactions";
 import { getAccountsAction } from "@/app/actions/accounts";
@@ -83,6 +84,24 @@ export default async function TransaccionesPage({
   );
   const dates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
+  // Cada transferencia son dos movimientos (sale de una cuenta, entra a otra): se busca el otro para mostrar «origen → destino».
+  const groupIds = [...new Set(transactions.filter((tx) => tx.type === "TRANSFER" && tx.transfer_group_id).map((tx) => tx.transfer_group_id as string))];
+  const counterparts = new Map<string, string>();
+  if (groupIds.length > 0 && user) {
+    const { data: legs } = await supabase
+      .from("transactions")
+      .select("id, transfer_group_id, accounts(name)")
+      .in("transfer_group_id", groupIds)
+      .eq("user_id", user.id)
+      .is("deleted_at", null);
+    for (const leg of legs ?? []) {
+      const name = (leg.accounts as { name: string } | null)?.name;
+      for (const tx of transactions) {
+        if (tx.transfer_group_id === leg.transfer_group_id && tx.id !== leg.id && name) counterparts.set(tx.id, name);
+      }
+    }
+  }
+
   const actionLink = "inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors";
 
   return (
@@ -93,7 +112,7 @@ export default async function TransaccionesPage({
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground font-heading">Movimientos</h1>
             <p className="text-muted-foreground mt-1">Historial de tus transacciones</p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div data-tour="tx-acciones" className="flex flex-wrap items-center gap-3">
             <Link href="/transacciones/transferir" className={cn(actionLink, "border border-border bg-card text-foreground hover:bg-muted/50")}>
               <ArrowLeftRight className="w-4 h-4" aria-hidden="true" />
               Transferir
@@ -107,7 +126,21 @@ export default async function TransaccionesPage({
           </div>
         </header>
 
-        <form method="get" role="search" aria-label="Filtrar movimientos" className="rounded-xl border border-border bg-card p-4 sm:p-6 space-y-4">
+        <ul data-tour="tx-leyenda" aria-label="Cómo leer los movimientos" className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
+          {(["EXPENSE", "INCOME", "TRANSFER"] as const).map((type) => {
+            const kind = describeMovement(type);
+            return (
+              <li key={type} className="flex items-center gap-1.5">
+                <span className={cn("inline-flex h-5 w-5 items-center justify-center rounded-full", MOVEMENT_TONE_CLASSES[kind.tone].badge)}>
+                  <kind.Icon className="h-3 w-3" aria-hidden="true" />
+                </span>
+                {kind.label}: {type === "TRANSFER" ? "mueves dinero entre tus cuentas (no es gasto ni ingreso)" : kind.detail.toLowerCase()}
+              </li>
+            );
+          })}
+        </ul>
+
+        <form data-tour="tx-filtros" method="get" role="search" aria-label="Filtrar movimientos" className="rounded-xl border border-border bg-card p-4 sm:p-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="lg:col-span-2">
               <label htmlFor="q" className="text-sm font-medium text-foreground">Buscar</label>
@@ -189,7 +222,7 @@ export default async function TransaccionesPage({
             )}
           </div>
         ) : (
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div data-tour="tx-lista" className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -210,52 +243,54 @@ export default async function TransaccionesPage({
                           {dateKey === today ? "Hoy" : dateKey === yesterday ? "Ayer" : format(parseISO(dateKey), "d 'de' MMMM 'de' yyyy", { locale: es })}
                         </TableCell>
                       </TableRow>
-                      {grouped[dateKey].map((tx) => (
+                      {grouped[dateKey].map((tx) => {
+                        const kind = describeMovement(tx.type, tx.direction);
+                        const tone = MOVEMENT_TONE_CLASSES[kind.tone];
+                        const other = counterparts.get(tx.id);
+                        const route =
+                          tx.type !== "TRANSFER"
+                            ? [tx.categories?.name, tx.accounts?.name].filter(Boolean).join(" · ")
+                            : other
+                              ? tx.direction === "INFLOW"
+                                ? `${other} → ${tx.accounts?.name ?? "?"}`
+                                : `${tx.accounts?.name ?? "?"} → ${other}`
+                              : tx.accounts?.name ?? "";
+                        return (
                         <TableRow key={tx.id} className="hover:bg-muted/30 transition-colors">
                           <TableCell className="text-left">
                             <div className="flex items-center gap-3">
-                              <div
-                                className={cn(
-                                  "p-2 rounded-lg",
-                                  tx.type === "INCOME" ? "bg-success/10 text-success" : tx.type === "EXPENSE" ? "bg-danger/10 text-danger" : "bg-primary/10 text-primary"
-                                )}
-                              >
+                              <div className={cn("relative p-2 rounded-lg", tone.icon)}>
                                 {tx.categories ? (
                                   <span className="text-lg" aria-hidden="true">{tx.categories.icon || "💰"}</span>
                                 ) : (
-                                  <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
+                                  <kind.Icon className="w-4 h-4" aria-hidden="true" />
+                                )}
+                                {tx.categories && (
+                                  <span className={cn("absolute -bottom-1 -right-1 rounded-full bg-card p-0.5 shadow-sm", tone.text)}>
+                                    <kind.Icon className="w-3 h-3" aria-hidden="true" />
+                                  </span>
                                 )}
                               </div>
                               <div className="min-w-0 flex-1">
                                 <p className="font-medium text-foreground truncate">{tx.description}</p>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {[tx.categories?.name, tx.accounts?.name].filter(Boolean).join(" · ")}
-                                </p>
+                                <p className="text-xs text-muted-foreground truncate">{route}</p>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{tx.categories?.name || "—"}</TableCell>
                           <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">{tx.accounts?.name || "—"}</TableCell>
                           <TableCell className="hidden md:table-cell">
-                            <span
-                              className={cn(
-                                "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
-                                tx.type === "INCOME" && "bg-success/10 text-success",
-                                tx.type === "EXPENSE" && "bg-danger/10 text-danger",
-                                tx.type === "TRANSFER" && "bg-primary/10 text-primary"
-                              )}
-                            >
-                              {tx.type === "INCOME" ? "Ingreso" : tx.type === "EXPENSE" ? "Gasto" : "Transferencia"}
+                            <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium", tone.badge)}>
+                              <kind.Icon className="w-3 h-3" aria-hidden="true" />
+                              {kind.label}
                             </span>
                           </TableCell>
                           <TableCell className="text-right font-semibold tabular-nums">
-                            <p className={cn(tx.type === "INCOME" ? "text-success" : tx.type === "EXPENSE" ? "text-danger" : "text-primary")}>
-                              {tx.type === "INCOME" ? "+" : tx.type === "EXPENSE" ? "-" : ""}
+                            <p className={tone.text}>
+                              {kind.sign}
                               {formatCurrency(Number(tx.amount), tx.currency_code)}
                             </p>
-                            {tx.type === "TRANSFER" && (
-                              <p className="text-xs text-muted-foreground mt-0.5">{tx.direction === "INFLOW" ? "Entrada" : "Salida"}</p>
-                            )}
+                            <p className="text-xs font-normal text-muted-foreground mt-0.5">{kind.detail}</p>
                           </TableCell>
                           <TableCell>
                             <Link
@@ -267,7 +302,8 @@ export default async function TransaccionesPage({
                             </Link>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </Fragment>
                   ))}
                 </TableBody>

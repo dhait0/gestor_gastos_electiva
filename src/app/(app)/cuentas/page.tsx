@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
-import { Plus, CreditCard, Wallet, Landmark, PiggyBank, Smartphone, MoreHorizontal, Edit, RotateCcw, AlertCircle } from "lucide-react";
+import { AccountIcon } from "@/components/shared/AccountIcon";
+import { Plus, Wallet, MoreHorizontal, Edit, RotateCcw, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
@@ -26,15 +27,6 @@ interface Account {
   user_id: string;
   deleted_at: string | null;
 }
-
-const accountTypeIcons: Record<string, React.ElementType> = {
-  CASH: Wallet,
-  CHECKING: Landmark,
-  SAVINGS: PiggyBank,
-  CREDIT_CARD: CreditCard,
-  DIGITAL_WALLET: Smartphone,
-  OTHER: MoreHorizontal,
-};
 
 const accountTypeLabels: Record<string, string> = {
   CASH: "Efectivo",
@@ -86,7 +78,7 @@ export default async function CuentasPage() {
               Gestiona tus cuentas financieras
             </p>
           </div>
-          <Link href="/cuentas/nueva">
+          <Link href="/cuentas/nueva" data-tour="cuentas-nueva">
             <Button>
               <Plus className="w-4 h-4 mr-2" />
               Nueva cuenta
@@ -145,15 +137,14 @@ export default async function CuentasPage() {
 }
 
 function AccountCard({ account, isArchived = false }: { account: Account; isArchived?: boolean }) {
-  const Icon = accountTypeIcons[account.type] || MoreHorizontal;
 
   return (
-    <Card className={cn("relative overflow-hidden", isArchived && "opacity-60")}>
+    <Card data-tour="cuenta-card" className={cn("relative overflow-hidden", isArchived && "opacity-60")}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className={cn("p-3 rounded-xl", account.color ? `bg-[${account.color}]/10` : "bg-primary/10")}>
-              <Icon className={cn("w-5 h-5", account.color ? `text-[${account.color}]` : "text-primary")} />
+              <AccountIcon icon={account.icon} type={account.type} className={cn("w-5 h-5", account.color ? `text-[${account.color}]` : "text-primary")} />
             </div>
             <div>
               <CardTitle className="text-base font-medium truncate">{account.name}</CardTitle>
@@ -162,7 +153,7 @@ function AccountCard({ account, isArchived = false }: { account: Account; isArch
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Acciones de ${account.name}`}>
+              <Button data-tour="cuenta-menu" variant="ghost" size="icon" className="h-8 w-8" aria-label={`Acciones de ${account.name}`}>
                 <MoreHorizontal className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>

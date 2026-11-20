@@ -480,8 +480,9 @@ test.describe("Suscripciones (J03)", () => {
     await registerUser(page, `test-sub-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Suscripción ${uniqueId}`);
     await completeOnboarding(page, "Cuenta Sub", "1000000");
 
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    // «Hoy» según la zona horaria del perfil (America/Bogota), no la del equipo que corre el test: en CI (UTC)
+    // entre las 19:00 y la medianoche de Bogotá la fecha local y la de UTC son distintas.
+    const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
 
     await page.goto(`${BASE_URL}/suscripciones/nueva`);
     await page.waitForLoadState("networkidle");
@@ -761,6 +762,8 @@ test.describe("Movimientos: transferir, editar, eliminar y filtrar (UC-11, 12, 1
     await page.waitForURL(/\/transacciones(\?|$)/, { timeout: 10000 });
     // Cada transferencia genera dos movimientos: salida y entrada
     await expect(page.getByRole("link", { name: /Ver o editar Transferencia/ })).toHaveCount(2);
+    // Se identifican como transferencia y muestran de dónde a dónde van (cada pata ve a la otra cuenta)
+    await expect(page.getByText("Cuenta Principal → Ahorros E2E")).toHaveCount(2);
 
     // Neutral: el saldo líquido total no cambia (1.000.000 − reserva 100.000)
     await page.goto(`${BASE_URL}/dashboard`);

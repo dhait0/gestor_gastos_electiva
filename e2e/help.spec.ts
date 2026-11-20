@@ -51,7 +51,7 @@ for (const [name, viewport, pasosEsperados] of [
       await expect(panel.getByText("Dinero disponible", { exact: true })).toBeVisible();
 
       // Recorrido: avanza por todos los pasos aplicables a este tamaño de pantalla y termina.
-      await panel.getByRole("button", { name: "Iniciar recorrido guiado" }).click();
+      await panel.getByRole("button", { name: "Recorrido general de Lukiva" }).click();
       await expect(page.locator(".driver-popover-title")).toHaveText("Bienvenido a Lukiva");
       for (let i = 1; i < pasosEsperados; i++) {
         await expect(page.locator(".driver-popover-progress-text")).toHaveText(`${i} de ${pasosEsperados}`);
@@ -68,7 +68,7 @@ for (const [name, viewport, pasosEsperados] of [
         await page.goto(`${BASE_URL}/cuentas`);
         await page.waitForLoadState("networkidle");
         await page.getByRole("button", { name: "Ayuda y recorrido guiado" }).click();
-        await page.getByRole("button", { name: "Iniciar recorrido guiado" }).click();
+        await page.getByRole("button", { name: "Recorrido general de Lukiva" }).click();
         await expect(page.locator(".driver-popover-title")).toHaveText("Bienvenido a Lukiva");
 
         const menu = page.locator('[data-slot="sheet-content"]');
@@ -101,6 +101,32 @@ for (const [name, viewport, pasosEsperados] of [
       });
     }
 
+    test("el panel ofrece el recorrido de la pantalla actual y dice en cuál estás", async ({ page }) => {
+      await registerAndLogin(page, `ayuda-pantalla-${Date.now()}-${viewport.width}@finwise.test`, "TestPassword123!");
+      await page.goto(`${BASE_URL}/cuentas`);
+      await page.waitForLoadState("networkidle");
+      await page.getByRole("button", { name: "Ayuda y recorrido guiado" }).click();
+      await page.getByRole("button", { name: "Recorrido de esta pantalla: Cuentas" }).click();
+
+      await expect(page.locator(".driver-popover-title")).toHaveText("Estás en: Cuentas");
+      await expect(page.locator(".driver-active-element")).toHaveText("Cuentas"); // resalta el título de la pantalla
+      await page.locator(".driver-popover-next-btn").click();
+      await expect(page.locator(".driver-popover-title")).toHaveText("Crear una cuenta");
+      await expect(page.locator(".driver-active-element")).toHaveAttribute("data-tour", "cuentas-nueva");
+      await page.keyboard.press("Escape");
+      await expect(page.locator(".driver-popover")).toHaveCount(0);
+
+      // En otra pantalla el recorrido es distinto.
+      await page.goto(`${BASE_URL}/transacciones`);
+      await page.waitForLoadState("networkidle");
+      await page.getByRole("button", { name: "Ayuda y recorrido guiado" }).click();
+      await page.getByRole("button", { name: "Recorrido de esta pantalla: Movimientos" }).click();
+      await expect(page.locator(".driver-popover-title")).toHaveText("Estás en: Movimientos");
+      await page.locator(".driver-popover-next-btn").click();
+      await page.locator(".driver-popover-next-btn").click();
+      await expect(page.locator(".driver-popover-title")).toHaveText("Cómo leer los iconos");
+    });
+
     test("Esc cierra el recorrido y el aviso del botón desaparece tras abrirlo", async ({ page }) => {
       await registerAndLogin(page, `ayuda-esc-${Date.now()}-${viewport.width}@finwise.test`, "TestPassword123!");
       await page.goto(`${BASE_URL}/dashboard`);
@@ -110,7 +136,7 @@ for (const [name, viewport, pasosEsperados] of [
       await expect(aviso).toHaveCount(1); // primera vez: el botón late
       await page.getByRole("button", { name: "Ayuda y recorrido guiado" }).click();
       await expect(aviso).toHaveCount(0);
-      await page.getByRole("button", { name: "Iniciar recorrido guiado" }).click();
+      await page.getByRole("button", { name: "Recorrido general de Lukiva" }).click();
       await expect(page.locator(".driver-popover")).toBeVisible();
       await page.keyboard.press("Escape");
       await expect(page.locator(".driver-popover")).toHaveCount(0);
