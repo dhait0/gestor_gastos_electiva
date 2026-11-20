@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
+import { MovementTypeTabs } from "@/components/transactions/MovementTypeTabs";
 import { createTransactionAction } from "@/app/actions/transactions";
 import { getAccountsAction } from "@/app/actions/accounts";
 import { getCategoriesByTypeAction } from "@/app/actions/categories";
@@ -92,6 +93,8 @@ function NewTransactionForm({ type }: { type: TransactionType }) {
       <input type="hidden" name="type" value={transactionType} />
       <input type="hidden" name="direction" value={direction} />
       <input type="hidden" name="currency_code" value="COP" />
+
+      <MovementTypeTabs current={isIncome ? "income" : "expense"} />
 
       <div className="flex items-center gap-4 mb-6">
         <Link href="/dashboard" aria-label="Volver al dashboard" className="p-2 hover:bg-muted rounded-lg transition-colors">

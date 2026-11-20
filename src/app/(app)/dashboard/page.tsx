@@ -1,3 +1,4 @@
+import { MOVEMENT_TONE_CLASSES, describeMovement } from "@/lib/movement-kind";
 import { cn } from "@/lib/utils";
 import { LayoutDashboard, Plus, ArrowDownLeft, ArrowUpRight, AlertTriangle, CheckCircle, ChevronRight, Wallet } from "lucide-react";
 import { getFinancialSummaryAction } from "@/app/actions/financial";
@@ -331,7 +332,7 @@ export default async function DashboardPage({
           </div>
         </section>
 
-        <section aria-labelledby="recent-transactions-heading" className="space-y-4">
+        <section data-tour="dash-recientes" aria-labelledby="recent-transactions-heading" className="space-y-4">
           <header className="flex items-center justify-between">
             <h2 id="recent-transactions-heading" className="text-lg font-semibold text-foreground">
               Movimientos recientes
@@ -347,15 +348,17 @@ export default async function DashboardPage({
           {hasTransactions ? (
             <div className="rounded-xl border border-border bg-card overflow-hidden">
               <ul className="divide-y divide-border" role="list">
-                {transactions.map((transaction) => (
+                {transactions.map((transaction) => {
+                  const kind = describeMovement(transaction.type, transaction.direction);
+                  const tone = MOVEMENT_TONE_CLASSES[kind.tone];
+                  return (
                   <li key={transaction.id} className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "p-2 rounded-lg",
-                        transaction.type === "INCOME" ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
-                      )}>
-                        {transaction.categories && (
+                      <div className={cn("p-2 rounded-lg", tone.icon)}>
+                        {transaction.categories ? (
                           <span className="text-lg" aria-hidden="true">{transaction.categories.icon || "💰"}</span>
+                        ) : (
+                          <kind.Icon className="w-4 h-4" aria-hidden="true" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -375,11 +378,8 @@ export default async function DashboardPage({
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className={cn(
-                          "font-semibold tabular-nums",
-                          transaction.type === "INCOME" ? "text-success" : "text-danger"
-                        )}>
-                          {transaction.type === "INCOME" ? "+" : "-"}
+                        <p className={cn("font-semibold tabular-nums", tone.text)}>
+                          {kind.sign}
                           {formatCurrency(Number(transaction.amount), transaction.currency_code)}
                         </p>
                         <p className="text-xs text-muted-foreground">
@@ -388,7 +388,8 @@ export default async function DashboardPage({
                       </div>
                     </div>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </div>
           ) : (

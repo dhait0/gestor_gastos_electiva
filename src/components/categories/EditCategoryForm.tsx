@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Wallet, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CategoryIconPicker } from "@/components/shared/icon-pickers";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -145,16 +146,7 @@ export function EditCategoryForm({ initialData }: { initialData: CategoryData })
             />
           </div>
 
-          <div>
-            <Label htmlFor="icon">Icono (opcional)</Label>
-            <Input
-              id="icon"
-              name="icon"
-              placeholder="Ej: wallet, credit-card, utensils, car"
-              defaultValue={initialData.icon || ""}
-              disabled={isPending}
-            />
-          </div>
+          <CategoryIconPicker defaultValue={initialData.icon} disabled={isPending} />
 
           <div className="flex items-center gap-2">
             <input

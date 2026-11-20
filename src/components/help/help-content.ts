@@ -97,6 +97,177 @@ export const TOUR_STEPS: TourStep[] = [
   },
 ];
 
+export interface PageTour {
+  /** Nombre de la pantalla, el mismo que se muestra en el panel de ayuda. */
+  name: string;
+  steps: TourStep[];
+}
+
+const TITLE = ["main h1"];
+const NEW_LINK = ['main a[href*="/nuev"]'];
+
+/** Primer paso de cada recorrido por pantalla: señala el título para que quede claro dónde estás. */
+function here(name: string, description: string): TourStep {
+  return { id: "aqui", selectors: TITLE, title: `Estás en: ${name}`, description, side: "bottom" };
+}
+
+/**
+ * Recorridos por pantalla. La clave es el prefijo de la ruta (gana el más largo).
+ * Los selectores pueden ser CSS cualquiera; los pasos sin elemento visible se omiten.
+ */
+export const PAGE_TOURS: Record<string, PageTour> = {
+  "/dashboard": {
+    name: "Dashboard",
+    steps: [
+      here("Dashboard", "Tu panorama general: cuánto tienes, cuánto debes y en qué se va tu dinero."),
+      { id: "disponible", selectors: ['[data-tour="disponible"]'], title: "Dinero disponible", description: "Lo que puedes gastar sin tocar tus compromisos ni tu reserva. Si sale negativo, tus compromisos superan tu dinero.", side: "bottom" },
+      { id: "nueva", selectors: ['[data-tour="nueva-transaccion"]'], title: "Registrar rápido", description: "Desde aquí registras un gasto o un ingreso sin pasar por el menú.", side: "bottom" },
+      { id: "recientes", selectors: ['[data-tour="dash-recientes"]'], title: "Movimientos recientes", description: "Lo último que registraste. El icono y el color indican el tipo: gasto (sale), ingreso (entra) o transferencia (solo cambia de cuenta).", side: "top" },
+    ],
+  },
+  "/cuentas": {
+    name: "Cuentas",
+    steps: [
+      here("Cuentas", "Aquí viven los lugares donde tienes dinero (efectivo, bancos, billeteras) y tus tarjetas de crédito."),
+      { id: "nueva", selectors: ['[data-tour="cuentas-nueva"]'], title: "Crear una cuenta", description: "Crea una cuenta por cada lugar donde tengas dinero. Eliges un icono de la lista, sin escribir nada.", side: "bottom" },
+      { id: "tarjeta", selectors: ['[data-tour="cuenta-card"]'], title: "Cada cuenta", description: "Muestra su saldo actual (o la deuda, si es una tarjeta de crédito) y su tipo.", side: "bottom" },
+      { id: "menu", selectors: ['[data-tour="cuenta-menu"]'], title: "Editar, archivar o desarchivar", description: "El menú ⋯ permite cambiar los datos de la cuenta, archivarla (se oculta de tus saldos pero conserva su historial) o recuperarla si está archivada.", side: "left" },
+    ],
+  },
+  "/cuentas/nueva": {
+    name: "Nueva cuenta",
+    steps: [
+      here("Nueva cuenta", "Completa estos datos para crear la cuenta. Lo único obligatorio es el nombre y el tipo."),
+      { id: "nombre", selectors: ["#name"], title: "Nombre", description: "Cómo la reconocerás en las listas, por ejemplo «Bancolombia» o «Efectivo».", side: "bottom" },
+      { id: "saldo", selectors: ["#opening_balance"], title: "Saldo inicial", description: "Lo que tiene hoy. Cuenta una sola vez; en una tarjeta de crédito es lo que debes. Puede ser negativo si tienes sobregiro.", side: "bottom" },
+      { id: "icono", selectors: ["main fieldset"], title: "Icono", description: "Elige uno de la lista; se verá en tus cuentas. Es opcional.", side: "top" },
+    ],
+  },
+  "/transacciones": {
+    name: "Movimientos",
+    steps: [
+      here("Movimientos", "El historial de todo lo que entra y sale de tus cuentas."),
+      { id: "acciones", selectors: ['[data-tour="tx-acciones"]'], title: "Registrar", description: "Un gasto cuando pagas algo, un ingreso cuando recibes dinero, y una transferencia cuando mueves dinero entre tus propias cuentas.", side: "bottom" },
+      { id: "leyenda", selectors: ['[data-tour="tx-leyenda"]'], title: "Cómo leer los iconos", description: "Gasto (flecha roja hacia arriba): sale dinero. Ingreso (flecha verde hacia abajo): entra dinero. Transferencia (flechas cruzadas): solo cambia de cuenta, no es gasto ni ingreso.", side: "bottom" },
+      { id: "filtros", selectors: ['[data-tour="tx-filtros"]'], title: "Buscar y filtrar", description: "Filtra por tipo, cuenta, categoría o fechas, o busca por descripción.", side: "bottom" },
+      { id: "lista", selectors: ['[data-tour="tx-lista"]'], title: "El historial", description: "Una transferencia aparece como «origen → destino». Abre cualquier fila con el lápiz para corregirla; el saldo se recalcula solo.", side: "top" },
+    ],
+  },
+  "/transacciones/nuevo": {
+    name: "Registrar movimiento",
+    steps: [
+      here("Registrar movimiento", "Aquí registras un gasto o un ingreso."),
+      { id: "tipo", selectors: ['[data-tour="tipo-movimiento"]'], title: "¿Qué tipo es?", description: "Gasto si sale dinero, Ingreso si entra, Transferencia si lo mueves entre tus cuentas. Puedes cambiar de tipo aquí sin volver atrás.", side: "bottom" },
+      { id: "monto", selectors: ["#amount"], title: "Monto", description: "Cuánto fue, siempre en positivo: el tipo decide si suma o resta.", side: "bottom" },
+      { id: "cuenta", selectors: ["#account_id"], title: "Cuenta", description: "De qué cuenta salió o a cuál entró el dinero. Su saldo se actualiza al guardar.", side: "bottom" },
+      { id: "fecha", selectors: ["#transaction_date"], title: "Fecha", description: "El día en que ocurrió (puede ser anterior a hoy).", side: "bottom" },
+    ],
+  },
+  "/transacciones/transferir": {
+    name: "Transferir entre cuentas",
+    steps: [
+      here("Transferir entre cuentas", "Para mover dinero entre tus propias cuentas, por ejemplo del banco al efectivo."),
+      { id: "tipo", selectors: ['[data-tour="tipo-movimiento"]'], title: "No es gasto ni ingreso", description: "Una transferencia no cambia tu patrimonio: solo cambia el dinero de lugar.", side: "bottom" },
+      { id: "origen", selectors: ["#from_account_id"], title: "Cuenta de origen", description: "De donde sale el dinero. Se registra un movimiento de salida en esta cuenta.", side: "bottom" },
+      { id: "destino", selectors: ["#to_account_id"], title: "Cuenta de destino", description: "A donde llega. Se registra el movimiento de entrada enlazado al anterior. Deben ser de la misma moneda.", side: "bottom" },
+      { id: "monto", selectors: ["#amount"], title: "Monto", description: "Cuánto mueves. Lo mismo sale de una cuenta y entra a la otra.", side: "bottom" },
+    ],
+  },
+  "/categorias": {
+    name: "Categorías",
+    steps: [
+      here("Categorías", "Cómo clasificas en qué entra y en qué se va tu dinero."),
+      { id: "nueva", selectors: NEW_LINK, title: "Crear una categoría", description: "Elige si es de gasto o de ingreso y un icono de la lista.", side: "bottom" },
+      { id: "menu", selectors: ['main button[aria-label^="Acciones de"]'], title: "Editar o archivar", description: "Desde el menú ⋯ cambias el nombre, el color o el icono, o archivas las que ya no uses.", side: "left" },
+    ],
+  },
+  "/presupuestos": {
+    name: "Presupuestos",
+    steps: [
+      here("Presupuestos", "Un límite mensual por categoría de gasto."),
+      { id: "nuevo", selectors: NEW_LINK, title: "Definir un límite", description: "Elige una categoría y cuánto quieres gastar al mes en ella.", side: "bottom" },
+      { id: "estado", selectors: ["main section", "main ul"], title: "Cómo vas", description: "Cada barra muestra cuánto llevas del límite: va bien, atención, casi al límite o superado.", side: "top" },
+    ],
+  },
+  "/metas": {
+    name: "Metas",
+    steps: [
+      here("Metas", "Ahorra con un propósito y un plazo."),
+      { id: "nueva", selectors: NEW_LINK, title: "Crear una meta", description: "Define cuánto quieres juntar y para cuándo; Lukiva calcula cuánto ahorrar al mes.", side: "bottom" },
+      { id: "lista", selectors: ["main section", "main ul"], title: "Tu avance", description: "Registra aportes para ver cuánto llevas. Un aporte no es un movimiento del banco: solo sigue tu avance.", side: "top" },
+    ],
+  },
+  "/recurrentes": {
+    name: "Recurrentes",
+    steps: [
+      here("Recurrentes", "Ingresos y gastos que se repiten, como el arriendo o la nómina."),
+      { id: "nuevo", selectors: NEW_LINK, title: "Programar uno", description: "Indica cada cuánto se repite y desde qué fecha.", side: "bottom" },
+      { id: "vencidos", selectors: ['[data-tour="recurrente-vencidos"]'], title: "Registrar vencidos", description: "Cuando una recurrente ya venció aparece este botón: crea los movimientos que tocaba hacer. Las marcadas como automáticas se registran solas al abrir esta pantalla. Revisa antes para no duplicar uno que ya registraste a mano.", side: "bottom" },
+    ],
+  },
+  "/suscripciones": {
+    name: "Suscripciones",
+    steps: [
+      here("Suscripciones", "Lo que pagas cada mes o año por servicios."),
+      { id: "nueva", selectors: NEW_LINK, title: "Agregar una suscripción", description: "Registra el servicio, su costo y cada cuánto se cobra.", side: "bottom" },
+      { id: "lista", selectors: ["main section", "main ul"], title: "Cuánto suman", description: "Ves el total al mes y al año, y la próxima renovación de cada una.", side: "top" },
+    ],
+  },
+  "/obligaciones": {
+    name: "Obligaciones",
+    steps: [
+      here("Obligaciones", "Pagos pendientes con fecha de vencimiento."),
+      { id: "nueva", selectors: NEW_LINK, title: "Agregar una obligación", description: "Un recibo, una cuota o cualquier pago que ya sabes que vendrá.", side: "bottom" },
+      { id: "lista", selectors: ["main section", "main ul"], title: "Pendientes y pagadas", description: "Las pendientes se descuentan de tu dinero disponible. Márcalas como pagadas cuando las canceles.", side: "top" },
+    ],
+  },
+  "/deudas": {
+    name: "Deudas",
+    steps: [
+      here("Deudas", "Préstamos y créditos: saldo, pago mínimo y avance."),
+      { id: "nueva", selectors: NEW_LINK, title: "Registrar una deuda", description: "Indica el saldo, el interés y el pago mínimo.", side: "bottom" },
+      { id: "estrategia", selectors: ['main a[href*="estrategia"]'], title: "Estrategia de pago", description: "Compara Avalancha (primero la de más interés) y Bola de nieve (primero la más pequeña).", side: "bottom" },
+    ],
+  },
+  "/alertas": {
+    name: "Alertas",
+    steps: [
+      here("Alertas", "Avisos sobre tu dinero: presupuestos cerca del límite, obligaciones próximas, disponible bajo."),
+      { id: "lista", selectors: ["main section", "main ul"], title: "Tus avisos", description: "Márcalos como leídos cuando los atiendas.", side: "top" },
+    ],
+  },
+  "/analisis": {
+    name: "Análisis",
+    steps: [
+      here("Análisis", "Una proyección de cómo cerrarías el mes."),
+      { id: "proyeccion", selectors: ["main section", "main ul"], title: "Proyección", description: "Se basa en tu gasto diario promedio: es una estimación, no una certeza.", side: "top" },
+    ],
+  },
+  "/simulador": {
+    name: "Simulador de compra",
+    steps: [
+      here("Simulador de compra", "Antes de comprar a cuotas, mira cuánto costaría y si cabe en tu flujo mensual."),
+      { id: "form", selectors: ["main form"], title: "Tu compra", description: "Escribe el valor, las cuotas y el interés. No registra la compra ni crea una deuda: solo simula.", side: "bottom" },
+    ],
+  },
+  "/ajustes": {
+    name: "Ajustes",
+    steps: [
+      here("Ajustes", "Tu perfil y tu reserva de seguridad."),
+      { id: "form", selectors: ["main form"], title: "Tus datos", description: "La reserva de seguridad se descuenta de tu dinero disponible.", side: "bottom" },
+    ],
+  },
+};
+
+/**
+ * Recorrido de la pantalla actual, o null si no tiene. Solo coincide la ruta exacta: en las
+ * pantallas de edición (/cuentas/123/editar) los pasos de la lista no aplicarían.
+ */
+export function getPageTour(pathname: string): PageTour | null {
+  const path = pathname.length > 1 ? pathname.replace(/\/$/, "") : pathname;
+  return PAGE_TOURS[path] ?? null;
+}
+
 /** Pasos del flujo de uso recomendado (se muestran en el panel de ayuda). */
 export const FLOW_STEPS: { title: string; description: string; href: string; cta: string }[] = [
   {

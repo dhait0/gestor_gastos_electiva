@@ -3,6 +3,7 @@
 import { preventFormReset } from "@/lib/keep-form-on-error";
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
+import { MovementTypeTabs } from "@/components/transactions/MovementTypeTabs";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,9 +56,10 @@ export default function TransferirPage() {
   return (
     <main className="p-4 sm:p-6 lg:p-8">
       <form action={formAction} onReset={preventFormReset} className="mx-auto max-w-2xl space-y-6">
+        <MovementTypeTabs current="transfer" />
         <h1 className="text-2xl font-bold text-foreground font-heading">Transferir entre cuentas</h1>
         <p className="text-sm text-muted-foreground">
-          Mover dinero entre tus cuentas no cambia tu patrimonio. Solo se permiten cuentas de la misma moneda.
+          Se registran dos movimientos enlazados (sale de una cuenta y entra a la otra). No cambia tu patrimonio. Solo se permiten cuentas de la misma moneda.
         </p>
         <input type="hidden" name="currency_code" value={from?.currency_code ?? "COP"} />
 

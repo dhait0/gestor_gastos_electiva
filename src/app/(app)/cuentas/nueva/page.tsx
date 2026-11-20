@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CreditCard, Wallet, Landmark, PiggyBank, Smartphone, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AccountIconPicker } from "@/components/shared/icon-pickers";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -254,15 +255,7 @@ function NewAccountForm() {
             />
           </div>
 
-          <div>
-            <Label htmlFor="icon">Icono (opcional)</Label>
-            <Input
-              id="icon"
-              name="icon"
-              placeholder="Ej: wallet, credit-card, banknote"
-              disabled={isPending}
-            />
-          </div>
+          <AccountIconPicker disabled={isPending} />
         </CardContent>
       </Card>
 

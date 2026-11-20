@@ -761,6 +761,8 @@ test.describe("Movimientos: transferir, editar, eliminar y filtrar (UC-11, 12, 1
     await page.waitForURL(/\/transacciones(\?|$)/, { timeout: 10000 });
     // Cada transferencia genera dos movimientos: salida y entrada
     await expect(page.getByRole("link", { name: /Ver o editar Transferencia/ })).toHaveCount(2);
+    // Se identifican como transferencia y muestran de dónde a dónde van (cada pata ve a la otra cuenta)
+    await expect(page.getByText("Cuenta Principal → Ahorros E2E")).toHaveCount(2);
 
     // Neutral: el saldo líquido total no cambia (1.000.000 − reserva 100.000)
     await page.goto(`${BASE_URL}/dashboard`);

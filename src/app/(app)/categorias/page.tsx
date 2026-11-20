@@ -172,7 +172,7 @@ function CategoryCard({ category }: { category: Category }) {
       </CardHeader>
       <CardContent>
         {category.icon && (
-          <p className="text-xs text-muted-foreground">Icono: {category.icon}</p>
+          <p className="text-2xl" aria-hidden="true">{category.icon}</p>
         )}
         {category.color && (
           <div className="mt-2 flex items-center gap-2">
