@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
@@ -1334,5 +1335,137 @@ describe('RBAC and administration (ADR-008)', () => {
       const columns = Object.keys(data![0]).sort();
       expect(columns).toEqual(['created_at', 'display_name', 'email', 'id', 'role_key']);
     });
+  });
+});
+
+describe('shortcut tokens (Atajos del iPhone)', () => {
+  const sha256 = (text: string) => createHash('sha256').update(text).digest('hex');
+  const mkToken = (label: string) => {
+    const token = `lkv_${label}${Date.now()}${Math.random().toString(36).slice(2)}`;
+    return { token, hash: sha256(token), prefix: token.slice(0, 8) };
+  };
+
+  let tokenA: ReturnType<typeof mkToken>;
+  let tokenB: ReturnType<typeof mkToken>;
+  let tokenRowA: string;
+  const stamp = Date.now();
+  const accountName = `Cuenta Atajo ${stamp}`;
+
+  const register = (hash: string, over: Record<string, unknown> = {}) =>
+    anon.rpc('shortcut_register_movement', {
+      p_token_hash: hash,
+      p_type: 'EXPENSE',
+      p_amount: 45000,
+      p_description: 'Almuerzo',
+      p_account: accountName,
+      p_category: `Comida Atajo ${stamp}`,
+      ...over,
+    });
+
+  beforeAll(async () => {
+    // Permite correr este bloque solo (con -t): si el bloque P0 no corrió antes, crea sus propios usuarios.
+    if (!userA) {
+      userA = await createTestUser('sca');
+      userB = await createTestUser('scb');
+      clientA = userA.client;
+      clientB = userB.client;
+    }
+    tokenA = mkToken('a');
+    tokenB = mkToken('b');
+    const rowA = await clientA.from('shortcut_tokens').insert({ user_id: userA.id, name: 'Mi iPhone', token_hash: tokenA.hash, token_prefix: tokenA.prefix }).select('id').single();
+    expect(rowA.error).toBeNull();
+    tokenRowA = rowA.data!.id;
+    const rowB = await clientB.from('shortcut_tokens').insert({ user_id: userB.id, name: 'iPhone de B', token_hash: tokenB.hash, token_prefix: tokenB.prefix });
+    expect(rowB.error).toBeNull();
+
+    const acc = await clientA.from('accounts').insert({ name: accountName, type: 'CASH', opening_balance: 0, user_id: userA.id });
+    expect(acc.error).toBeNull();
+    const cats = await clientA.from('categories').insert([
+      { name: `Comida Atajo ${stamp}`, type: 'EXPENSE', user_id: userA.id },
+      { name: `Sueldo Atajo ${stamp}`, type: 'INCOME', user_id: userA.id },
+    ]);
+    expect(cats.error).toBeNull();
+  });
+
+  it('B cannot read A tokens; anon cannot read tokens or idempotency keys', async () => {
+    const { data: asB } = await clientB.from('shortcut_tokens').select('id').eq('id', tokenRowA);
+    expect(asB).toEqual([]);
+    const { data: asAnon } = await anon.from('shortcut_tokens').select('id').eq('id', tokenRowA);
+    expect(asAnon ?? []).toEqual([]);
+    const events = await clientA.from('shortcut_events').select('*');
+    expect(events.error).not.toBeNull();
+    const eventsAnon = await anon.from('shortcut_events').select('*');
+    expect(eventsAnon.error).not.toBeNull();
+  });
+
+  it('A cannot create a token for B, cannot change the hash, can only revoke', async () => {
+    const forB = await clientA.from('shortcut_tokens').insert({ user_id: userB.id, name: 'x', token_hash: sha256('otro'), token_prefix: 'lkv_xxxx' });
+    expect(forB.error).not.toBeNull();
+    const rehash = await clientA.from('shortcut_tokens').update({ token_hash: sha256('nuevo') }).eq('id', tokenRowA);
+    expect(rehash.error).not.toBeNull();
+    const del = await clientA.from('shortcut_tokens').delete().eq('id', tokenRowA).select();
+    expect(del.data ?? []).toEqual([]);
+    const bRevokes = await clientB.from('shortcut_tokens').update({ revoked_at: new Date().toISOString() }).eq('id', tokenRowA).select();
+    expect(bRevokes.data ?? []).toEqual([]);
+  });
+
+  it('an invalid token is rejected', async () => {
+    const { error } = await register(sha256('no-existe'));
+    expect(error?.message).toContain('INVALID_TOKEN');
+    const options = await anon.rpc('shortcut_options', { p_token_hash: sha256('no-existe') });
+    expect(options.error?.message).toContain('INVALID_TOKEN');
+  });
+
+  it('a valid token registers an expense with the account currency and marks the token as used', async () => {
+    const { data, error } = await register(tokenA.hash);
+    expect(error).toBeNull();
+    const result = data as { id: string; duplicado: boolean; moneda: string };
+    expect(result.duplicado).toBe(false);
+    const { data: tx } = await service.from('transactions').select('*').eq('id', result.id).single();
+    expect(tx).toMatchObject({ user_id: userA.id, type: 'EXPENSE', direction: 'OUTFLOW', currency_code: 'COP', description: 'Almuerzo' });
+    expect(Number(tx!.amount)).toBe(45000);
+    const { data: used } = await clientA.from('shortcut_tokens').select('last_used_at').eq('id', tokenRowA).single();
+    expect(used!.last_used_at).not.toBeNull();
+  });
+
+  it('registers an income with an income category and rejects the wrong category type', async () => {
+    const ok = await register(tokenA.hash, { p_type: 'INCOME', p_category: `Sueldo Atajo ${stamp}`, p_amount: 100000 });
+    expect(ok.error).toBeNull();
+    const wrong = await register(tokenA.hash, { p_type: 'INCOME', p_category: `Comida Atajo ${stamp}` });
+    expect(wrong.error?.message).toContain('CATEGORY_NOT_FOUND');
+  });
+
+  it('validates type, amount, account and category', async () => {
+    expect((await register(tokenA.hash, { p_type: 'TRANSFER' })).error?.message).toContain('INVALID_TYPE');
+    expect((await register(tokenA.hash, { p_amount: 0 })).error?.message).toContain('INVALID_AMOUNT');
+    expect((await register(tokenA.hash, { p_amount: -5 })).error?.message).toContain('INVALID_AMOUNT');
+    expect((await register(tokenA.hash, { p_account: 'No existe' })).error?.message).toContain('ACCOUNT_NOT_FOUND');
+    expect((await register(tokenA.hash, { p_category: null })).error?.message).toContain('CATEGORY_REQUIRED');
+    expect((await register(tokenA.hash, { p_date: '2999-01-01' })).error?.message).toContain('INVALID_DATE');
+  });
+
+  it('B token cannot use A account or categories (ownership)', async () => {
+    const { error } = await register(tokenB.hash);
+    expect(error?.message).toContain('ACCOUNT_NOT_FOUND');
+    const options = await anon.rpc('shortcut_options', { p_token_hash: tokenB.hash });
+    expect(JSON.stringify(options.data)).not.toContain(accountName);
+  });
+
+  it('the same idempotency key creates only one movement', async () => {
+    const key = `clave-${stamp}`;
+    const first = await register(tokenA.hash, { p_key: key, p_description: 'Una sola vez' });
+    const second = await register(tokenA.hash, { p_key: key, p_description: 'Una sola vez' });
+    expect((first.data as { duplicado: boolean }).duplicado).toBe(false);
+    expect((second.data as { duplicado: boolean }).duplicado).toBe(true);
+    expect((second.data as { id: string }).id).toBe((first.data as { id: string }).id);
+    const { data: rows } = await service.from('transactions').select('id').eq('user_id', userA.id).eq('description', 'Una sola vez');
+    expect(rows).toHaveLength(1);
+  });
+
+  it('a revoked token stops working immediately', async () => {
+    const revoke = await clientA.from('shortcut_tokens').update({ revoked_at: new Date().toISOString() }).eq('id', tokenRowA);
+    expect(revoke.error).toBeNull();
+    const { error } = await register(tokenA.hash);
+    expect(error?.message).toContain('INVALID_TOKEN');
   });
 });

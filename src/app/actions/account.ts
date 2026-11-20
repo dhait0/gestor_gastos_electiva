@@ -4,11 +4,16 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { changeEmailSchema, changePasswordSchema, profileSettingsSchema } from "@/schemas/account";
+import { changeEmailSchema, changePasswordSchema, profileSettingsSchema, shortcutTokenNameSchema } from "@/schemas/account";
+import { generateShortcutToken } from "@/lib/shortcut";
 
 export type AccountActionResult =
   | { success: true; message: string; error?: undefined; fieldErrors?: undefined }
   | { success: false; error: string; message?: undefined; fieldErrors?: Record<string, string[]> };
+
+export type ShortcutTokenResult =
+  | { success: true; token: string; name: string; error?: undefined }
+  | { success: false; error: string; token?: undefined; name?: undefined };
 
 async function requireUser() {
   const supabase = await createSupabaseServerClient();
@@ -137,4 +142,51 @@ export async function signOutEverywhereAction(): Promise<void> {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut({ scope: "global" });
   redirect("/login");
+}
+
+/** Crea un token para los Atajos del iPhone. El token en claro solo se devuelve aquí, una vez: en la base queda su hash. */
+export async function createShortcutTokenAction(_prev: ShortcutTokenResult, formData: FormData): Promise<ShortcutTokenResult> {
+  const parsed = shortcutTokenNameSchema.safeParse({ name: formData.get("name") });
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Nombre inválido" };
+  }
+
+  const { supabase, user } = await requireUser();
+  if (!user) return { success: false, error: "Tu sesión expiró. Inicia sesión de nuevo." };
+
+  const { count } = await supabase
+    .from("shortcut_tokens")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .is("revoked_at", null);
+  if ((count ?? 0) >= 5) {
+    return { success: false, error: "Ya tienes 5 tokens activos. Revoca uno que no uses para crear otro." };
+  }
+
+  const { token, hash, prefix } = generateShortcutToken();
+  const { error } = await supabase
+    .from("shortcut_tokens")
+    .insert({ user_id: user.id, name: parsed.data.name, token_hash: hash, token_prefix: prefix });
+  if (error) return { success: false, error: "No se pudo crear el token. Inténtalo de nuevo." };
+
+  revalidatePath("/ajustes");
+  return { success: true, token, name: parsed.data.name };
+}
+
+/** Revoca un token: los atajos que lo usen dejan de funcionar al instante. */
+export async function revokeShortcutTokenAction(tokenId: string): Promise<{ error?: string }> {
+  const { supabase, user } = await requireUser();
+  if (!user) return { error: "Tu sesión expiró. Inicia sesión de nuevo." };
+
+  const { data, error } = await supabase
+    .from("shortcut_tokens")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("id", tokenId)
+    .eq("user_id", user.id)
+    .is("revoked_at", null)
+    .select("id");
+  if (error || !data?.length) return { error: "No se pudo revocar el token" };
+
+  revalidatePath("/ajustes");
+  return {};
 }
