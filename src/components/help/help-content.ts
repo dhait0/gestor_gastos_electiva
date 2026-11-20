@@ -256,6 +256,7 @@ export const PAGE_TOURS: Record<string, PageTour> = {
       here("Ajustes", "Aquí administras tu cuenta: tu perfil, tu correo, tu contraseña y tus sesiones."),
       { id: "perfil", selectors: ["#perfil"], title: "Perfil y preferencias", description: "Tu nombre, la moneda principal, la zona horaria (define qué día es «hoy») y la reserva de seguridad que se descuenta de tu dinero disponible.", side: "bottom" },
       { id: "apariencia", selectors: ["#apariencia"], title: "Apariencia", description: "Elige modo claro, oscuro o automático y el color de la app. Cambia al instante y se recuerda en este dispositivo.", side: "bottom" },
+      { id: "atajos", selectors: ["#atajos"], title: "Atajos del iPhone", description: "Crea un token y arma un atajo «Gasto rápido» en la app Atajos: registras un gasto o ingreso desde la pantalla de inicio o con Siri y llega a Lukiva al instante.", side: "top" },
       { id: "correo", selectors: ["#correo"], title: "Correo electrónico", description: "Cambia el correo con el que inicias sesión. Te enviamos un enlace de confirmación y el cambio se aplica cuando lo abres.", side: "top" },
       { id: "contrasena", selectors: ["#contrasena"], title: "Contraseña", description: "Para cambiarla te pedimos la actual, así nadie puede hacerlo si deja tu sesión abierta.", side: "top" },
       { id: "sesiones", selectors: ["#sesiones"], title: "Sesiones", description: "Si usaste Lukiva en un equipo ajeno, cierra la sesión en todos los dispositivos de una vez.", side: "top" },
@@ -441,6 +442,7 @@ export const PAGE_HELP: Record<string, PageHelp> = {
     summary: "Tu perfil, correo, contraseña y sesiones.",
     tips: [
       "Cambia tu nombre, moneda principal y zona horaria en «Perfil y preferencias».",
+      "En «Atajos del iPhone» creas un token para registrar gastos desde la app Atajos o con Siri.",
       "En «Apariencia» eliges modo claro, oscuro o automático y el color de la app.",
       "La moneda principal solo se puede cambiar si todas tus cuentas ya están en la nueva.",
       "El correo nuevo se aplica cuando abres el enlace de confirmación que te enviamos.",

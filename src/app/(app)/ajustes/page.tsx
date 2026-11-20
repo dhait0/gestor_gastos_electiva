@@ -1,12 +1,14 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { ArrowLeft, KeyRound, LogOut, Mail, Palette, UserRound } from "lucide-react";
+import { ArrowLeft, KeyRound, LogOut, Mail, Palette, Smartphone, UserRound } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { signOutEverywhereAction } from "@/app/actions/account";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProfileForm } from "@/components/settings/ProfileForm";
 import { ThemeSettings } from "@/components/settings/ThemeSettings";
+import { ShortcutTokens, type ShortcutTokenRow } from "@/components/settings/ShortcutTokens";
 import { EmailForm } from "@/components/settings/EmailForm";
 import { PasswordForm } from "@/components/settings/PasswordForm";
 
@@ -44,6 +46,25 @@ export default async function AjustesPage() {
     .eq("id", user.id)
     .single();
 
+  const timezone = profile?.timezone ?? "America/Bogota";
+  const dateFormat = new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeZone: timezone });
+  const [{ data: tokenRows }, { data: accountRows }, { data: categoryRows }] = await Promise.all([
+    supabase.from("shortcut_tokens").select("id, name, token_prefix, created_at, last_used_at, revoked_at").eq("user_id", user.id).order("created_at", { ascending: false }),
+    supabase.from("accounts").select("name").eq("user_id", user.id).eq("is_archived", false).is("deleted_at", null).order("name"),
+    supabase.from("categories").select("name").eq("user_id", user.id).eq("type", "EXPENSE").is("deleted_at", null).order("name"),
+  ]);
+  const tokens: ShortcutTokenRow[] = (tokenRows ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    prefix: row.token_prefix,
+    createdAt: dateFormat.format(new Date(row.created_at)),
+    lastUsedAt: row.last_used_at ? dateFormat.format(new Date(row.last_used_at)) : null,
+    revoked: row.revoked_at !== null,
+  }));
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "";
+  const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+
   return (
     <main className="p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-2xl space-y-6">
@@ -71,6 +92,15 @@ export default async function AjustesPage() {
 
         <Section id="apariencia" icon={Palette} title="Apariencia" description="Elige el modo y el color de Lukiva">
           <ThemeSettings />
+        </Section>
+
+        <Section id="atajos" icon={Smartphone} title="Atajos del iPhone" description="Registra gastos e ingresos desde la app Atajos o con Siri">
+          <ShortcutTokens
+            tokens={tokens}
+            baseUrl={`${protocol}://${host}`}
+            accounts={(accountRows ?? []).map((a) => a.name)}
+            expenseCategories={(categoryRows ?? []).map((c) => c.name)}
+          />
         </Section>
 
         <Section id="correo" icon={Mail} title="Correo electrónico" description="El correo con el que inicias sesión">
