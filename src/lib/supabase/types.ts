@@ -347,6 +347,46 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"shortcut_events": {
+                  Row: {
+                    "created_at": string,"idempotency_key": string,"transaction_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"idempotency_key": string,"transaction_id": string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"idempotency_key"?: string,"transaction_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "shortcut_events_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"shortcut_tokens": {
+                  Row: {
+                    "created_at": string,"id": string,"last_used_at": string | null,"name": string,"revoked_at": string | null,"token_hash": string,"token_prefix": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"last_used_at"?: string | null,"name": string,"revoked_at"?: string | null,"token_hash": string,"token_prefix": string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"last_used_at"?: string | null,"name"?: string,"revoked_at"?: string | null,"token_hash"?: string,"token_prefix"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "shortcut_tokens_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"subscriptions": {
                   Row: {
                     "amount": number,"category_id": string | null,"created_at": string,"currency_code": string,"custom_interval_days": number | null,"deleted_at": string | null,"frequency": Database["public"]['Enums']["frequency"],"id": string,"name": string,"next_payment_date": string,"recurring_transaction_id": string | null,"source": string,"status": Database["public"]['Enums']["recurring_status"],"updated_at": string,"user_id": string
@@ -483,6 +523,12 @@ isOneToOne: true
                            },
 "record_debt_payment":
 { Args: { "p_amount": number,"p_debt_id": string,"p_interest"?: number,"p_notes"?: string,"p_payment_date"?: string }; Returns: string
+                           },
+"shortcut_options":
+{ Args: { "p_token_hash": string }; Returns: Json
+                           },
+"shortcut_register_movement":
+{ Args: { "p_account"?: string,"p_amount": number,"p_category"?: string,"p_date"?: string,"p_description"?: string,"p_key"?: string,"p_token_hash": string,"p_type": string }; Returns: Json
                            },
 "void_debt_payment":
 { Args: { "p_payment_id": string }; Returns: undefined

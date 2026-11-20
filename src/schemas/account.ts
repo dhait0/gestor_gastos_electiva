@@ -26,3 +26,7 @@ export const changePasswordSchema = z
     message: "La nueva contraseña debe ser distinta de la actual",
     path: ["password"],
   });
+
+export const shortcutTokenNameSchema = z.object({
+  name: z.string().trim().min(1, "Ponle un nombre al token (por ejemplo «Mi iPhone»)").max(60, "El nombre es demasiado largo (máximo 60 caracteres)"),
+});

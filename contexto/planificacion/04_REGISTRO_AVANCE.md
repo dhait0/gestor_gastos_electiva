@@ -1289,3 +1289,13 @@ Pedido del propietario (presentación final): que la persona gestione su cuenta 
 - **Icono:** nuevo SVG con la paleta de marca y PNG regenerados (72–512, maskable, apple-touch); manifest con `theme_color` de marca.
 - Encabezado: muestra el nombre y enlaza a Ajustes. `formatCurrency` ya no muestra «-$ 0».
 **Pruebas:** lint 0 errores, tsc limpio, unit (esquemas, temas, moneda), E2E 5 nuevos de Ajustes + 1 de temas; suite completa verde (alguna prueba de otros specs falló una vez por carga de la máquina y pasó al repetir). Sin migraciones.
+
+## Atajos del iPhone: registrar un gasto o ingreso desde la app Atajos (2026-11-20)
+
+Pedido del propietario: poder registrar movimientos desde una automatización/atajo manual del iPhone («Gasto rápido»).
+- **Migración aditiva `20261120200000_shortcut_tokens.sql`:** `shortcut_tokens` (solo el hash SHA-256; RLS por dueño; sin DELETE; la única columna actualizable es `revoked_at`), `shortcut_events` (claves de idempotencia, sin políticas: solo las funciones la tocan) y las funciones `security definer` `shortcut_options` y `shortcut_register_movement` (ejecutables por `anon`: la autorización es el token; `search_path=''`; errores con mensaje estable). Rollback documentado en la cabecera. Un token solo puede crear gastos/ingresos del dueño y listar nombres de cuentas/categorías: no lee movimientos ni saldos.
+- **API:** `POST /api/atajos/movimientos` y `GET /api/atajos/opciones` (Bearer `lkv_…`; 401/400/413 con `mensaje` legible para mostrar en el atajo; `clave` evita duplicados si el atajo se dispara dos veces). Moneda tomada de la cuenta (no hay conversión), fecha por defecto en la zona horaria del perfil, categoría del mismo tipo.
+- **Ajustes → «Atajos del iPhone»:** crear token (se muestra una sola vez, máx. 5 activos), revocar, y guía paso a paso con la URL, el encabezado y el JSON de ejemplo con los nombres reales de cuentas y categorías del usuario.
+- `src/lib/supabase/types.ts` regenerado (`supabase gen types --local`); cliente anónimo en `src/lib/supabase/anon.ts`.
+**Pruebas:** unit 9 (token, cuerpo, errores), RLS 9 nuevas (aislamiento A/B/anon, hash inmodificable, tipo de categoría, propiedad de cuentas, idempotencia, revocación; ejecutadas aisladas contra la base local, la suite completa la corre `rls.yml`), E2E de punta a punta (crear token en la interfaz → API → el movimiento aparece → revocar). Lint 0 errores, tsc limpio.
+**Pendiente:** disparadores automáticos (Apple Pay «Transacción», SMS del banco) reutilizan el mismo endpoint; falta su guía. Limitación de iOS: no se pueden leer notificaciones push de otras apps (Nequi, RappiCard). No hay límite de peticiones por token (los tokens son de 256 bits).
