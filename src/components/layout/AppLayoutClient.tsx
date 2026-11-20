@@ -220,7 +220,7 @@ function MobileNav({ pathname, onOpenMenu }: { pathname: string; onOpenMenu: () 
   );
 }
 
-function UserMenu() {
+function UserMenu({ displayName }: { displayName: string | null }) {
   const [isPending, startTransition] = useTransition();
 
   const handleLogout = () => {
@@ -231,10 +231,14 @@ function UserMenu() {
 
   return (
     <div className="flex items-center gap-3">
-      <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 text-sm text-muted-foreground">
-        <User className="w-4 h-4" />
-        <span>Usuario</span>
-      </div>
+      <Link
+        href="/ajustes"
+        aria-label={`Mi cuenta: ${displayName || "Usuario"}`}
+        className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+      >
+        <User className="w-4 h-4" aria-hidden="true" />
+        <span className="max-w-[10rem] truncate">{displayName || "Usuario"}</span>
+      </Link>
       <form action={handleLogout}>
         <Button
           type="submit"
@@ -251,7 +255,7 @@ function UserMenu() {
   );
 }
 
-function AppHeader({ menu }: { menu: React.ReactNode }) {
+function AppHeader({ menu, displayName }: { menu: React.ReactNode; displayName: string | null }) {
   return (
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
       <div className="flex items-center justify-between h-16 px-4">
@@ -260,13 +264,13 @@ function AppHeader({ menu }: { menu: React.ReactNode }) {
           {/* La marca no es un h1: cada página tiene el suyo */}
           <p className="text-lg font-bold text-foreground font-heading lg:hidden">Lukiva</p>
         </div>
-        <UserMenu />
+        <UserMenu displayName={displayName} />
       </div>
     </header>
   );
 }
 
-export function AppLayoutClient({ children, showAdmin = false }: { children: React.ReactNode; showAdmin?: boolean }) {
+export function AppLayoutClient({ children, showAdmin = false, displayName = null }: { children: React.ReactNode; showAdmin?: boolean; displayName?: string | null }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const tourActive = useSyncExternalStore(tourBridge.subscribe, tourBridge.isActive, () => false);
@@ -279,7 +283,7 @@ export function AppLayoutClient({ children, showAdmin = false }: { children: Rea
       <div className="min-h-screen bg-background">
         <DesktopSidebar pathname={pathname} showAdmin={showAdmin} />
         <div className="min-h-screen flex flex-col lg:pl-64">
-          <AppHeader menu={<MobileMenu pathname={pathname} showAdmin={showAdmin} open={menuOpen} onOpenChange={setMenuOpen} tourActive={tourActive} />} />
+          <AppHeader displayName={displayName} menu={<MobileMenu pathname={pathname} showAdmin={showAdmin} open={menuOpen} onOpenChange={setMenuOpen} tourActive={tourActive} />} />
           <main className="flex-1 pb-20 lg:pb-0">{children}</main>
         </div>
         <MobileNav pathname={pathname} onOpenMenu={() => setMenuOpen(true)} />

@@ -1,3 +1,4 @@
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Geist, Manrope } from "next/font/google";
@@ -29,6 +30,7 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: "/icons/icon.svg", type: "image/svg+xml", sizes: "any" },
       { url: "/icons/icon-72x72.png", sizes: "72x72", type: "image/png" },
       { url: "/icons/icon-96x96.png", sizes: "96x96", type: "image/png" },
       { url: "/icons/icon-128x128.png", sizes: "128x128", type: "image/png" },
@@ -63,6 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <meta name="theme-color" content="#315CF5" media="(prefers-color-scheme: light)" />

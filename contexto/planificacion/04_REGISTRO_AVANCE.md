@@ -1278,3 +1278,14 @@ Pedido del propietario: más de un recorrido (uno por pantalla, que diga dónde 
 - **Movimientos:** `describeMovement` (icono, color, nombre y signo únicos por tipo) usado en Movimientos y Dashboard; las transferencias muestran «origen → destino» (se consulta la otra pata por `transfer_group_id`), leyenda de lectura sobre la lista, y `MovementTypeTabs` (Gasto/Ingreso/Transferencia) en las pantallas de registro y transferencia. Antes una transferencia en el Dashboard se veía como gasto (rojo, signo «−»).
 - **Bug previo:** los tokens `success` y `danger` no existían en el tema, por lo que `text-success`/`text-danger` (ingresos, gastos, estados) no pintaban nada. Definidos en `globals.css` (claro y oscuro).
 **Pruebas:** lint 0 errores, tsc limpio, 324 unit, E2E completo 44/44 contra el build de producción. Sin migraciones.
+
+## Ajustes de usuario, temas e icono (2026-11-20)
+
+Pedido del propietario (presentación final): que la persona gestione su cuenta (nombre, moneda, correo, contraseña), elegir temas, y renovar el icono.
+- **Ajustes** (`/ajustes`, ahora página de servidor): Perfil (nombre, moneda principal, zona horaria, reserva), Apariencia, Correo, Contraseña y Sesiones. Acciones en `src/app/actions/account.ts` con Zod (`src/schemas/account.ts`). El correo usa el flujo de confirmación de Supabase; la contraseña exige la actual (se verifica con `signInWithPassword`); «cerrar sesión en todos los dispositivos» usa `signOut({ scope: "global" })`.
+- **Protección de moneda:** el Dashboard calcula en la moneda del perfil y no mezcla monedas (regla de AGENTS.md §6); cambiarla con cuentas en otra moneda las sacaría de los totales, por eso el servidor lo rechaza.
+- **Bug previo:** guardar Ajustes ponía la reserva en 0 (el formulario arrancaba en 0 en vez del valor guardado). Ahora se precarga.
+- **Temas:** modo (automático/claro/oscuro) y 4 acentos (Océano, Menta, Atardecer, Violeta). `src/lib/theme.ts`, script en `<head>` (sin destello), tokens en `globals.css`. Antes la clase `.dark` existía en el CSS pero nada la activaba. Se guarda por dispositivo (localStorage); no hay migración. Pendiente si se quiere sincronizar entre dispositivos: columna en `profiles`.
+- **Icono:** nuevo SVG con la paleta de marca y PNG regenerados (72–512, maskable, apple-touch); manifest con `theme_color` de marca.
+- Encabezado: muestra el nombre y enlaza a Ajustes. `formatCurrency` ya no muestra «-$ 0».
+**Pruebas:** lint 0 errores, tsc limpio, unit (esquemas, temas, moneda), E2E 5 nuevos de Ajustes + 1 de temas; suite completa verde (alguna prueba de otros specs falló una vez por carga de la máquina y pasó al repetir). Sin migraciones.
