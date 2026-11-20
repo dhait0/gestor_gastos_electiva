@@ -24,6 +24,7 @@ export function RegisterDueButton({ recurringId, dueCount }: { recurringId: stri
   const [isPending, startTransition] = useTransition();
   return (
     <Button
+      data-tour="recurrente-vencidos"
       type="button"
       size="sm"
       disabled={isPending}

@@ -70,9 +70,9 @@ export function resolveTourSteps(steps: TourStep[] = TOUR_STEPS): ResolvedStep[]
 }
 
 /** Inicia el recorrido guiado. driver.js se carga bajo demanda: no pesa en el resto de la app. */
-export async function startTour(): Promise<void> {
+export async function startTour(tourSteps: TourStep[] = TOUR_STEPS): Promise<void> {
   const { driver } = await import("driver.js");
-  const steps = resolveTourSteps();
+  const steps = resolveTourSteps(tourSteps);
   let menuOpen = false;
 
   const setMenu = async (open: boolean) => {
