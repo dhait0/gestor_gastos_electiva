@@ -24,6 +24,7 @@ export function ShortcutTokens({ tokens, baseUrl, accounts, expenseCategories }:
   const [isRevoking, startRevoke] = useTransition();
   const active = tokens.filter((token) => !token.revoked);
   const movementsUrl = `${baseUrl}/api/atajos/movimientos`;
+  const getBaseUrl = `${movementsUrl}?cuenta=${encodeURIComponent(accounts[0] ?? "Efectivo")}&categoria=${encodeURIComponent(expenseCategories[0] ?? "Alimentación")}&monto=`;
   const exampleToken = state.success ? state.token : "<tu token>";
   const exampleBody = JSON.stringify(
     { tipo: "gasto", monto: 45000, descripcion: "Almuerzo", cuenta: accounts[0] ?? "Efectivo", categoria: expenseCategories[0] ?? "Alimentación" },
@@ -111,18 +112,22 @@ export function ShortcutTokens({ tokens, baseUrl, accounts, expenseCategories }:
           <li>Añade <strong>Solicitar entrada</strong> (tipo Número) con la pregunta «¿Cuánto gastaste?».</li>
           <li>Añade otra <strong>Solicitar entrada</strong> (tipo Texto) con la pregunta «¿En qué?».</li>
           <li>
-            Añade <strong>Obtener contenido de URL</strong> y toca «Mostrar más»:
+            Añade <strong>Obtener contenido de URL</strong> y toca «Mostrar más». <strong>Opción recomendada (GET, sin cuerpo):</strong>
             <ul className="mt-1 list-disc space-y-1 pl-5 text-muted-foreground">
               <li>
-                URL: <code className="break-all text-xs text-foreground">{movementsUrl}</code> <CopyButton value={movementsUrl} label="URL" />
+                URL: empieza con <code className="break-all text-xs text-foreground">{getBaseUrl}</code> <CopyButton value={getBaseUrl} label="URL base" />
+                {" "}y a continuación escribe <code className="text-xs text-foreground">&amp;descripcion=</code> y la variable del paso 3, y al final de la parte que ya trae <code className="text-xs text-foreground">monto=</code> inserta la variable del paso 2.
               </li>
-              <li>Método: <strong className="text-foreground">POST</strong>.</li>
+              <li>Método: <strong className="text-foreground">GET</strong> (el que viene por defecto).</li>
               <li>
                 Encabezado: <code className="text-xs text-foreground">Authorization</code> con el valor{" "}
                 <code className="break-all text-xs text-foreground">Bearer {exampleToken}</code>
               </li>
-              <li>Cuerpo de la solicitud: <strong className="text-foreground">JSON</strong>, con estos campos (en <em>monto</em> y <em>descripcion</em> usa las variables de los pasos 2 y 3):</li>
             </ul>
+            <p className="mt-2 text-muted-foreground">
+              <strong className="text-foreground">Alternativa (POST con JSON):</strong> URL <code className="break-all text-xs text-foreground">{movementsUrl}</code>, método POST, el mismo encabezado y cuerpo JSON con estos campos
+              (en <em>monto</em> y <em>descripcion</em> usa las variables de los pasos 2 y 3). Si te sale «la conexión de red se perdió», usa la opción GET.
+            </p>
             <pre className="mt-2 overflow-x-auto rounded-md bg-muted p-3 text-xs">{exampleBody}</pre>
           </li>
           <li>Añade <strong>Obtener valor del diccionario</strong> con la clave <code className="text-xs">mensaje</code> y luego <strong>Mostrar notificación</strong>: verás «Gasto de $45.000 registrado en…».</li>

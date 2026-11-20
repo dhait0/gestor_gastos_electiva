@@ -66,6 +66,14 @@ test.describe("Atajos del iPhone", () => {
     expect(again.movimiento.duplicado).toBe(true);
     expect(again.movimiento.id).toBe(json.movimiento.id);
 
+    // Opción GET (sin cuerpo): para cuando el POST con JSON falla en la app Atajos
+    const viaGet = await request.get(`${url}?cuenta=${encodeURIComponent("Efectivo E2E")}&categoria=${encodeURIComponent("Comida E2E")}&monto=12000&descripcion=${encodeURIComponent("Café con tilde á")}&clave=e2e-get-1`, { headers: auth });
+    expect(viaGet.status()).toBe(200);
+    expect((await viaGet.json()).mensaje).toContain("registrado en Efectivo E2E");
+    expect((await (await request.get(`${url}?cuenta=Efectivo%20E2E&categoria=Comida%20E2E&monto=12000&clave=e2e-get-1`, { headers: auth })).json()).movimiento.duplicado).toBe(true);
+    expect((await request.get(`${url}?monto=12000&categoria=Comida%20E2E`)).status()).toBe(401); // sin token
+    expect((await request.get(`${url}?monto=abc&categoria=Comida%20E2E&cuenta=Efectivo%20E2E`, { headers: auth })).status()).toBe(400);
+
     // Errores claros para el atajo
     const noToken = await request.post(url, { data: body });
     expect(noToken.status()).toBe(401);
@@ -87,6 +95,7 @@ test.describe("Atajos del iPhone", () => {
     // El movimiento aparece en la app
     await page.goto(`${BASE_URL}/transacciones`);
     await expect(page.getByText("Almuerzo E2E")).toHaveCount(1);
+    await expect(page.getByText("Café con tilde á")).toHaveCount(1);
 
     // Revocar corta el acceso al instante
     await page.goto(`${BASE_URL}/ajustes`);
