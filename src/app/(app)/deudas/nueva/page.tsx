@@ -1,13 +1,14 @@
 "use client";
 
 import { preventFormReset } from "@/lib/keep-form-on-error";
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createDebtAction } from "@/app/actions/debts";
+import { getAccountsAction } from "@/app/actions/accounts";
 
 const initialState = { error: undefined, data: undefined };
 const selectClass =
@@ -21,9 +22,19 @@ const TYPES = [
   ["OTHER", "Otra"],
 ] as const;
 
+interface AccountOption { id: string; name: string; type: string; }
+
 export default function NuevaDeudaPage() {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(createDebtAction, initialState);
+  const [accounts, setAccounts] = useState<AccountOption[]>([]);
+  const [selectedType, setSelectedType] = useState("PERSONAL_LOAN");
+
+  useEffect(() => {
+    getAccountsAction().then((r) => {
+      if ("data" in r && r.data) setAccounts(r.data);
+    });
+  }, []);
 
   const createdId = "data" in state && state.data ? state.data.id : undefined;
   useEffect(() => {
@@ -45,6 +56,13 @@ export default function NuevaDeudaPage() {
     </div>
   );
 
+  // Cuentas compatibles con el tipo de deuda seleccionado
+  const compatibleAccounts = accounts.filter((a) => {
+    if (selectedType === "CREDIT_CARD") return a.type === "CREDIT_CARD";
+    if (selectedType === "MORTGAGE") return a.type === "SAVINGS" || a.type === "CHECKING";
+    return true;
+  });
+
   return (
     <main className="p-4 sm:p-6 lg:p-8">
       <form action={formAction} onReset={preventFormReset} className="mx-auto max-w-2xl space-y-6">
@@ -53,18 +71,47 @@ export default function NuevaDeudaPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="name">Nombre *</Label>
-            <Input id="name" name="name" required maxLength={100} disabled={isPending} placeholder="Ej: Préstamo del banco" />
+            <Input id="name" name="name" required maxLength={100} disabled={isPending} placeholder="Ej: Tarjeta Bancolombia" />
             {fieldError("name") && <p className="mt-1 text-sm text-destructive" role="alert">{fieldError("name")}</p>}
           </div>
           <div>
             <Label htmlFor="type">Tipo *</Label>
-            <select id="type" name="type" defaultValue="PERSONAL_LOAN" className={selectClass} disabled={isPending}>
+            <select
+              id="type"
+              name="type"
+              defaultValue="PERSONAL_LOAN"
+              className={selectClass}
+              disabled={isPending}
+              onChange={(e) => setSelectedType(e.target.value)}
+            >
               {TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </div>
-          {numberField("original_amount", "Monto original *", { required: true, min: "0.01" })}
+
+          {/* Selector de cuenta vinculada */}
+          <div className="sm:col-span-2">
+            <Label htmlFor="account_id">
+              Cuenta vinculada
+              <span className="ml-1 text-xs text-muted-foreground font-normal">
+                {selectedType === "CREDIT_CARD" ? "(tarjeta de crédito asociada)" : "(opcional)"}
+              </span>
+            </Label>
+            <select id="account_id" name="account_id" className={selectClass} disabled={isPending}>
+              <option value="">Sin cuenta vinculada</option>
+              {compatibleAccounts.map((a) => (
+                <option key={a.id} value={a.id}>{a.name}</option>
+              ))}
+            </select>
+            {selectedType === "CREDIT_CARD" && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Al vincular la tarjeta, los gastos registrados en esa cuenta se reflejarán en esta deuda.
+              </p>
+            )}
+          </div>
+
+          {numberField("original_amount", "Monto original / cupo total *", { required: true, min: "0.01" })}
           {numberField("current_balance", "Saldo pendiente (si ya pagaste parte)")}
-          {numberField("interest_rate_percent", "Tasa de interés anual %", { defaultValue: "0", step: "0.01" })}
+          {numberField("interest_rate_percent", "Tasa de interés mensual %", { defaultValue: "0", step: "0.01" })}
           {numberField("minimum_payment", "Pago mínimo mensual", { defaultValue: "0" })}
           {numberField("payment_day", "Día de pago (1-31)", { step: "1", min: "1" })}
         </div>
