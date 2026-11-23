@@ -29,7 +29,18 @@ export interface ShortcutMovementInput {
   clave: string | null;
 }
 
-export type ParsedBody = { ok: true; value: ShortcutMovementInput } | { ok: false; error: string };
+export interface ShortcutTransferInput {
+  tipo: "TRANSFER";
+  monto: number;
+  descripcion: string | null;
+  cuenta_origen: string | null;
+  cuenta_destino: string | null;
+  fecha: string | null;
+  clave: string | null;
+}
+
+export type ShortcutInput = ShortcutMovementInput | ShortcutTransferInput;
+export type ParsedBody = { ok: true; value: ShortcutInput } | { ok: false; error: string };
 
 function text(value: unknown, max: number): string | null | undefined {
   if (value === undefined || value === null) return null;
@@ -53,29 +64,41 @@ export function parseAmountText(text: string): number | null {
   return null;
 }
 
-/** Valida el JSON que manda el atajo. Acepta «gasto»/«ingreso» (o EXPENSE/INCOME) y el monto como número o texto. */
+/** Valida el JSON que manda el atajo. Acepta «gasto»/«ingreso»/«transferencia» y el monto como número o texto. */
 export function parseMovementBody(body: unknown): ParsedBody {
   if (!body || typeof body !== "object" || Array.isArray(body)) return { ok: false, error: "El cuerpo debe ser un objeto JSON" };
   const raw = body as Record<string, unknown>;
 
   const tipoRaw = String(raw.tipo ?? "gasto").trim().toLowerCase();
-  const tipo = ["gasto", "expense"].includes(tipoRaw) ? "EXPENSE" : ["ingreso", "income"].includes(tipoRaw) ? "INCOME" : null;
-  if (!tipo) return { ok: false, error: "El tipo debe ser «gasto» o «ingreso»" };
+  const isTransfer = ["transferencia", "transfer"].includes(tipoRaw);
+  const tipo = isTransfer ? "TRANSFER"
+    : ["gasto", "expense"].includes(tipoRaw) ? "EXPENSE"
+    : ["ingreso", "income"].includes(tipoRaw) ? "INCOME"
+    : null;
+  if (!tipo) return { ok: false, error: "El tipo debe ser «gasto», «ingreso» o «transferencia»" };
 
   const monto = typeof raw.monto === "number" ? raw.monto : typeof raw.monto === "string" ? parseAmountText(raw.monto) : null;
   if (monto === null) return { ok: false, error: "El monto debe ser un número positivo, por ejemplo 45000, 45.000 o 45000,50" };
   if (!Number.isFinite(monto) || monto <= 0 || monto > 1_000_000_000_000) return { ok: false, error: "El monto debe ser mayor que cero" };
 
   const descripcion = text(raw.descripcion, 200);
-  const cuenta = text(raw.cuenta, 100);
-  const categoria = text(raw.categoria, 100);
   const clave = text(raw.clave, 100);
   if (descripcion === undefined) return { ok: false, error: "La descripción es demasiado larga (máximo 200 caracteres)" };
-  if (cuenta === undefined || categoria === undefined) return { ok: false, error: "El nombre de la cuenta o la categoría no es válido" };
   if (clave === undefined) return { ok: false, error: "La clave es demasiado larga (máximo 100 caracteres)" };
 
   const fecha = text(raw.fecha, 10);
   if (fecha === undefined || (fecha !== null && !/^\d{4}-\d{2}-\d{2}$/.test(fecha))) return { ok: false, error: "La fecha debe tener el formato AAAA-MM-DD" };
+
+  if (tipo === "TRANSFER") {
+    const cuenta_origen = text(raw.cuenta_origen ?? raw.cuenta, 100);
+    const cuenta_destino = text(raw.cuenta_destino, 100);
+    if (cuenta_origen === undefined || cuenta_destino === undefined) return { ok: false, error: "El nombre de la cuenta no es válido" };
+    return { ok: true, value: { tipo: "TRANSFER", monto, descripcion, cuenta_origen: cuenta_origen ?? null, cuenta_destino: cuenta_destino ?? null, fecha, clave } };
+  }
+
+  const cuenta = text(raw.cuenta, 100);
+  const categoria = text(raw.categoria, 100);
+  if (cuenta === undefined || categoria === undefined) return { ok: false, error: "El nombre de la cuenta o la categoría no es válido" };
 
   return { ok: true, value: { tipo, monto, descripcion, cuenta, categoria, fecha, clave } };
 }
