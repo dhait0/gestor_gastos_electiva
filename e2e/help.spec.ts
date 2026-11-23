@@ -27,7 +27,9 @@ for (const [name, viewport, pasosEsperados] of [
   // Escritorio fuera del Dashboard: «Movimientos» ya lo cubre el paso 3, así que son 8 (en el Dashboard serían 9).
   ["escritorio", { width: 1280, height: 800 }, 8],
   // En móvil Cuentas, Categorías y Alertas viven en el menú lateral: el recorrido lo abre, así que no se fusionan pasos.
-  ["móvil", { width: 390, height: 844 }, 9],
+  // Presupuestos ya no está en la barra móvil (reemplazado por Resumen), por lo que el selector nav-presupuestos
+  // no es visible en móvil y ese paso se omite → 8 pasos en móvil.
+  ["móvil", { width: 390, height: 844 }, 8],
 ] as const) {
   test.describe(`Ayuda y recorrido guiado · ${name}`, () => {
     test.use({ viewport });
