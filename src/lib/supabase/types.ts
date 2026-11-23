@@ -163,14 +163,14 @@ isOneToOne: false
                   ]
                 },"debts": {
                   Row: {
-                    "created_at": string,"currency_code": string,"current_balance": number,"deleted_at": string | null,"id": string,"interest_rate_percent": number,"minimum_payment": number,"name": string,"original_amount": number,"payment_day": number | null,"status": Database["public"]['Enums']["debt_status"],"type": Database["public"]['Enums']["debt_type"],"updated_at": string,"user_id": string
+                    "account_id": string | null,"created_at": string,"currency_code": string,"current_balance": number,"deleted_at": string | null,"id": string,"interest_rate_percent": number,"minimum_payment": number,"name": string,"original_amount": number,"payment_day": number | null,"status": Database["public"]['Enums']["debt_status"],"type": Database["public"]['Enums']["debt_type"],"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"currency_code"?: string,"current_balance": number,"deleted_at"?: string | null,"id"?: string,"interest_rate_percent"?: number,"minimum_payment"?: number,"name": string,"original_amount": number,"payment_day"?: number | null,"status"?: Database["public"]['Enums']["debt_status"],"type"?: Database["public"]['Enums']["debt_type"],"updated_at"?: string,"user_id": string
+                    "account_id"?: string | null,"created_at"?: string,"currency_code"?: string,"current_balance": number,"deleted_at"?: string | null,"id"?: string,"interest_rate_percent"?: number,"minimum_payment"?: number,"name": string,"original_amount": number,"payment_day"?: number | null,"status"?: Database["public"]['Enums']["debt_status"],"type"?: Database["public"]['Enums']["debt_type"],"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "created_at"?: string,"currency_code"?: string,"current_balance"?: number,"deleted_at"?: string | null,"id"?: string,"interest_rate_percent"?: number,"minimum_payment"?: number,"name"?: string,"original_amount"?: number,"payment_day"?: number | null,"status"?: Database["public"]['Enums']["debt_status"],"type"?: Database["public"]['Enums']["debt_type"],"updated_at"?: string,"user_id"?: string
+                    "account_id"?: string | null,"created_at"?: string,"currency_code"?: string,"current_balance"?: number,"deleted_at"?: string | null,"id"?: string,"interest_rate_percent"?: number,"minimum_payment"?: number,"name"?: string,"original_amount"?: number,"payment_day"?: number | null,"status"?: Database["public"]['Enums']["debt_status"],"type"?: Database["public"]['Enums']["debt_type"],"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -178,6 +178,13 @@ isOneToOne: false
       columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },
+    {
+      foreignKeyName: "debts_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
       referencedColumns: ["id"]
     }
                   ]

@@ -14,6 +14,7 @@ const createDebtSchema = z.object({
   interest_rate_percent: z.coerce.number().min(0, "La tasa no puede ser negativa").default(0),
   minimum_payment: z.coerce.number().min(0, "El pago mínimo no puede ser negativo").default(0),
   payment_day: z.coerce.number().int().min(1).max(31).optional(),
+  account_id: z.string().uuid().optional().nullable(),
 });
 
 const paymentSchema = z.object({
@@ -46,6 +47,8 @@ export interface DebtRow {
   payment_day: number | null;
   status: DebtStatus;
   paidPercent: number;
+  account_id: string | null;
+  account_name: string | null;
 }
 
 export interface DebtPaymentRow {
@@ -76,7 +79,10 @@ function toDebtRow(d: {
   minimum_payment: string | number;
   payment_day: number | null;
   status: DebtStatus;
+  account_id?: string | null;
+  accounts?: { name: string } | { name: string }[] | null;
 }): DebtRow {
+  const acc = d.accounts ? (Array.isArray(d.accounts) ? d.accounts[0] : d.accounts) : null;
   return {
     ...d,
     original_amount: String(d.original_amount),
@@ -84,11 +90,13 @@ function toDebtRow(d: {
     interest_rate_percent: String(d.interest_rate_percent),
     minimum_payment: String(d.minimum_payment),
     paidPercent: paidPercent(d),
+    account_id: d.account_id ?? null,
+    account_name: acc?.name ?? null,
   };
 }
 
 const DEBT_COLUMNS =
-  "id, name, type, original_amount, current_balance, currency_code, interest_rate_percent, minimum_payment, payment_day, status";
+  "id, name, type, original_amount, current_balance, currency_code, interest_rate_percent, minimum_payment, payment_day, status, account_id, accounts(name)";
 
 export async function createDebtAction(_prevState: FormState, formData: FormData): Promise<FormState> {
   const supabase = await createSupabaseServerClient();
@@ -103,6 +111,7 @@ export async function createDebtAction(_prevState: FormState, formData: FormData
     interest_rate_percent: formData.get("interest_rate_percent") || 0,
     minimum_payment: formData.get("minimum_payment") || 0,
     payment_day: formData.get("payment_day") || undefined,
+    account_id: formData.get("account_id") || null,
   });
   if (!parsed.success) return { error: parsed.error.flatten().fieldErrors };
 
@@ -119,6 +128,7 @@ export async function createDebtAction(_prevState: FormState, formData: FormData
       ...parsed.data,
       current_balance: parsed.data.current_balance ?? parsed.data.original_amount,
       currency_code: profile?.currency_code ?? "COP",
+      account_id: parsed.data.account_id ?? null,
     })
     .select("id")
     .single();
