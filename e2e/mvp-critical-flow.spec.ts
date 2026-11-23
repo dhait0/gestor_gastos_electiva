@@ -1007,7 +1007,7 @@ test.describe("Navegación principal en escritorio (UC-50)", () => {
 
     const sidebar = page.getByRole("navigation", { name: "Navegación principal" });
     await expect(sidebar).toBeVisible();
-    for (const group of ["Principal", "Planificación", "Inteligencia", "Cuenta"]) {
+    for (const group of ["Inicio", "Mi dinero", "Compromisos", "Planificación", "Herramientas", "Cuenta"]) {
       await expect(sidebar.getByText(group, { exact: true })).toBeVisible();
     }
     // La barra inferior de móvil no se muestra en escritorio

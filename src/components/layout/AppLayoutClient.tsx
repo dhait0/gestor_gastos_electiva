@@ -44,13 +44,29 @@ interface NavItem {
 
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
-    label: "Principal",
+    label: "Inicio",
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/resumen", label: "Resumen del mes", icon: CalendarRange },
       { href: "/transacciones", label: "Movimientos", icon: List },
+    ],
+  },
+  {
+    // Configurar primero: lo que define la cascada financiera
+    label: "Mi dinero",
+    items: [
       { href: "/cuentas", label: "Cuentas", icon: CreditCard },
+      { href: "/deudas", label: "Deudas", icon: Landmark },
       { href: "/categorias", label: "Categorías", icon: Tags },
+    ],
+  },
+  {
+    // Pagos y gastos que se repiten cada mes
+    label: "Compromisos",
+    items: [
+      { href: "/obligaciones", label: "Obligaciones", icon: TrendingUp },
+      { href: "/recurrentes", label: "Recurrentes", icon: Repeat },
+      { href: "/suscripciones", label: "Suscripciones", icon: CalendarClock },
     ],
   },
   {
@@ -58,18 +74,14 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/presupuestos", label: "Presupuestos", icon: PiggyBank },
       { href: "/metas", label: "Metas", icon: Target },
-      { href: "/recurrentes", label: "Recurrentes", icon: Repeat },
-      { href: "/suscripciones", label: "Suscripciones", icon: CalendarClock },
-      { href: "/obligaciones", label: "Obligaciones", icon: TrendingUp },
-      { href: "/deudas", label: "Deudas", icon: Landmark },
     ],
   },
   {
-    label: "Inteligencia",
+    label: "Herramientas",
     items: [
-      { href: "/alertas", label: "Alertas", icon: Bell },
       { href: "/analisis", label: "Análisis", icon: LineChart },
       { href: "/simulador", label: "Simulador", icon: Calculator },
+      { href: "/alertas", label: "Alertas", icon: Bell },
     ],
   },
 ];
