@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Geist, Manrope } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { ServiceWorkerRegistration } from "@/components/layout/ServiceWorkerRegistration";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -76,6 +77,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className={cn(geist.variable, manrope.variable)}>
+        <ServiceWorkerRegistration />
         {children}
       </body>
     </html>

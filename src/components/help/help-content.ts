@@ -64,7 +64,7 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: "presupuestos",
-    selectors: ['[data-tour="nav-presupuestos"]', '[data-tour="mobile-presupuestos"]'],
+    selectors: ['[data-tour="nav-presupuestos"]'],
     title: "4. Planifica",
     description:
       "Define cuánto quieres gastar al mes por categoría y Lukiva te avisa cuando te acercas al límite. En Planificación también están Metas de ahorro, Recurrentes, Suscripciones, Obligaciones y Deudas.",
