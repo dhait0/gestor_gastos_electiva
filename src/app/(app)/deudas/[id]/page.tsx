@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Pencil } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { getDebtDetailAction } from "@/app/actions/debts";
 import { simulatePayoff } from "@/domain/debts";
@@ -31,8 +31,17 @@ export default async function DeudaDetallePage({ params }: { params: Promise<{ i
         </Link>
 
         <header className="flex items-start justify-between gap-3">
-          <h1 className="text-2xl font-bold text-foreground font-heading">{debt.name}</h1>
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{STATUS_LABEL[debt.status]}</span>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground font-heading">{debt.name}</h1>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{STATUS_LABEL[debt.status]}</span>
+          </div>
+          <Link
+            href={`/deudas/${id}/editar`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted text-foreground"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            Editar
+          </Link>
         </header>
 
         <section aria-label="Saldo" className="rounded-xl border border-border bg-card p-5 space-y-3">

@@ -6,7 +6,7 @@ import { z } from "zod";
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato de fecha inválido (YYYY-MM-DD)");
 
-const createDebtSchema = z.object({
+const debtFieldsSchema = z.object({
   name: z.string().trim().min(1, "El nombre es requerido").max(100),
   type: z.enum(["CREDIT_CARD", "PERSONAL_LOAN", "STUDENT_LOAN", "MORTGAGE", "OTHER"]),
   original_amount: z.coerce.number().positive("El monto debe ser mayor a 0"),
@@ -16,6 +16,8 @@ const createDebtSchema = z.object({
   payment_day: z.coerce.number().int().min(1).max(31).optional(),
   account_id: z.string().uuid().optional().nullable(),
 });
+
+const createDebtSchema = debtFieldsSchema;
 
 const paymentSchema = z.object({
   debt_id: z.string().uuid(),
@@ -135,6 +137,41 @@ export async function createDebtAction(_prevState: FormState, formData: FormData
 
   if (error) return { error: "Error al crear la deuda" };
   return { data: { id: data.id } };
+}
+
+export async function updateDebtAction(id: string, _prevState: FormState, formData: FormData): Promise<FormState> {
+  const supabase = await createSupabaseServerClient();
+  const user = await getUser(supabase);
+  if (!user) return { error: "No autorizado" };
+
+  const parsed = debtFieldsSchema.safeParse({
+    name: formData.get("name"),
+    type: formData.get("type"),
+    original_amount: formData.get("original_amount"),
+    current_balance: formData.get("current_balance") || undefined,
+    interest_rate_percent: formData.get("interest_rate_percent") || 0,
+    minimum_payment: formData.get("minimum_payment") || 0,
+    payment_day: formData.get("payment_day") || undefined,
+    account_id: formData.get("account_id") || null,
+  });
+  if (!parsed.success) return { error: parsed.error.flatten().fieldErrors };
+
+  const { data: profile } = await supabase.from("profiles").select("currency_code").eq("id", user.id).single();
+
+  const { error } = await supabase
+    .from("debts")
+    .update({
+      ...parsed.data,
+      current_balance: parsed.data.current_balance ?? parsed.data.original_amount,
+      currency_code: profile?.currency_code ?? "COP",
+      account_id: parsed.data.account_id ?? null,
+    })
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .is("deleted_at", null);
+
+  if (error) return { error: "Error al actualizar la deuda" };
+  return { data: { id } };
 }
 
 export async function setDebtStatusAction(id: string, status: "ACTIVE" | "PAUSED" | "CANCELLED") {
