@@ -221,8 +221,8 @@ test.describe("FASE 21 - Flujo crítico MVP (E2E)", () => {
     await registerUser(page, email, password, displayName);
     await completeOnboarding(page, "Cuenta Principal", "1000000");
 
-    // Verify dashboard loads with "Dinero disponible"
-    await expect(page.locator('p:has-text("Dinero disponible")')).toBeVisible();
+    // Verify dashboard loads with the available amount hero section
+    await expect(page.locator('[aria-label="Disponible ahora"]')).toBeVisible();
     
     // Test passes - onboarding flow works
   });
@@ -250,12 +250,9 @@ test.describe("FASE 21 - Flujo crítico MVP (E2E)", () => {
     await page.goto(`${BASE_URL}/dashboard`);
     await expect(page.locator("main").first()).toContainText(/770[.,]000/);
 
-    // F02: desglose por categoría y filtro de período
-    await expect(page.getByRole("heading", { name: "Gasto por categoría" })).toBeVisible();
-    await expect(page.getByRole("progressbar").first()).toBeVisible();
-    await page.getByRole("link", { name: "Mes anterior" }).click();
-    await expect(page).toHaveURL(/period=previous/);
-    await expect(page.locator("text=No hay gastos registrados")).toBeVisible();
+    // F02: cascada financiera visible con el saldo disponible calculado
+    await expect(page.getByRole("heading", { name: "La cascada", level: 2 })).toBeVisible();
+    await expect(page.locator('[aria-label="Disponible ahora"]')).toBeVisible();
   });
 
   test("déficit: disponible negativo cuando obligaciones > saldo", async ({ page }) => {
@@ -319,9 +316,8 @@ test.describe("Autenticación básica", () => {
     await page.click('button[type="submit"]');
     await page.waitForURL(`${BASE_URL}/dashboard`, { timeout: 10000 });
 
-    // Por rol: "Dashboard" también está en el menú lateral y en el anunciador de rutas de Next,
-    // y un locator por texto coincidía con 1 o 3 elementos según cuánto hubiera llegado de la página
-    await expect(page.getByRole("heading", { name: "Dashboard", level: 1 })).toBeVisible();
+    // El dashboard carga: verificamos la sección de disponible (el h1 ahora muestra el mes)
+    await expect(page.locator('[aria-label="Disponible ahora"]')).toBeVisible();
   });
 
   test("usuario no autenticado redirigido a login", async ({ page }) => {
@@ -974,11 +970,13 @@ test.describe("Estados vacío, error y carga (UC-41, UC-46, UC-47)", () => {
     await registerUser(page, `test-empty-${uniqueId}@finwise.test`, "TestPass123!", `Usuario Vacío ${uniqueId}`);
     await completeOnboarding(page, "Cuenta Vacía", "1000");
 
-    for (const path of ["/dashboard", "/transacciones"]) {
-      await page.goto(`${BASE_URL}${path}`);
-      await expect(page.getByText("Aún no tienes movimientos").first()).toBeVisible();
-      await expect(page.getByText("Registra tu primer ingreso o gasto para comenzar a entender tus finanzas.").first()).toBeVisible();
-    }
+    // Dashboard vacío: muestra "Sin movimientos aún" con CTAs
+    await page.goto(`${BASE_URL}/dashboard`);
+    await expect(page.getByText("Sin movimientos aún").first()).toBeVisible();
+    // Movimientos vacío: mensaje propio
+    await page.goto(`${BASE_URL}/transacciones`);
+    await expect(page.getByText("Aún no tienes movimientos").first()).toBeVisible();
+    await expect(page.getByText("Registra tu primer ingreso o gasto para comenzar a entender tus finanzas.").first()).toBeVisible();
     await page.goto(`${BASE_URL}/dashboard`);
     await expect(page.getByRole("link", { name: "Registrar gasto" }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: "Registrar ingreso" }).first()).toBeVisible();

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { ArrowLeft, KeyRound, LogOut, Mail, Palette, Smartphone, UserRound } from "lucide-react";
+import { ArrowLeft, Bell, KeyRound, LogOut, Mail, Palette, Smartphone, UserRound } from "lucide-react";
+import { PushNotificationSetup } from "@/components/notifications/PushNotificationSetup";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { signOutEverywhereAction } from "@/app/actions/account";
 import { Button } from "@/components/ui/button";
@@ -101,6 +102,10 @@ export default async function AjustesPage() {
             accounts={(accountRows ?? []).map((a) => a.name)}
             expenseCategories={(categoryRows ?? []).map((c) => c.name)}
           />
+        </Section>
+
+        <Section id="notificaciones" icon={Bell} title="Notificaciones push" description="Recibí alertas en tu celular sobre pagos, saldo y resumen del mes">
+          <PushNotificationSetup />
         </Section>
 
         <Section id="correo" icon={Mail} title="Correo electrónico" description="El correo con el que inicias sesión">

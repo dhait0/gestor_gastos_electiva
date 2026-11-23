@@ -24,6 +24,7 @@ import {
   Tags,
   MoreHorizontal,
   Menu,
+  CalendarRange,
   type LucideIcon,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -46,6 +47,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: "Principal",
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/resumen", label: "Resumen del mes", icon: CalendarRange },
       { href: "/transacciones", label: "Movimientos", icon: List },
       { href: "/cuentas", label: "Cuentas", icon: CreditCard },
       { href: "/categorias", label: "Categorías", icon: Tags },
@@ -205,7 +207,7 @@ function MobileNav({ pathname, onOpenMenu }: { pathname: string; onOpenMenu: () 
           <Plus className="w-5 h-5" aria-hidden="true" />
           Crear
         </Link>
-        {item("/presupuestos", "Presupuestos", PiggyBank, "mobile-presupuestos")}
+        {item("/resumen", "Resumen", CalendarRange, "mobile-resumen")}
         <button
           type="button"
           data-tour="mobile-mas"
