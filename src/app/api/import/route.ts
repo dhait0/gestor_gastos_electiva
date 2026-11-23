@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   const periodMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
   const errors: string[] = [];
-  let importedCount = { cuentas: 0, deudas: 0, obligaciones: 0, recurrentes: 0, suscripciones: 0, presupuestos: 0, transacciones: 0 };
+  const importedCount = { cuentas: 0, deudas: 0, obligaciones: 0, recurrentes: 0, suscripciones: 0, presupuestos: 0, transacciones: 0 };
 
   // ── Categorías: cargar existentes y crear las que falten ──────────────────
   const { data: existingCats } = await supabase
