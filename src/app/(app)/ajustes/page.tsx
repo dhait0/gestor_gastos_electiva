@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Bell, KeyRound, LogOut, Mail, Palette, Smartphone, UserRound } from "lucide-react";
+import { ArrowLeft, Bell, Database, KeyRound, LogOut, Mail, Palette, Smartphone, UserRound } from "lucide-react";
 import { PushNotificationSetup } from "@/components/notifications/PushNotificationSetup";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { signOutEverywhereAction } from "@/app/actions/account";
@@ -12,6 +12,7 @@ import { ThemeSettings } from "@/components/settings/ThemeSettings";
 import { ShortcutTokens, type ShortcutTokenRow } from "@/components/settings/ShortcutTokens";
 import { EmailForm } from "@/components/settings/EmailForm";
 import { PasswordForm } from "@/components/settings/PasswordForm";
+import { DataManagement } from "@/components/settings/DataManagement";
 
 function Section({ id, icon: Icon, title, description, children }: { id: string; icon: typeof UserRound; title: string; description: string; children: React.ReactNode }) {
   return (
@@ -122,6 +123,10 @@ export default async function AjustesPage() {
               Cerrar sesión en todos los dispositivos
             </Button>
           </form>
+        </Section>
+
+        <Section id="datos" icon={Database} title="Datos e importación" description="Descargá la plantilla Excel, importá tu información inicial o limpiá datos de prueba">
+          <DataManagement />
         </Section>
       </div>
     </main>
